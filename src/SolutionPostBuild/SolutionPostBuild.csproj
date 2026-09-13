@@ -11,8 +11,6 @@
         <ProjectReference Include="..\ZdoWatcher\ZdoWatcher.csproj"/>
         <ProjectReference Include="..\DynamicLocations\DynamicLocations.csproj"/>
         <ProjectReference Include="..\ValheimVehicles\ValheimVehicles.csproj"/>
-        <ProjectReference Include="..\Eldritch.Core\EldritchCore.csproj"/>
-        <ProjectReference Include="..\Eldritch.Valheim\EldritchValheim.csproj"/>
         <ProjectReference Include="..\ModSync\ModSync.csproj">
             <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
@@ -109,13 +107,4 @@
     </Target>
 
     <!--  Version imports override eachother  -->
-    <Import Condition="'$(DidBuildEldritchValheim)' == 'true'" Project="$(SolutionDir)build\eldritch_version.props"/>
-    <Target KeepDuplicateOutputs="false" Name="Generate_Mod_Archive_Eldritch" AfterTargets="RunPostInstaller" Condition="'$(ShouldArchiveEldritch)' == 'true'">
-        <!--   overrides version of previous key     -->
-        <Exec
-                Command="dotnet &quot;$(ModSyncDll)&quot; generateArchive --targets=eldritch-release --env-release=true --override-version=$(EldritchVersion)"
-                WorkingDirectory="$(SolutionDir)"
-                IgnoreExitCode="false"
-        />
-    </Target>
 </Project>

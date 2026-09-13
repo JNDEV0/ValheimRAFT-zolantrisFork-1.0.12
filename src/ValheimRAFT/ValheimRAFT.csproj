@@ -33,10 +33,6 @@
         <ProjectReference Include="..\ZdoWatcher\ZdoWatcher.csproj"/>
         <ProjectReference Include="..\ValheimVehicles\ValheimVehicles.csproj"/>
     </ItemGroup>
-
-    <PropertyGroup>
-        <SentryDSN>https://e720adb5b1a1fdb40d073635eb76817d@o243490.ingest.sentry.io/4506613652586496</SentryDSN>
-    </PropertyGroup>
     <ItemGroup>
         <AssemblyAttribute Include="Properties.CustomAssemblyAttributes">
             <_Parameter1>"$(SentryDSN)"</_Parameter1>
@@ -54,7 +50,6 @@
 
     <!--  Other bepinex plugins  -->
     <ItemGroup>
-        <!--        <Reference Include="SentryUnityWrapper">-->
         <!--            <HintPath>$(SolutionDir)\src\SentryUnityWrapper\bin\Debug\SentryUnityWrapper.dll</HintPath>-->
         <!--            <Private>False</Private>-->
         <!--        </Reference>-->

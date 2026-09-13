@@ -10,8 +10,7 @@
 
 If you enjoy this update and want to support continued development and maintenance of ValheimRAFT for the community, you can support on Ko-fi:
 
-[![Support on Ko-fi](https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0)](https://ko-fi.com/jndev0)  
-👉 **[Support JNDEV on Ko-fi (https://ko-fi.com/jndev0)](https://ko-fi.com/jndev0)**
+👉 **[Support JNDEV0 on Ko-fi (https://ko-fi.com/jndev0)](https://ko-fi.com/jndev0)**
 
 ---
 
@@ -108,20 +107,9 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
-## ⚙️ Configuration
-
-Configuration is located at `BepInEx/config/zolantris.ValheimRAFT.cfg` after launching the game once:
-- **`AllowFlight`**: Toggle flight capability (`true`/`false`).
-- **`SpeedHalfSailFactor`**: Speed 2 sail multiplier (Default: `0.25`).
-- **`SpeedFullSailFactor`**: Speed 3 sail multiplier (Default: `0.50`).
-- **`EnableCollisionDebugLogging`**: Toggle verbose contact debug logs (Default: `false`).
-- **`Vehicles Prevent Pausing`**: Set `false` to allow single-player pause on Esc.
-
----
-
 ## 🌐 Community & Source Code
 
 - **GitHub Repository**: [https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)
 - **Upstream Repository**: [https://github.com/zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
 - **Original Mod**: [ValheimRAFT by Sarcen](https://www.nexusmods.com/valheim/mods/1136)
-- **Support JNDEV on Ko-fi**: [https://ko-fi.com/jndev0](https://ko-fi.com/jndev0)
+- **Support JNDEV0 on Ko-fi**: [https://ko-fi.com/jndev0](https://ko-fi.com/jndev0)
