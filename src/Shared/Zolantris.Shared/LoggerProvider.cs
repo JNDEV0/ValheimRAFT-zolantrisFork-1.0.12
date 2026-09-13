@@ -231,7 +231,7 @@
         if (!IsLevelEnabled(LogLevel.Debug)) return;
         var key = $"Debug:{file}:{line}:{val.GetHashCode()}";
         if (ShouldDebounce(key, debounceSeconds)) return;
-        SafeLog(LogLevel.Info, Format("Debug", val, file, line));
+        SafeLog(LogLevel.Debug, Format("Debug", val, file, line));
       }
 
       public static void LogInfoDebounced(string val, float debounceSeconds = 5f,

@@ -411,7 +411,7 @@ public class PlayerSpawnController : MonoBehaviour
 
     ZNet.instance.SetReferencePosition(newPosition);
     playerZdo.SetPosition(newPosition);
-    playerZdo.SetSector(ZoneSystem.GetZone(newPosition));
+    playerZdo.SetSector(ZoneSystem.GetSectorIndex(newPosition));
     player.transform.position = newPosition;
   }
 

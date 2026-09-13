@@ -248,6 +248,8 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
     return hoverText;
   }
 
+  public float GetHoverOffset() => 0f;
+
   private void Awake()
   {
     m_nview = GetComponent<ZNetView>();

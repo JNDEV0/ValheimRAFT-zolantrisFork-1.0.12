@@ -60,12 +60,12 @@ public class PatchConfig : BepInExBaseConfig<PatchConfig>
         "Some prefabs on ValheimRAFT have flipped/rotated snappoints. This will allow rotating based on rotated point transform. Eg pieces can be flipped upside down. Supports Rotating Cannons. It does not flip the actual snappoint though. So the collision point requires a bit of creativity.."));
 #endif
     ShipPausePatch = config.BindUnique<bool>("Patches",
-      "Vehicles Prevent Pausing", true,
+      "Vehicles Prevent Pausing", false,
       ConfigHelpers.CreateConfigDescription(
         "Prevents pausing on a boat, pausing causes a TON of desync problems and can make your boat crash or other players crash",
         true, true));
     ShipPausePatchSinglePlayer = config.BindUnique<bool>("Patches",
-      "Vehicles Prevent Pausing SinglePlayer", true,
+      "Vehicles Prevent Pausing SinglePlayer", false,
       ConfigHelpers.CreateConfigDescription(
         "Prevents pausing on a boat during singleplayer. Must have the Vehicle Prevent Pausing patch as well",
         true, true));

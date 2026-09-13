@@ -268,7 +268,7 @@
     internal List<SailComponent> m_sailPieces = [];
 
 /* end sail calcs  */
-    private Vector2i m_sector;
+    private Vector2s m_sector;
     private Vector2i m_serverSector;
 
     private Transform onboardColliderTransform;
@@ -934,18 +934,16 @@
         var rbs = netView.GetComponentsInChildren<Rigidbody>();
         foreach (var rbsItem in rbs)
         {
-          if (!rbsItem.isKinematic && rbsItem != m_localRigidbody || rbsItem != m_syncRigidbody)
+          if (!rbsItem.isKinematic && rbsItem != m_localRigidbody && rbsItem != m_syncRigidbody)
           {
-            var fixedJoint = rbsItem.GetComponent<FixedJoint>();
-            var destroyMessage = $"Destroying Rigidbody on netview <{netView.name}> for rigidbody GameObject Name <{rbsItem.name}>";
-
-            if (fixedJoint != null)
+            var joints = rbsItem.GetComponents<Joint>();
+            foreach (var joint in joints)
             {
-              destroyMessage += $"\nDestroying FixedJoint detected on {fixedJoint.name}";
-              Destroy(fixedJoint);
+              joint.connectedBody = null;
+              DestroyImmediate(joint);
             }
 
-            LoggerProvider.LogWarning(destroyMessage);
+            LoggerProvider.LogWarning($"Destroying Rigidbody on netview <{netView.name}> for rigidbody GameObject Name <{rbsItem.name}>");
             Destroy(rbsItem);
           }
         }
@@ -2915,7 +2913,7 @@
       Vector3 vehicleCurrentPos,
       List<ZNetView>? liveTempPieces)
     {
-      var newSector = ZoneSystem.GetZone(newVehiclePos);
+      var newSector = ZoneSystem.GetSectorIndex(newVehiclePos);
       var characterDestinations = new Dictionary<ZNetView, Vector3>();
 
 
@@ -2978,7 +2976,7 @@
           var destPos = newVehiclePos + relativeOffset;
           zdo.Set(VehicleZdoVars.MBPositionHash, relativeOffset);
           zdo.SetPosition(destPos);
-          zdo.SetSector(ZoneSystem.GetZone(destPos));
+          zdo.SetSector(ZoneSystem.GetSectorIndex(destPos));
 
           // Freeze character bodies and record their destination.
           if (nv != null)
@@ -3016,7 +3014,7 @@
 
           zdo.Set(VehicleZdoVars.MBPositionHash, relativeOffset);
           zdo.SetPosition(destPos);
-          zdo.SetSector(ZoneSystem.GetZone(destPos));
+          zdo.SetSector(ZoneSystem.GetSectorIndex(destPos));
 
           // Advance streaming reference for local player.
           var character = nv.GetComponent<Character>();
@@ -4052,7 +4050,7 @@
         var newWorldOrigin = MovementController.m_body.position + worldShift;
         var rootZdo = m_nview.GetZDO();
         rootZdo.SetPosition(newWorldOrigin);
-        rootZdo.SetSector(ZoneSystem.GetZone(newWorldOrigin));
+        rootZdo.SetSector(ZoneSystem.GetSectorIndex(newWorldOrigin));
 
         LoggerProvider.LogDebug(
           $"RecenterVehicleOrigin: done. New ZDO world origin: {newWorldOrigin}");

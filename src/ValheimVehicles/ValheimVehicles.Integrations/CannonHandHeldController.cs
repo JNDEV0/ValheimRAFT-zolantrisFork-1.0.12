@@ -262,4 +262,6 @@ public class CannonHandHeldController : CannonController, Hoverable
   {
     return Localization.instance.Localize("$valheim_vehicles_cannon_handheld_item");
   }
+
+  public float GetHoverOffset() => 0f;
 }

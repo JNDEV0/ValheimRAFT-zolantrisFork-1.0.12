@@ -163,7 +163,7 @@ public class NearestTargetListener : MonoBehaviour, IAnimatorHandler
         m_lightning = m_lightningDamage * random.Next(1, 10) / 5f
       }
     };
-    NearestHostile.AddLightningDamage(m_lightningDamage);
+    NearestHostile.AddLightningDamage(m_lightningDamage, -1);
     NearestHostile.Damage(hit);
     Player.m_localPlayer.UseEitr(eitrCost);
   }

@@ -62,6 +62,7 @@ public class PhysicsConfig : BepInExBaseConfig<PhysicsConfig>
   public static ConfigEntry<float> convexHullJoinDistanceThreshold = null!;
   public static ConfigEntry<Color> convexHullDebuggerColor = null!;
   public static ConfigEntry<bool> convexHullDebuggerForceEnabled = null!;
+  public static ConfigEntry<bool> EnableCollisionDebugLogging = null!;
   public static ConfigEntry<Vector3> convexHullPreviewOffset = null!;
 
   // physics related to floatation and propulsion
@@ -374,6 +375,13 @@ public class PhysicsConfig : BepInExBaseConfig<PhysicsConfig>
       ConfigHelpers.CreateConfigDescription(
         "Force enables the convex hull. This will be turned off if other commands are run or re-enabled if toggled.",
         true, true));
+
+    EnableCollisionDebugLogging = config.BindUnique(FloatationPhysicsSectionKey,
+      "EnableCollisionDebugLogging",
+      false,
+      ConfigHelpers.CreateConfigDescription(
+        "Enable debug logging of collision contact points in the console. Default is false.",
+        true, false));
 
     convexHullPreviewOffset = config.BindUnique(FloatationPhysicsSectionKey,
       "convexHullPreviewOffset",

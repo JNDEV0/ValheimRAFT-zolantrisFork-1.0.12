@@ -94,6 +94,8 @@ public class TargetControlsInteractive : MonoBehaviour, Hoverable, Interactable,
     return "";
   }
 
+  public float GetHoverOffset() => 0f;
+
   public void AddOrRemoveHotKeyControllers(Player player, bool shouldRemove)
   {
     // if (Player.m_localPlayer != player) return;

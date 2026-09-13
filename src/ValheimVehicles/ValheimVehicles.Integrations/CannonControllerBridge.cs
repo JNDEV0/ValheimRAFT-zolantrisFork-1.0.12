@@ -117,6 +117,8 @@ public class CannonControllerBridge : CannonController, Hoverable, Interactable,
   {
     return "CannonController Hover (Should not be visible)";
   }
+
+  public float GetHoverOffset() => 0f;
   public bool Interact(Humanoid user, bool hold, bool alt)
   {
     if (hold)

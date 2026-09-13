@@ -76,7 +76,15 @@ public class PanelUtil
     panel.GetComponent<Image>().pixelsPerUnitMultiplier = 1f;
 
     var panelTransform = (RectTransform)panel.transform;
-    panelTransform.anchoredPosition = WindowPosition.Value;
+    var pos = WindowPosition.Value;
+    if ((pos.x <= 1.0f && pos.y <= 1.0f) || (pos.x <= 15f && pos.y <= 15f))
+    {
+      var screenW = Screen.width > 0 ? (float)Screen.width : 1920f;
+      var screenH = Screen.height > 0 ? (float)Screen.height : 1080f;
+      pos = new Vector2(screenW * 0.5f, screenH * 0.5f);
+      WindowPosition.Value = pos;
+    }
+    panelTransform.anchoredPosition = pos;
     panelTransform.anchorMin = panelStyles.anchorMin;
     panelTransform.anchorMax = panelStyles.anchorMax;
 
@@ -97,7 +105,15 @@ public class PanelUtil
     ScreenSizeWatcher.OnScreenSizeChanged += (_) =>
     {
       GuiConfig.EnsurePanelInScreenBounds(panelTransform.anchoredPosition, WindowPosition);
-      panelTransform.anchoredPosition = WindowPosition.Value;
+      var pos = WindowPosition.Value;
+    if ((pos.x <= 1.0f && pos.y <= 1.0f) || (pos.x <= 15f && pos.y <= 15f))
+    {
+      var screenW = Screen.width > 0 ? (float)Screen.width : 1920f;
+      var screenH = Screen.height > 0 ? (float)Screen.height : 1080f;
+      pos = new Vector2(screenW * 0.5f, screenH * 0.5f);
+      WindowPosition.Value = pos;
+    }
+    panelTransform.anchoredPosition = pos;
     };
 
     // Create the button object above the gui manager. So it can hide itself.

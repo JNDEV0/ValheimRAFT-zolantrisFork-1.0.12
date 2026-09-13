@@ -311,4 +311,6 @@ public class PowerHoverComponent : MonoBehaviour, Hoverable, Interactable
   {
     return "Power Source";
   }
+
+  public float GetHoverOffset() => 0f;
 }

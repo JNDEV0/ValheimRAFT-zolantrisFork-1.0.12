@@ -112,6 +112,8 @@ public class CultivatableComponent : MonoBehaviour
     return "";
   }
 
+  public float GetHoverOffset() => 0f;
+
   public bool Interact(Humanoid user, bool hold, bool alt)
   {
     return true;

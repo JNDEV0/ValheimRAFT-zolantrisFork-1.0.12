@@ -61,11 +61,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
 
     var vikingShipMastComponent =
       vikingShipMastPrefab.AddComponent<MastComponent>();
-    vikingShipMastComponent.m_sailObject =
-      vikingShipMastPrefab.transform.Find("Sail").gameObject;
-
-    vikingShipMastComponent.m_sailCloth =
-      vikingShipMastComponent.m_sailObject.GetComponentInChildren<Cloth>();
+    SetupMastSail(vikingShipMastPrefab, vikingShipMastComponent);
     vikingShipMastComponent.m_allowSailRotation = true;
     vikingShipMastComponent.m_allowSailShrinking = true;
 
@@ -130,10 +126,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
     PrefabRegistryHelpers.AddNetViewWithPersistence(prefab);
 
     var mastComponent = prefab.AddComponent<MastComponent>();
-    var clothObj = prefab.GetComponentsInChildren<Cloth>()[0];
-    mastComponent.m_sailObject = clothObj.transform.parent.gameObject;
-
-    mastComponent.m_sailCloth = clothObj;
+    SetupMastSail(prefab, mastComponent);
     mastComponent.m_allowSailRotation = true;
     mastComponent.m_allowSailShrinking = true;
 
@@ -291,10 +284,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
     var mastComponent = mbRaftMastPrefab.AddComponent<MastComponent>();
     mastComponent.m_allowSailRotation = true;
     mastComponent.m_allowSailShrinking = true;
-    mastComponent.m_sailObject =
-      mbRaftMastPrefab.transform.Find("Sail").gameObject;
-    mastComponent.m_sailCloth =
-      mastComponent.m_sailObject.GetComponentInChildren<Cloth>();
+    SetupMastSail(mbRaftMastPrefab, mastComponent);
 
     PrefabRegistryHelpers.SetWearNTear(mbRaftMastPrefab);
 
@@ -349,9 +339,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
 
     // tweak the mast
     var mast = mbKarveMastPrefab.AddComponent<MastComponent>();
-    mast.m_sailObject =
-      mbKarveMastPrefab.transform.Find("Sail").gameObject;
-    mast.m_sailCloth = mast.m_sailObject.GetComponentInChildren<Cloth>();
+    SetupMastSail(mbKarveMastPrefab, mast);
     mast.m_allowSailShrinking = true;
     mast.m_allowSailRotation = true;
 
@@ -394,5 +382,33 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
           }
         }
       }));
+  }
+
+  private static void SetupMastSail(GameObject prefab, MastComponent mastComponent)
+  {
+    var cloth = prefab.GetComponentInChildren<Cloth>(true);
+    if (cloth != null)
+    {
+      mastComponent.m_sailCloth = cloth;
+      mastComponent.m_sailObject = (cloth.transform.parent != null && cloth.transform.parent != prefab.transform)
+        ? cloth.transform.parent.gameObject
+        : cloth.gameObject;
+    }
+    else
+    {
+      var sailTransform = prefab.transform.Find("Sail") ??
+                          prefab.transform.Find("sail") ??
+                          prefab.GetComponentsInChildren<Transform>(true)
+                            .FirstOrDefault(t => t.name.IndexOf("sail", System.StringComparison.OrdinalIgnoreCase) >= 0);
+      if (sailTransform != null)
+      {
+        mastComponent.m_sailObject = sailTransform.gameObject;
+        mastComponent.m_sailCloth = sailTransform.GetComponentInChildren<Cloth>(true);
+      }
+      else
+      {
+        mastComponent.m_sailObject = prefab;
+      }
+    }
   }
 }

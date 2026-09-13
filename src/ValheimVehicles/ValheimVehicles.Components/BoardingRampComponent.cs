@@ -442,6 +442,8 @@ public class BoardingRampComponent : MonoBehaviour, Interactable, Hoverable
              "\n[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] $mb_boarding_ramp_edit");
   }
 
+  public float GetHoverOffset() => 0f;
+
   public bool Interact(Humanoid user, bool hold, bool alt)
   {
     if (alt)

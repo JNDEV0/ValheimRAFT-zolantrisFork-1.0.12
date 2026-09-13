@@ -100,7 +100,7 @@ public class SailCreatorComponent : MonoBehaviour
 
 
     var piece = sailPrefabInstance.GetComponent<Piece>();
-    piece.SetCreator(m_sailCreators[0].GetComponent<Piece>().GetCreator());
+    piece.SetCreator(m_sailCreators[0].GetComponent<Piece>().GetCreator(), Splatform.PlatformUserID.None);
 
     AddToVehicle(netView);
 

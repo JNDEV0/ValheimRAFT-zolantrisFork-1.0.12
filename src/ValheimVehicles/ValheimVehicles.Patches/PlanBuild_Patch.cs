@@ -6,7 +6,6 @@ using HarmonyLib;
 using UnityEngine;
 using PlanBuild.Blueprints;
 using PlanBuild.Blueprints.Components;
-using PlanBuild.ModCompat;
 using PlanBuild.Plans;
 using ValheimVehicles.Controllers;
 using Logger = Jotunn.Logger;

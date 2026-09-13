@@ -1,5 +1,4 @@
 using BepInEx.Configuration;
-using ComfyLib;
 using ValheimVehicles.Propulsion.Sail;
 using ValheimVehicles.Components;
 using ValheimVehicles.Controllers;
@@ -34,6 +33,8 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
   public static ConfigEntry<float> BallastClimbingOffset { get; private set; } =
     null!;
   public static ConfigEntry<float> SailingMassPercentageFactor { get; set; }
+  public static ConfigEntry<float> SpeedHalfSailFactor { get; set; } = null!;
+  public static ConfigEntry<float> SpeedFullSailFactor { get; set; } = null!;
   public static ConfigEntry<bool> AllowFlight { get; set; }
   public static ConfigEntry<bool> AllowSailCollisions { get; set; }
 
@@ -112,7 +113,13 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
 
     CreateSpeedConfig(config);
 
-    AllowFlight = config.BindUnique<bool>(GenericSectionName, "AllowFlight", false,
+    SpeedHalfSailFactor = config.BindUnique<float>(GenericSectionName, "SpeedHalfSailFactor", 0.25f,
+      ConfigHelpers.CreateConfigDescription(
+        "Multiplier for sail force when at half sail (speed 2). Default is 0.25 (25%).", true));
+    SpeedFullSailFactor = config.BindUnique<float>(GenericSectionName, "SpeedFullSailFactor", 0.50f,
+      ConfigHelpers.CreateConfigDescription(
+        "Multiplier for sail force when at full sail (speed 3). Default is 0.50 (50%).", true));
+    AllowFlight = config.BindUnique<bool>(GenericSectionName, "AllowFlight", true,
       ConfigHelpers.CreateConfigDescription(
         "Allow the raft to fly (jump\\crouch to go up and down)", true));
     AllowSailCollisions = config.BindUnique<bool>(GenericSectionName, "AllowSailCollisions", false,

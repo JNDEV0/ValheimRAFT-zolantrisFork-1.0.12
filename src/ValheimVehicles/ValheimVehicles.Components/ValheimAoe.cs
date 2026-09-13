@@ -561,7 +561,6 @@ public class ValheimAoe : MonoBehaviour, IProjectile, IMonoUpdater
     foreach (var contact in collision.contacts) averagePoint += contact.point;
 
     averagePoint /= collision.contactCount;
-    Debug.Log($"Average Collision Point: {averagePoint}");
     return averagePoint;
   }
 

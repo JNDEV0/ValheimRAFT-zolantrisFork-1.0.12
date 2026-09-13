@@ -491,7 +491,7 @@ public class VehicleCommands : ConsoleCommand
       if (playerZdo != null)
       {
         playerZdo.SetPosition(toPosition);
-        playerZdo.SetSector(ZoneSystem.GetZone(toPosition));
+        playerZdo.SetSector(ZoneSystem.GetSectorIndex(toPosition));
       }
     }
     else
@@ -659,7 +659,7 @@ public class VehicleCommands : ConsoleCommand
 
       // Root vehicle ZDO first — anchors the vehicle in the new sector.
       vehicleInstance.m_nview.m_zdo.SetPosition(newLocation);
-      vehicleInstance.m_nview.m_zdo.SetSector(ZoneSystem.GetZone(newLocation));
+      vehicleInstance.m_nview.m_zdo.SetSector(ZoneSystem.GetSectorIndex(newLocation));
 
       characterDestinations = VehiclePiecesController.StampAllVehicleZdosToPosition(
         persistentId, newLocation, vehicleCurrentPos, liveTempPieces);
@@ -1155,17 +1155,12 @@ public class VehicleCommands : ConsoleCommand
     try
     {
       var playerFolderLocation =
-        PlayerProfile.GetCharacterFolderPath(Game.instance.m_playerProfile
-          .m_fileSource);
+        SaveSystem.GetCharacterFolderPath(Game.instance.m_playerProfile.m_fileSource);
       var worldFolderLocation =
-        World.GetWorldSavePath(Game.instance.m_playerProfile.m_fileSource);
+        SaveSystem.GetWorldsSaveRootPath(Game.instance.m_playerProfile.m_fileSource);
 
 
-      var logFile = PlayerProfile.GetPath(
-                      Game.instance.m_playerProfile
-                        .m_fileSource,
-                      "Player.log") ??
-                    $"Possible issue findingpath: guessing path is -> {Path.Combine(playerFolderLocation, "../Player.log")}";
+      var logFile = Path.Combine(playerFolderLocation, "../Player.log");
 
       return string.Join("\n",
         $"PlayerProfile location: {playerFolderLocation}",

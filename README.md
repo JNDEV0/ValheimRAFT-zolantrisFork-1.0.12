@@ -1,3 +1,12 @@
+# ValheimRAFT (Valheim 1.0.12 Compatibility Fork)
+
+> **Community Fork**: Maintained by [JNDEV0](https://github.com/JNDEV0) to update ValheimRAFT for **Valheim 1.0.12 (Unity 6)** and **Jotunn 2.30.0+**.
+> - **Original Mod**: [Sarcen](https://www.nexusmods.com/valheim/mods/1136) (2023)
+> - **Upstream Monorepo**: [zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
+> - **Release Version**: 4.3.1
+
+---
+
 # ValheimMods
 
 A collection of Valheim mods maintained by zolantris. Many of these mods were

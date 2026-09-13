@@ -128,6 +128,11 @@ public class ConvexHullBoundaryConstraint
   /// </summary>
   public bool GenerateBoundaryMesh(Transform parentTransform)
   {
+    if (boundaryVertices.Count == 0)
+    {
+      return false;
+    }
+
     if (boundaryVertices.Count < 4)
     {
       LoggerProvider.LogWarning($"Not enough boundary points to generate boundary mesh: {boundaryVertices.Count}");

@@ -511,6 +511,8 @@
 
     private void OnCollisionStay(Collision other)
     {
+      if (!PhysicsConfig.EnableCollisionDebugLogging?.Value ?? true) return;
+
       var otherCollider = other.collider;
       var currentCollider = other.contactCount;
 
@@ -1277,7 +1279,23 @@
         if (!FloatCollider) return;
 
         var maxVerticalOffset = GetMaxVerticalOffset();
-        UpdateTargetHeight(TargetHeight - maxVerticalOffset);
+        var newTarget = TargetHeight - maxVerticalOffset;
+
+        if (ZoneSystem.instance != null)
+        {
+          var waterSurfaceTarget = ZoneSystem.instance.m_waterLevel + GetSurfaceOffsetWaterVehicleOnly();
+          // If descending from above water level, land at water surface (0)
+          if (TargetHeight > waterSurfaceTarget && newTarget <= waterSurfaceTarget)
+          {
+            newTarget = 0f;
+            cachedFlyingValue = false;
+            lastFlyingDt = 0f;
+            if (m_body.constraints != RigidbodyConstraints.None)
+              m_body.constraints = RigidbodyConstraints.None;
+          }
+        }
+
+        UpdateTargetHeight(newTarget);
       }
     }
 
@@ -1779,16 +1797,16 @@
 
       if (Vector3.Distance(lastPosition, transform.position) < 3f) return;
 
-      var mode = Minimap.m_instance.m_mode;
+      var mode = Minimap.instance.m_mode;
       if (vehicleMapKey != "")
-        ZoneSystem.m_instance.RemoveGlobalKey(vehicleMapKey);
+        ZoneSystem.instance.RemoveGlobalKey(vehicleMapKey);
 
       vehicleMapKey = GetVehicleMapKey();
 
       if (vehicleMapKey != "")
       {
-        ZoneSystem.m_instance.SetGlobalKey(vehicleMapKey);
-        Minimap.m_instance.SetMapMode(mode);
+        ZoneSystem.instance.SetGlobalKey(vehicleMapKey);
+        Minimap.instance.SetMapMode(mode);
       }
     }
 
@@ -3394,6 +3412,18 @@
     {
       if (!PropulsionConfig.AllowFlight.Value) return false;
 
+      if (!ZoneSystem.instance) return false;
+
+      // Check physical water contact: if the bottom of the hull has reached water level, exit flight
+      var waterLvl = ZoneSystem.instance.m_waterLevel;
+      var hullBottomY = FloatCollider != null ? FloatCollider.bounds.min.y : m_body.position.y;
+      if (hullBottomY <= waterLvl + 0.1f && TargetHeight <= waterLvl + GetSurfaceOffsetWaterVehicleOnly() + 0.5f)
+      {
+        cachedFlyingValue = false;
+        lastFlyingDt = 0f;
+        return false;
+      }
+
       // this allows for the check to run the first time.
       if (lastFlyingDt is > 0f and < 2f)
       {
@@ -3401,7 +3431,7 @@
         return cachedFlyingValue;
       }
 
-      if (!ZoneSystem.m_instance) return false;
+      if (!ZoneSystem.instance) return false;
 
       lastFlyingDt = Time.fixedDeltaTime;
 
@@ -3690,10 +3720,10 @@
       switch (instance.VehicleSpeed)
       {
         case Ship.Speed.Full:
-          sailArea *= 1f;
+          sailArea *= PropulsionConfig.SpeedFullSailFactor?.Value ?? 0.50f;
           break;
         case Ship.Speed.Half:
-          sailArea *= 0.5f;
+          sailArea *= PropulsionConfig.SpeedHalfSailFactor?.Value ?? 0.25f;
           break;
         case Ship.Speed.Slow:
           sailArea = 0;

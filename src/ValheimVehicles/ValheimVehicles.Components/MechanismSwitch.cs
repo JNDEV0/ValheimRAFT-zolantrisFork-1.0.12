@@ -673,6 +673,8 @@ public class MechanismSwitch : AnimatedLeverMechanism, IAnimatorHandler, Interac
     return ModTranslations.MechanismSwitch_SwitchName;
   }
 
+  public float GetHoverOffset() => 0f;
+
   public string GetHoverText()
   {
     if (prefabConfigSync && !prefabConfigSync.HasInitLoaded)

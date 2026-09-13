@@ -16,6 +16,8 @@ public class RopeComponent : MonoBehaviour
 		return "$mb_rope_use";
 	}
 
+	public float GetHoverOffset() => 0f;
+
 	public bool Interact(Humanoid user, bool hold, bool alt)
 	{
 		return true;

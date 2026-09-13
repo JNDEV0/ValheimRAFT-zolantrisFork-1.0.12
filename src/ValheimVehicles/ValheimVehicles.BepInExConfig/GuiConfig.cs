@@ -11,6 +11,7 @@ public class GuiConfig : BepInExBaseConfig<GuiConfig>
 {
   public const string SectionKey = "Gui";
   public static ConfigEntry<Vector2> SwivelPanelLocation = null!;
+  public static ConfigEntry<Vector2> MechanismSelectorPanelLocation = null!;
   public static ConfigEntry<Vector2> VehicleCommandsPanelLocation = null!;
   // public static ConfigEntry<Vector2> VehicleConfigPanelLocation = null!;
   // public static ConfigEntry<Vector2> SailPanelLocation = null!;
@@ -90,6 +91,7 @@ public class GuiConfig : BepInExBaseConfig<GuiConfig>
   {
     ShouldSkipSyncOnBind = true;
     CreatePanelLocationConfig(config, "SwivelPanelLocation", $"SwivelPanel screen location. {ProtectedScreenValue}", out SwivelPanelLocation);
+    CreatePanelLocationConfig(config, "MechanismSelectorPanelLocation", $"MechanismSelectorPanel screen location. {ProtectedScreenValue}", out MechanismSelectorPanelLocation);
     CreatePanelLocationConfig(config, "VehicleCommandsPanelLocation", $"VehicleCommands panel screen location. {ProtectedScreenValue}", out VehicleCommandsPanelLocation);
 #if DEBUG
     // CreatePanelLocationConfig(config, "SailPanelLocation", $"SailPanel screen location. {ProtectedScreenValue}", out SailPanelLocation);

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
 using BepInEx;
 using BepInEx.Configuration;
@@ -40,6 +40,7 @@ public class ValheimVehiclesPlugin : MonoBehaviour
 
   private MapPinSync _mapPinSync;
   private SwivelUIPanelComponentIntegration _swivelUIPanel;
+  private MechanismSelectorPanelIntegration _mechanismSelectorPanel;
   private ScreenSizeWatcher _screenSizeWatcher;
   private PowerNetworkControllerIntegration _powerNetworkController;
 
@@ -135,6 +136,7 @@ public class ValheimVehiclesPlugin : MonoBehaviour
   {
     _mapPinSync = gameObject.AddComponent<MapPinSync>();
     _swivelUIPanel = gameObject.AddComponent<SwivelUIPanelComponentIntegration>();
+    _mechanismSelectorPanel = gameObject.AddComponent<MechanismSelectorPanelIntegration>();
     _screenSizeWatcher = gameObject.AddComponent<ScreenSizeWatcher>();
     _powerNetworkController = gameObject.AddComponent<PowerNetworkControllerIntegration>();
   }

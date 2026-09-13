@@ -1336,6 +1336,8 @@ public class SailComponent : MonoBehaviour, Interactable, Hoverable, INetView
       $"[<color=yellow><b>$KEY_Use</b></color>] $mb_sail_edit \narea ({Math.Round(m_sailArea)})");
   }
 
+  public float GetHoverOffset() => 0f;
+
   public bool Interact(Humanoid user, bool hold, bool alt)
   {
     if (m_editPanel == null) m_editPanel = new EditSailComponentPanel();

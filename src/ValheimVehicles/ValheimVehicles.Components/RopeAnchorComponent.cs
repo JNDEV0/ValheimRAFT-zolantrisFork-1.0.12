@@ -184,6 +184,8 @@ public class RopeAnchorComponent : MonoBehaviour, Interactable, Hoverable
     return "";
   }
 
+  public float GetHoverOffset() => 0f;
+
 
   public string GetHoverText()
   {

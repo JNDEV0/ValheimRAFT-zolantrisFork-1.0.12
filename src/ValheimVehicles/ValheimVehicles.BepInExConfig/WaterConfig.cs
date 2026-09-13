@@ -200,7 +200,7 @@ public class WaterConfig : BepInExBaseConfig<WaterConfig>
     WaterBallastEnabled = config.BindUnique(
       SectionKey,
       "WaterBallastEnabled",
-      false,
+      true,
       ConfigHelpers.CreateConfigDescription(
         "Similar to flight mechanics but at sea. Defaults with Space/Jump to increase height and Sneak/Shift to decrease height uses the same flight comamnds.",
         true, true));

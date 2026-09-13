@@ -823,7 +823,7 @@
           !isActiveAndEnabled) return;
       var position = transform.position;
 
-      var sector = ZoneSystem.GetZone(position);
+      var sector = ZoneSystem.GetSectorIndex(position);
       var zdo = m_nview.GetZDO();
 
       zdo.SetPosition(PiecesController.m_localRigidbody.worldCenterOfMass);
