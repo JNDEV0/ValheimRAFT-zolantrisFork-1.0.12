@@ -1,41 +1,69 @@
-# ValheimRAFT v4.3.1 (Valheim 1.0 Compatibility Update)
+# ValheimRAFT v4.3.1 (Valheim 1.0.12 Compatibility Update)
 
-**ValheimRAFT** allows you to build custom, fully functional movable rafts, ships, and vehicles in Valheim. Expand your boat with standard building pieces, craft custom sails and steering wheels, drop anchors, navigate open seas, and even take flight!
+**ValheimRAFT** allows you to build custom, fully functional movable rafts, ships, and vehicles in Valheim. Expand your vessels with standard building pieces, craft custom sails and steering wheels, drop anchors, navigate open seas, and take flight!
 
 This release is an **unofficial community update** restoring full compatibility with **Valheim 1.0.12** (Unity 6 runtime) and **Jotunn 2.30.0+**.
 
 ---
 
-## ⛵ Attribution & Heritage
+## ☕ Support the Project
 
-- **Original Mod Creator**: **Sarcen** (created the legendary ValheimRAFT mod and graciously open-sourced it in 2023 under GPLv3).
-- **Vehicle Rewrite & Modern Architecture**: **Zolantris** ([ValheimMods GitHub](https://github.com/zolantris/ValheimMods)), who completely redesigned the vehicle physics, modular systems, and monorepo.
-- **Valheim 1.0 Compatibility & Maintenance**: Maintained and updated for the Valheim 1.0 community to resolve engine breakage, crash bugs, physics hangs, and console spam.
+If you enjoy this update and want to support continued development and maintenance of ValheimRAFT for the community, you can support on Ko-fi:
 
-*This project is licensed under the [GNU General Public License v3.0 (GPLv3)](LICENSE).*
+[![Support on Ko-fi](https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0)](https://ko-fi.com/jndev0)  
+👉 **[Support JNDEV on Ko-fi (https://ko-fi.com/jndev0)](https://ko-fi.com/jndev0)**
 
 ---
 
-## 🛠️ What's New in v4.3.1
+## ⚠️ Important Community Notice & "As-Is" Disclaimer
 
-### Engine & Framework Upgrades
-- **Valheim 1.0.12 & Unity 6**: Recompiled against the new Unity 6 engine runtime (`v6000.0.75`).
-- **Jotunn 2.30.0+**: Migrated from outdated Jotunn references (2.27 / 2.20) to Jotunn 2.30.0 for seamless piece table and prefab registration.
+- **Community Maintained**: This fork was created to make ValheimRAFT playable again following Valheim's 1.0 release (Unity 6 engine upgrade).
+- **Tested Functionality**: Core features have been thoroughly tested and verified: vehicle piece building, floating/sailing, sail propulsion, anchor toggling, flying, ballasting, smooth water landing transitions, steering wheel doodad control, and world saving/loading.
+- **Untested & Experimental Features**: ValheimRAFT is a massive and complex codebase containing advanced mechanics (such as complex mechanical swivel contraptions, land vehicle nesting, and advanced toggle mechanism options). Not all extended features or edge-case interactions have been exhaustively tested.
+- **Offered "As-Is"**: This release is provided freely and without warranty. Always back up your character and world saves before testing modded structures!
+- **Community Contributions Welcome**: Community developers and modders are warmly invited to report issues, submit Pull Requests, and help maintain this mod at our GitHub repository:  
+  👉 **[https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)**
 
-### Bug Fixes & Stability
-- **Save & Logout Black Screen / Freeze Fixed**: Resolved an issue where `SingletonBehaviour` marked Valheim's core `Game.instance` GameObject as `DontDestroyOnLoad`. This caused duplicate popups and `ArgumentException` crashes when returning to the main menu, requiring Alt+F4. Scene unloading now executes smoothly.
-- **Steering Wheel Attachment Fixed**: Fixed the Unity console error `Can't remove Rigidbody because FixedJoint depends on it` triggered whenever players grabbed the helm or reloaded the world.
-- **Silenced Convex Hull Warnings**: Normal ships without custom boundary markers no longer spam `Not enough boundary points to generate boundary mesh: 0`.
-- **Collision Debug Console Spam Silenced**: Fixed per-frame contact logging during `OnCollisionStay`. Added an `EnableCollisionDebugLogging` config toggle (disabled by default) under `[Vehicle Physics: Floatation]` and corrected debug log levels so they don't flood the console as Info messages.
-- **Restored Vanilla Esc Menu Pause**: Disabled intrusive background pause suppression patches. In single player, pressing **Esc** now pauses the game simulation and performs the vanilla camera panning as intended.
-- **Centered Mechanism UI**: Fixed coordinate math that previously trapped the Mechanism Toggle action selector and Swivel UI menus in the bottom-left corner of the screen.
+---
 
-### Physics & Controls Polish
-- **Tuned Sail Speeds**: Scaled down excessive tailwind propulsion:
-  - **Speed 2 (Half Sail)**: Scaled to **25%** force.
-  - **Speed 3 (Full Sail)**: Scaled to **50%** force.
-  - Both multipliers are configurable in `zolantris.ValheimRAFT.cfg` (`SpeedHalfSailFactor` and `SpeedFullSailFactor`).
-- **Smooth Flight-to-Water Landing**: When descending from flight (holding Ctrl/C), physical contact with the water surface is automatically detected. The vehicle immediately exits flight mode, resets elevation targets, unlocks rotation constraints, and transitions seamlessly back to natural water buoyancy and wave floating.
+## 📜 Attribution & Open Source History
+
+- **Original Creator**: **Sarcen** created the original ValheimRAFT mod that defined ship building in Valheim, and generously released it as open source in 2023 under the GPLv3 license.
+- **Modern Rewrite & Architecture**: **Zolantris** ([zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)) completely overhauled the mod's architecture, adding modular vehicle systems, convex hull boundary physics, and expansive features.
+- **1.0 Compatibility Update**: Because Zolantris has been inactive for several months while Valheim 1.0 broke existing builds, this fork was created by **JNDEV0** to address engine breakages introduced by the Valheim 1.0 / Unity 6 update, ensuring the mod remains accessible and functional for the community.
+- **Telemetry Removed**: Unused external telemetry wrappers (such as Sentry tracking) and leftover debug spam hooks have been audited and removed/disabled, ensuring clean, local, offline-friendly execution.
+
+*Licensed under the [GNU General Public License v3.0 (GPLv3)](LICENSE).*
+
+---
+
+## 📦 Requirements
+
+To use this mod, ensure you have the following installed:
+1. **[BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)** (Package: `denikson-BepInExPack_Valheim-5.4.2350` or newer)
+2. **[Jotunn - the Valheim Mod Tool](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/)** (Package: `ValheimModding-Jotunn-2.30.0` or newer)
+
+---
+
+## 🛠️ Changelog (v4.3.1)
+
+### Engine & Platform Upgrades
+- **Valheim 1.0.12 & Unity 6 Runtime**: Fully recompiled and updated for Unity `v6000.0.75` and Jotunn `2.30.0`.
+- **Cleaned Telemetry**: Audited codebase to remove unused external telemetry and tracking wrappers.
+
+### Stability & Bug Fixes
+- **Save & Logout Freeze Fixed**: Fixed a critical hang where `SingletonBehaviour` marked Valheim's core `Game.instance` GameObject as `DontDestroyOnLoad`. Returning to the main menu no longer hangs on a black screen or crashes with `UnifiedPopup` / `ArgumentException` errors.
+- **Steering Wheel FixedJoint Error Fixed**: Fixed the Unity error `Can't remove Rigidbody because FixedJoint depends on it` when grabbing helm controls or reloading vehicles.
+- **Silenced Convex Hull Boundary Warnings**: Eliminated the recurring `Not enough boundary points to generate boundary mesh: 0` warning for normal ships.
+- **Collision Debug Console Spam Silenced**: Disabled the intensive per-frame contact logging loop during `OnCollisionStay`. Added a dedicated `EnableCollisionDebugLogging` configuration toggle (default `false`) under `[Vehicle Physics: Floatation]` and corrected log levels so debug logs never spam the console as Info messages.
+- **Restored Vanilla Esc Menu Pause & Camera Pan**: Disabled background pause suppression patches. Single-player games pause normally and the camera pans smoothly when pressing **Esc**.
+- **Centered Mechanism UI**: Fixed coordinate math that clamped the Mechanism Toggle action selector and Swivel UI menus to the bottom-left corner of the screen.
+
+### Controls & Physics Polish
+- **Tuned Sail Propulsion Speeds**: Scaled down excessive tailwind speeds for controllable navigation:
+  - **Speed 2 (Half Sail)**: Scaled to **25%** force (configurable via `SpeedHalfSailFactor`).
+  - **Speed 3 (Full Sail)**: Scaled to **50%** force (configurable via `SpeedFullSailFactor`).
+- **Smooth Flight-to-Water Landing**: Descending from flight (holding Ctrl/C) now automatically detects water contact, immediately exits flight mode, resets height offsets, frees rotation constraints, and transitions smoothly into natural water floating and wave bobbing.
 
 ---
 
@@ -55,23 +83,15 @@ This release is an **unofficial community update** restoring full compatibility 
 
 ---
 
-## 📦 Requirements
-
-1. **[BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)** (Version 5.4.2300 or newer)
-2. **[Jotunn - the Valheim Mod Tool](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/)** (Version 2.30.0 or newer)
-
----
-
 ## 📥 Installation
 
 ### Option A: Thunderstore / r2modman / Gale (Recommended)
-1. Install via your mod manager by searching for **ValheimRAFT** or clicking **Install with Mod Manager**.
-2. If installing manually from the Thunderstore zip, extract all contents into your Valheim folder or profile `BepInEx/plugins/ValheimRAFT/`.
+1. Search for **ValheimRAFT** in your mod manager and click **Install with Mod Manager**.
+2. Launch the game through your mod manager.
 
 ### Option B: NexusMods / Vortex / Manual Installation
-1. Download the release archive.
-2. If using Vortex, drag and drop the `.zip` directly into Vortex.
-3. If installing manually, extract the `plugins/ValheimRAFT` folder into your game's `Valheim/BepInEx/plugins/` directory:
+1. If using Vortex, install and enable the zip archive directly.
+2. If installing manually, extract `plugins/ValheimRAFT` into your `Valheim/BepInEx/plugins/` directory:
    ```
    Valheim/
    └── BepInEx/
@@ -90,17 +110,18 @@ This release is an **unofficial community update** restoring full compatibility 
 
 ## ⚙️ Configuration
 
-Configuration is located at `BepInEx/config/zolantris.ValheimRAFT.cfg` after launching the game once with the mod installed. You can adjust:
-- **`AllowFlight`**: Enable or disable flight controls.
-- **`SpeedHalfSailFactor`**: Multiplier for Speed 2 sail force (Default: `0.25`).
-- **`SpeedFullSailFactor`**: Multiplier for Speed 3 sail force (Default: `0.50`).
-- **`EnableCollisionDebugLogging`**: Toggle verbose console logging for collision points (Default: `false`).
-- **`Vehicles Prevent Pausing`**: Keep `false` to preserve vanilla single-player Esc pause.
+Configuration is located at `BepInEx/config/zolantris.ValheimRAFT.cfg` after launching the game once:
+- **`AllowFlight`**: Toggle flight capability (`true`/`false`).
+- **`SpeedHalfSailFactor`**: Speed 2 sail multiplier (Default: `0.25`).
+- **`SpeedFullSailFactor`**: Speed 3 sail multiplier (Default: `0.50`).
+- **`EnableCollisionDebugLogging`**: Toggle verbose contact debug logs (Default: `false`).
+- **`Vehicles Prevent Pausing`**: Set `false` to allow single-player pause on Esc.
 
 ---
 
-## 📜 Credits & Links
+## 🤝 Community & Source Code
 
-- **Sarcen**: Original author of ValheimRAFT.
-- **Zolantris**: Author of the ValheimVehicles rewrite ([GitHub Repository](https://github.com/zolantris/ValheimMods)).
-- **Jotunn Team**: Valheim Modding Library.
+- **GitHub Repository**: [https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)
+- **Upstream Repository**: [https://github.com/zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
+- **Original Mod**: [ValheimRAFT by Sarcen](https://www.nexusmods.com/valheim/mods/1136)
+- **Support JNDEV on Ko-fi**: [https://ko-fi.com/jndev0](https://ko-fi.com/jndev0)

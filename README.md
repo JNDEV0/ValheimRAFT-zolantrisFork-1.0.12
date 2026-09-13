@@ -1,107 +1,127 @@
-# ValheimRAFT (Valheim 1.0.12 Compatibility Fork)
+# ValheimRAFT v4.3.1 (Valheim 1.0.12 Compatibility Update)
 
-> **Community Fork**: Maintained by [JNDEV0](https://github.com/JNDEV0) to update ValheimRAFT for **Valheim 1.0.12 (Unity 6)** and **Jotunn 2.30.0+**.
-> - **Original Mod**: [Sarcen](https://www.nexusmods.com/valheim/mods/1136) (2023)
-> - **Upstream Monorepo**: [zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
-> - **Release Version**: 4.3.1
+**ValheimRAFT** allows you to build custom, fully functional movable rafts, ships, and vehicles in Valheim. Expand your vessels with standard building pieces, craft custom sails and steering wheels, drop anchors, navigate open seas, and take flight!
+
+This release is an **unofficial community update** restoring full compatibility with **Valheim 1.0.12** (Unity 6 runtime) and **Jotunn 2.30.0+**.
 
 ---
 
-# ValheimMods
+## ☕ Support the Project
 
-A collection of Valheim mods maintained by zolantris. Many of these mods were
-previously maintained by other authors.
+If you enjoy this update and want to support continued development and maintenance of ValheimRAFT for the community, you can support on Ko-fi:
 
-Some mods may be maintained only, other mods may be actively worked on
+[![Support on Ko-fi](https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0)](https://ko-fi.com/jndev0)  
+👉 **[Support JNDEV on Ko-fi (https://ko-fi.com/jndev0)](https://ko-fi.com/jndev0)**
 
-## Mods
+---
 
-Each mod has the link to the folder and mentions activity.
+## ⚠️ Important Community Notice & "As-Is" Disclaimer
 
-The following statuses will be used to label repos.
+- **Community Maintained**: This fork was created to make ValheimRAFT playable again following Valheim's 1.0 release (Unity 6 engine upgrade).
+- **Tested Functionality**: Core features have been thoroughly tested and verified: vehicle piece building, floating/sailing, sail propulsion, anchor toggling, flying, ballasting, smooth water landing transitions, steering wheel doodad control, and world saving/loading.
+- **Untested & Experimental Features**: ValheimRAFT is a massive and complex codebase containing advanced mechanics (such as complex mechanical swivel contraptions, land vehicle nesting, and advanced toggle mechanism options). Not all extended features or edge-case interactions have been exhaustively tested.
+- **Offered "As-Is"**: This release is provided freely and without warranty. Always back up your character and world saves before testing modded structures!
+- **Community Contributions Welcome**: Community developers and modders are warmly invited to report issues, submit Pull Requests, and help maintain this mod at our GitHub repository:  
+  👉 **[https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)**
 
-- LTS: Long-term support. Features will be released to fix bugs and for valheim
-  compatibility only.
-- Active: Active development. Features will be released on a weekly cadence.
-- Deprecated: No longer supported, features will not be released to fix bugs.
+---
 
-### Supported Mods
+## 📜 Attribution & Open Source History
 
-| Mod Name                                                   | Status           | Description                                                                                                                           | 
-|------------------------------------------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| [ValheimRAFT][ValheimRAFT_Dir]                             | **Active**       | Allows Valheim Build system on the water, similar to the Raft Game                                                                    |
-| [Eldritch][Eldritch_Dir]                                   | **Active**       | Allows Eldritch creatures in valheim to spawn. Currently support Xenomorph drones with complex attack animations.                     |
-| [YggdrasilTerrain][YggdrassilTerrain_Dir]                  | **LTS**          | Allows for walking, building, and colliding with the Yggdrasil Branch. Adds teleport commands and collision config to futureproof it. |
-| [BuildingDamageModExtended][BuildingDamageModExtended_Dir] | **NOT released** | Allows setting building damage multipliers based on entity types and also additionally allows for damage caps                         |
+- **Original Creator**: **Sarcen** created the original ValheimRAFT mod that defined ship building in Valheim, and generously released it as open source in 2023 under the GPLv3 license.
+- **Modern Rewrite & Architecture**: **Zolantris** ([zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)) completely overhauled the mod's architecture, adding modular vehicle systems, convex hull boundary physics, and expansive features.
+- **1.0 Compatibility Update**: Because Zolantris has been inactive for several months while Valheim 1.0 broke existing builds, this fork was created by **JNDEV0** to address engine breakages introduced by the Valheim 1.0 / Unity 6 update, ensuring the mod remains accessible and functional for the community.
+- **Telemetry Removed**: Unused external telemetry wrappers (such as Sentry tracking) and leftover debug spam hooks have been audited and removed/disabled, ensuring clean, local, offline-friendly execution.
 
-## Contributing
+*Licensed under the [GNU General Public License v3.0 (GPLv3)](LICENSE).*
 
-Go [here](docs/CONTRIBUTING.md) for more information.
+---
 
-## Support Open Source
+## 📦 Requirements
 
-<a href='https://ko-fi.com/zolantris' target='_blank'><img height='35' style='border:0px;height:46px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'></a>
+To use this mod, ensure you have the following installed:
+1. **[BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)** (Package: `denikson-BepInExPack_Valheim-5.4.2350` or newer)
+2. **[Jotunn - the Valheim Mod Tool](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/)** (Package: `ValheimModding-Jotunn-2.30.0` or newer)
 
-## Step Debugging ValheimMods
+---
 
-1. Download doorstop >=4.x.x
-2. Place doorstop files into your BepInEx folder under r2modman profile/<name>
-   or directly in valheim game directory if you are directly managing valheim (
-   NOT RECOMMENDED)
-3. Change the doorstop config to these values
-    ```ini
-    [General]
-    enabled=true
-    target_assembly=BepInEx\core\BepInEx.Preloader.dll
-    redirect_output_log=false
-    ignore_disable_switch=false
-    [UnityMono]
-    dll_search_path_override=
-    debug_enabled=true
-    debug_address=127.0.0.1:10000
-    debug_suspend=false
-    [Il2Cpp]
-    coreclr_path=
-    corlib_dir=
-    ```
-   _Noting that doorstop_config.ini must be changed within the valheim game
-   folder
-   instead of the r2modman/thunderstore profile folder._
-4. Copy and overwrite the doorstop_4.x.x_libs/BepInEx.Preloader.dll into
-   BepInEx/core and replace the current file.
-5. For Rider IDE under BepInEx/config/BepInEx.cfg enable dump assemblies. (set
-   to true)
-6. In Rider connect the debugger via attach to process. Create a custom process
-   call it `Valheim` add the IP which is the debug_address e.g. `127.0.0.1` and
-   the port `10000`
-    - This can be found under `"mono-remote"`
-7. add a breakpoint in your mod to pause things.
-8. alternative wait for a game error to throw and it will pause and decompile
-   that assembly!
+## 🛠️ Changelog (v4.3.1)
 
-## Want Valheim To Run Faster?
+### Engine & Platform Upgrades
+- **Valheim 1.0.12 & Unity 6 Runtime**: Fully recompiled and updated for Unity `v6000.0.75` and Jotunn `2.30.0`.
+- **Cleaned Telemetry**: Audited codebase to remove unused external telemetry and tracking wrappers.
 
-Add this to `valheim_Data/boot.config folder. This should allow script heavy
-mods to run garbage collecting every 20ms instead of every 3 ms. Big gains
-especially for larger GPUs and multithreaded CPUs which do not need to be forced
-to garbage collect.
+### Stability & Bug Fixes
+- **Save & Logout Freeze Fixed**: Fixed a critical hang where `SingletonBehaviour` marked Valheim's core `Game.instance` GameObject as `DontDestroyOnLoad`. Returning to the main menu no longer hangs on a black screen or crashes with `UnifiedPopup` / `ArgumentException` errors.
+- **Steering Wheel FixedJoint Error Fixed**: Fixed the Unity error `Can't remove Rigidbody because FixedJoint depends on it` when grabbing helm controls or reloading vehicles.
+- **Silenced Convex Hull Boundary Warnings**: Eliminated the recurring `Not enough boundary points to generate boundary mesh: 0` warning for normal ships.
+- **Collision Debug Console Spam Silenced**: Disabled the intensive per-frame contact logging loop during `OnCollisionStay`. Added a dedicated `EnableCollisionDebugLogging` configuration toggle (default `false`) under `[Vehicle Physics: Floatation]` and corrected log levels so debug logs never spam the console as Info messages.
+- **Restored Vanilla Esc Menu Pause & Camera Pan**: Disabled background pause suppression patches. Single-player games pause normally and the camera pans smoothly when pressing **Esc**.
+- **Centered Mechanism UI**: Fixed coordinate math that clamped the Mechanism Toggle action selector and Swivel UI menus to the bottom-left corner of the screen.
 
-```ini
-gc-max-time-slice=20
-```
+### Controls & Physics Polish
+- **Tuned Sail Propulsion Speeds**: Scaled down excessive tailwind speeds for controllable navigation:
+  - **Speed 2 (Half Sail)**: Scaled to **25%** force (configurable via `SpeedHalfSailFactor`).
+  - **Speed 3 (Full Sail)**: Scaled to **50%** force (configurable via `SpeedFullSailFactor`).
+- **Smooth Flight-to-Water Landing**: Descending from flight (holding Ctrl/C) now automatically detects water contact, immediately exits flight mode, resets height offsets, frees rotation constraints, and transitions smoothly into natural water floating and wave bobbing.
 
-Want more details on max-time-slice or other flags? Go to the GPT-4 document
-below on flags.
+---
 
-Other flags according to chatGPT 4.0. These are nested unity flags. Apparently
-no aggregate spot for them.
+## 🎮 Controls Quick Reference
 
-[Full GPT output of flags](./docs/unity-flags-from-chatgpt-4.md)
+| Action | Control (Default) |
+| :--- | :--- |
+| **Take Helm / Steer** | Press **E** at Steering Wheel |
+| **Forward / Increase Speed** | **W** (1 = Slow / Rudder, 2 = Half Sail, 3 = Full Sail) |
+| **Reverse / Decrease Speed** | **S** |
+| **Turn Rudder** | **A** / **D** |
+| **Ascend / Fly Up** | **Spacebar** ("Jump") |
+| **Descend / Ballast Down** | **Ctrl** or **C** ("Crouch") |
+| **Drop / Raise Anchor** | **Left Shift** ("Run") |
+| **Interact / Open Mechanism UI** | Press **E** on Mechanism Toggle Switch |
+| **Pause Game (Single Player)** | **Esc** |
 
-[ValheimRAFT_Dir]: src/ValheimRAFT
+---
 
-[Eldritch_Dir]: src/Eldritch.Valheim
+## 📥 Installation
 
-[YggdrassilTerrain_Dir]: src/YggdrasilTerrain
+### Option A: Thunderstore / r2modman / Gale (Recommended)
+1. Search for **ValheimRAFT** in your mod manager and click **Install with Mod Manager**.
+2. Launch the game through your mod manager.
 
-[BuildingDamageModExtended_Dir]: src/ValheimRAFT
+### Option B: NexusMods / Vortex / Manual Installation
+1. If using Vortex, install and enable the zip archive directly.
+2. If installing manually, extract `plugins/ValheimRAFT` into your `Valheim/BepInEx/plugins/` directory:
+   ```
+   Valheim/
+   └── BepInEx/
+       └── plugins/
+           └── ValheimRAFT/
+               ├── ValheimRAFT.dll
+               ├── ValheimVehicles.dll
+               ├── Zolantris.Shared.dll
+               ├── ZdoWatcher.dll
+               ├── DynamicLocations.dll
+               ├── Assets/
+               └── docs/
+   ```
+
+---
+
+## ⚙️ Configuration
+
+Configuration is located at `BepInEx/config/zolantris.ValheimRAFT.cfg` after launching the game once:
+- **`AllowFlight`**: Toggle flight capability (`true`/`false`).
+- **`SpeedHalfSailFactor`**: Speed 2 sail multiplier (Default: `0.25`).
+- **`SpeedFullSailFactor`**: Speed 3 sail multiplier (Default: `0.50`).
+- **`EnableCollisionDebugLogging`**: Toggle verbose contact debug logs (Default: `false`).
+- **`Vehicles Prevent Pausing`**: Set `false` to allow single-player pause on Esc.
+
+---
+
+## 🤝 Community & Source Code
+
+- **GitHub Repository**: [https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)
+- **Upstream Repository**: [https://github.com/zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
+- **Original Mod**: [ValheimRAFT by Sarcen](https://www.nexusmods.com/valheim/mods/1136)
+- **Support JNDEV on Ko-fi**: [https://ko-fi.com/jndev0](https://ko-fi.com/jndev0)
