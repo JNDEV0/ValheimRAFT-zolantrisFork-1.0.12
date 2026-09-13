@@ -173,19 +173,24 @@ public class PowerConduitPlateBridge :
     var parentRigidbody = GetComponentInParent<Rigidbody>();
     if (!m_body)
     {
-      m_body = gameObject.AddComponent<Rigidbody>();
+      m_body = gameObject.GetComponent<Rigidbody>() ?? gameObject.AddComponent<Rigidbody>();
     }
     m_body.isKinematic = !parentRigidbody;
+    if (m_joint != null)
+    {
+      m_joint.connectedBody = null;
+      DestroyImmediate(m_joint);
+      m_joint = null;
+    }
     if (!parentRigidbody)
     {
-      if (m_joint) Destroy(m_joint);
       return;
     }
 
-    var joint = gameObject.AddComponent<FixedJoint>();
-    joint.connectedBody = parentRigidbody;
-    joint.axis = Vector3.one;
-    joint.enableCollision = false;
+    m_joint = gameObject.AddComponent<FixedJoint>();
+    m_joint.connectedBody = parentRigidbody;
+    m_joint.axis = Vector3.one;
+    m_joint.enableCollision = false;
   }
 
   protected override void OnDestroy()

@@ -642,7 +642,7 @@
 
         m_convexHullAPI.GenerateMeshFromConvexOutput(verts.ToArray(), tris.ToArray(), normals.ToArray(), 0);
 
-        Debug.Log("✅ Convex Hull Generation Complete!");
+        LoggerProvider.LogDebug("✅ Convex Hull Generation Complete!");
         m_convexHullAPI.PostGenerateConvexMeshes();
         IgnoreAllCollisionsFromConvexColliders();
         callback?.Invoke(true);
@@ -668,7 +668,7 @@
         m_convexHullJobHandler.ScheduleConvexHullJob(m_convexHullAPI, prefabDataItems, maxClusters, () =>
         {
           m_convexHullAPI.PostGenerateConvexMeshes();
-          Debug.Log("✅ Convex Hull Generation Complete!");
+          LoggerProvider.LogDebug("✅ Convex Hull Generation Complete!");
           IgnoreAllCollisionsFromConvexColliders();
           callback?.Invoke(true);
         });

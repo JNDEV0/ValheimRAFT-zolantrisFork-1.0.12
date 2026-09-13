@@ -1,3 +1,4 @@
+using UnityEngine;
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
@@ -18,6 +19,18 @@ public class CustomVehicleMastRegistry : RegisterPrefab<CustomVehicleMastRegistr
     PrefabRegistryHelpers.AddNetViewWithPersistence(prefab);
     PrefabRegistryHelpers.AddPieceForPrefab(PrefabNames.GetMastByLevelName(mastTier), prefab);
     PrefabRegistryHelpers.SetWearNTear(prefab);
+
+    foreach (var mc in prefab.GetComponentsInChildren<MeshCollider>(true))
+    {
+      try
+      {
+        if (mc.convex && mc.sharedMesh != null && mc.sharedMesh.vertexCount > 255)
+        {
+          mc.convex = false;
+        }
+      }
+      catch { }
+    }
 
     var mastComponent = prefab.AddComponent<MastComponent>();
     mastComponent.m_sailCloth = null;

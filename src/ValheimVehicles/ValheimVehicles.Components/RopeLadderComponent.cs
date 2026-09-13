@@ -126,7 +126,7 @@
       m_collider = GetComponentInChildren<BoxCollider>();
       m_ghostObject = ZNetView.m_forceDisableInit;
       m_attachPoint = transform.Find("attachpoint");
-      InvokeRepeating(nameof(UpdateSteps), 0.1f, m_ghostObject ? 0.1f : 5f);
+      InvokeRepeating(nameof(UpdateSteps), 0.1f, m_ghostObject ? 0.1f : 3f);
     }
 
     public static float LadderExitOffsetMult = 0.75f;
@@ -160,7 +160,7 @@
         "Movement", Vector3.zero);
     }
 
-    private bool IsFlyingAndNotAnchored(Vector3 hitPoint)
+    private bool ShouldRetractLadder()
     {
       if (vehiclePiecesController == null || vehiclePiecesController.MovementController == null)
       {
@@ -169,12 +169,12 @@
 
       var movementController = vehiclePiecesController.MovementController;
 
-      var targetHeight = movementController
-        .TargetHeight;
-      if (targetHeight >
-          0f &&
-          !movementController.isAnchored &&
-          hitPoint.y < vehiclePiecesController.GetColliderBottom())
+      // Only retract if the vessel is in flight mode, has an active pilot at the steering wheel, and is not anchored
+      var isFlying = movementController.IsFlying();
+      var hasPilot = movementController.HaveControllingPlayer();
+      var isAnchored = movementController.isAnchored;
+
+      if (isFlying && hasPilot && !isAnchored)
       {
         return true;
       }
@@ -194,7 +194,17 @@
         rayMask = LayerMask.GetMask("Default", "static_solid", "Default_small",
           "piece", "terrain");
 
-      m_ladderHeight = 200f;
+      if (vehiclePiecesController == null)
+      {
+        vehiclePiecesController = GetComponentInParent<VehiclePiecesController>();
+        if (vehiclePiecesController == null)
+        {
+          var vm = GetComponentInParent<VehicleManager>();
+          if (vm != null) vehiclePiecesController = vm.PiecesController;
+        }
+      }
+
+      m_ladderHeight = 500f;
       var hitpoint = new Vector3(m_attachPoint.transform.position.x, 0f,
         m_attachPoint.transform.position.z);
       var raystart = new Vector3(m_attachPoint.transform.position.x,
@@ -215,7 +225,7 @@
         }
       }
 
-      if (IsFlyingAndNotAnchored(hitpoint))
+      if (ShouldRetractLadder())
       {
         if (vehiclePiecesController)
           hitpoint.y = vehiclePiecesController.GetColliderBottom();
@@ -223,19 +233,29 @@
         m_ladderHeight = (hitpoint - raystart).magnitude;
         m_lastHitWaterDistance = 0f;
       }
-      else if (hitpoint.y < ZoneSystem.instance.m_waterLevel)
+      else
       {
-        if (WaterConfig.UnderwaterAccessMode.Value ==
-            WaterConfig.UnderwaterAccessModeType.Disabled)
-          hitpoint.y = ZoneSystem.instance.m_waterLevel;
-
-        var waterdist = (hitpoint - raystart).magnitude + 2f;
-        if (waterdist < m_ladderHeight)
+        // Ladder extends down to water or ground
+        if (ZoneSystem.instance != null)
         {
-          if (m_lastHitWaterDistance != 0f) waterdist = m_lastHitWaterDistance;
-
-          m_ladderHeight = waterdist;
-          m_lastHitWaterDistance = waterdist;
+          var waterLvl = ZoneSystem.instance.m_waterLevel;
+          if (raystart.y > waterLvl)
+          {
+            var waterdist = (raystart.y - waterLvl) + 2f;
+            if (hitpoint.y < waterLvl || m_ladderHeight >= 500f)
+            {
+              m_ladderHeight = waterdist;
+            }
+          }
+          else
+          {
+            if (WaterConfig.UnderwaterAccessMode.Value ==
+                WaterConfig.UnderwaterAccessModeType.Disabled)
+            {
+              var waterdist = Mathf.Abs(raystart.y - waterLvl) + 2f;
+              m_ladderHeight = Mathf.Min(m_ladderHeight, waterdist);
+            }
+          }
         }
       }
 
@@ -264,7 +284,7 @@
       if (m_steps.Count != steps)
       {
         var wnt = GetComponent<WearNTear>();
-        wnt.ResetHighlight();
+        if (wnt != null) wnt.ResetHighlight();
         while (m_steps.Count > steps)
         {
           Destroy(m_steps[m_steps.Count - 1]);
@@ -286,12 +306,13 @@
         m_ropeLine.SetPosition(2,
           new Vector3(-0.4f, (0f - m_stepDistance) * (float)m_steps.Count, 0f));
         m_ropeLine.SetPosition(3, new Vector3(-0.4f, 0f, 0f));
-        if (!m_ghostObject)
-        {
-          m_collider.size = new Vector3(1f, m_ladderHeight, 0.1f);
-          m_collider.transform.localPosition =
-            new Vector3(0f, (0f - m_ladderHeight) / 2f, 0f);
-        }
+      }
+
+      if (!m_ghostObject && m_collider != null)
+      {
+        m_collider.size = new Vector3(1f, m_ladderHeight, 0.1f);
+        m_collider.transform.localPosition =
+          new Vector3(0f, (0f - m_ladderHeight) / 2f, 0f);
       }
     }
 

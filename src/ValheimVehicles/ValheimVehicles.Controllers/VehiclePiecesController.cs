@@ -931,20 +931,49 @@
       // Remove non-kinematic rigidbodies if not a ram
       if (CanRemoveRigidbodyFromChild(netView.name))
       {
-        var rbs = netView.GetComponentsInChildren<Rigidbody>();
+        // First, disconnect and destroy all Joint components in this piece hierarchy
+        // to prevent Unity error: "Can't remove Rigidbody because FixedJoint depends on it"
+        var allJoints = netView.GetComponentsInChildren<Joint>(true);
+        foreach (var joint in allJoints)
+        {
+          try
+          {
+            joint.connectedBody = null;
+            DestroyImmediate(joint);
+          }
+          catch { }
+        }
+
+        var rbs = netView.GetComponentsInChildren<Rigidbody>(true);
+        if (netView.transform.root != null)
+        {
+          var rootJoints = netView.transform.root.GetComponentsInChildren<Joint>(true);
+          foreach (var joint in rootJoints)
+          {
+            foreach (var rbsItem in rbs)
+            {
+              if (joint != null && joint.connectedBody == rbsItem)
+              {
+                joint.connectedBody = null;
+                try { DestroyImmediate(joint); } catch { }
+              }
+            }
+          }
+        }
+
         foreach (var rbsItem in rbs)
         {
-          if (!rbsItem.isKinematic && rbsItem != m_localRigidbody && rbsItem != m_syncRigidbody)
+          if (rbsItem != null && !rbsItem.isKinematic && rbsItem != m_localRigidbody && rbsItem != m_syncRigidbody)
           {
-            var joints = rbsItem.GetComponents<Joint>();
-            foreach (var joint in joints)
+            rbsItem.isKinematic = true;
+            try
             {
-              joint.connectedBody = null;
-              DestroyImmediate(joint);
+              Destroy(rbsItem);
             }
-
-            LoggerProvider.LogWarning($"Destroying Rigidbody on netview <{netView.name}> for rigidbody GameObject Name <{rbsItem.name}>");
-            Destroy(rbsItem);
+            catch (Exception ex)
+            {
+              LoggerProvider.LogDebug($"Could not remove rigidbody on {rbsItem.name}: {ex.Message}");
+            }
           }
         }
       }
