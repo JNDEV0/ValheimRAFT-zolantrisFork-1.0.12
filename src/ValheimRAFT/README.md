@@ -2,7 +2,7 @@
 
 **ValheimRAFT** allows you to build custom, fully functional movable rafts, ships, and vehicles in Valheim. Expand your vessels with standard building pieces, craft custom sails and steering wheels, drop anchors, navigate open seas, and take flight!
 
-This release is an **unofficial community update** restoring full compatibility with **Valheim 1.0.12** (Unity 6 runtime) and **Jotunn 2.30.0+**.
+> **Community Fork**: Maintained by **[JNDEV0](https://github.com/JNDEV0)** to update ValheimRAFT for **Valheim 1.0.12**, **[ValheimModding-Jotunn-2.30.0+](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)**, and **[denikson-BepInExPack_Valheim-5.4.2350+](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)**.
 
 ---
 
@@ -21,8 +21,16 @@ If you enjoy this update and want to support continued development and maintenan
 - **Tested Functionality**: Core features have been thoroughly tested and verified: vehicle piece building, floating/sailing, sail propulsion, anchor toggling, flying, ballasting, smooth water landing transitions, steering wheel doodad control, and world saving/loading.
 - **Untested & Experimental Features**: ValheimRAFT is a massive and complex codebase containing advanced mechanics (such as complex mechanical swivel contraptions, land vehicle nesting, and advanced toggle mechanism options). Not all extended features or edge-case interactions have been exhaustively tested.
 - **Offered "As-Is"**: This release is provided freely and without warranty. Always back up your character and world saves before testing modded structures!
-- **Community Contributions Welcome**: Community developers and modders are warmly invited to report issues, submit Pull Requests, and help maintain this mod at our GitHub repository:  
+- **Feedback & Issues**: Players and modders are warmly invited to report issues, submit suggestions or Pull Requests, and help maintain this mod at our GitHub repository:  
   👉 **[https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)**
+
+---
+
+## 📦 Requirements & Dependencies
+
+To use this mod, ensure you have the following required dependencies installed:
+1. **[denikson-BepInExPack_Valheim-5.4.2350](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)** (or newer)
+2. **[ValheimModding-Jotunn-2.30.0](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)** (or newer)
 
 ---
 
@@ -34,14 +42,6 @@ If you enjoy this update and want to support continued development and maintenan
 - **Telemetry Removed**: Unused external telemetry wrappers (such as Sentry tracking) and leftover debug spam hooks have been audited and removed/disabled, ensuring clean, local, offline-friendly execution.
 
 *Licensed under the [GNU General Public License v3.0 (GPLv3)](LICENSE).*
-
----
-
-## 📦 Requirements
-
-To use this mod, ensure you have the following installed:
-1. **[BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)** (Package: `denikson-BepInExPack_Valheim-5.4.2350` or newer)
-2. **[Jotunn - the Valheim Mod Tool](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/)** (Package: `ValheimModding-Jotunn-2.30.0` or newer)
 
 ---
 
@@ -119,7 +119,7 @@ Configuration is located at `BepInEx/config/zolantris.ValheimRAFT.cfg` after lau
 
 ---
 
-## 🤝 Community & Source Code
+## 🌐 Community & Source Code
 
 - **GitHub Repository**: [https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)
 - **Upstream Repository**: [https://github.com/zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
