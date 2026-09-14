@@ -12,9 +12,9 @@ public class ZdoPatch
     ZdoWatchController.Instance.Deserialize(__instance);
   }
 
-  [HarmonyPatch(typeof(ZDO), "Load")]
+  [HarmonyPatch(typeof(ZDO), "Load", typeof(ZPackage), typeof(global::Version.World))]
   [HarmonyPostfix]
-  private static void ZDO_Load(ZDO __instance, ZPackage pkg, int version)
+  private static void ZDO_Load(ZDO __instance)
   {
     ZdoWatchController.Instance.Load(__instance);
   }

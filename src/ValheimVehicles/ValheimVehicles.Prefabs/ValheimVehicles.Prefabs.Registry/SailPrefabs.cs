@@ -235,18 +235,9 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
       mesh.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
     }
 
-    var sailIcon = sailCount == 3
-      ? LoadValheimVehicleAssets.VehicleSprites.GetSprite("customsail_tri")
-      : LoadValheimVehicleAssets.VehicleSprites.GetSprite("customsail");
-
-    PrefabRegistryController.AddPiece(new CustomPiece(prefab, true, new PieceConfig
-    {
-      PieceTable = PrefabRegistryController.GetPieceTableName(),
-      Description = $"$mb_sail_{sailCount}_desc",
-      Category = PrefabRegistryController.SetCategoryName(VehicleHammerTableCategories.Propulsion),
-      Enabled = true,
-      Icon = sailIcon
-    }));
+    // Disable custom square and triangle sails from the hammer build menu
+    piece.m_enabled = false;
+    PrefabManager.Instance.AddPrefab(prefab);
   }
 
   public static string GetTieredSailAreaText(int tier)

@@ -532,6 +532,13 @@
         var previousHash = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
         zdo.Set(VehicleZdoVars.MBPositionHash, previousHash - offset);
       }
+      foreach (var nv in m_pieces)
+      {
+        if (nv != null)
+        {
+          nv.transform.localPosition -= offset;
+        }
+      }
     }
 
     public override void OnDisable()
@@ -965,14 +972,32 @@
         {
           if (rbsItem != null && !rbsItem.isKinematic && rbsItem != m_localRigidbody && rbsItem != m_syncRigidbody)
           {
-            rbsItem.isKinematic = true;
-            try
+            var attachedJoints = rbsItem.GetComponents<Joint>();
+            foreach (var j in attachedJoints)
             {
-              Destroy(rbsItem);
+              try
+              {
+                j.connectedBody = null;
+                Destroy(j);
+              }
+              catch { }
             }
-            catch (Exception ex)
+
+            rbsItem.isKinematic = true;
+
+            // If a joint is still bound or attached, destroying Rigidbody in the same frame
+            // throws Unity error: "Can't remove Rigidbody because FixedJoint depends on it".
+            // Setting isKinematic = true already neutralizes it. Only call Destroy if no joint remains.
+            if (rbsItem.GetComponent<Joint>() == null)
             {
-              LoggerProvider.LogDebug($"Could not remove rigidbody on {rbsItem.name}: {ex.Message}");
+              try
+              {
+                Destroy(rbsItem);
+              }
+              catch (Exception ex)
+              {
+                LoggerProvider.LogDebug($"Could not remove rigidbody on {rbsItem.name}: {ex.Message}");
+              }
             }
           }
         }
@@ -1817,7 +1842,7 @@
       var currentSector = ZoneSystem.GetZone(m_syncRigidbody.position);
       m_sector = currentSector;
 
-      var shouldUpdate = VehicleGlobalConfig.ForceShipOwnerUpdatePerFrame.Value || zdoSector != m_sector || _nextForcedResyncUpdate >= Time.time;
+      var shouldUpdate = VehicleGlobalConfig.ForceShipOwnerUpdatePerFrame.Value || zdoSector != m_sector || Time.time >= _nextForcedResyncUpdate;
       if (shouldUpdate)
       {
         // Time.time is in seconds.
@@ -2290,9 +2315,6 @@
       // Does not care about conditionals are first run
       do
       {
-        if (ZNetScene.instance.InLoadingScreen())
-          yield return new WaitForFixedUpdate();
-
         yield return null;
 
         if (Manager?.m_nview == null)
@@ -2748,6 +2770,14 @@
       var maxSpeed = Mathf.Min(PhysicsConfig.MaxLinearVelocity.Value, PropulsionConfig.MaxSailSpeed.Value);
       var massToPush = Mathf.Max(1f, TotalMass * mpFactor);
       var lerpedSailForce = Mathf.Lerp(0f, maxSpeed, Mathf.Clamp01(surfaceArea / massToPush));
+
+      if (area > 0f)
+      {
+        var minSpeed = PropulsionConfig.MinSailSpeed?.Value ?? 10f;
+        lerpedSailForce = Mathf.Clamp(Mathf.Max(minSpeed, lerpedSailForce), minSpeed, maxSpeed);
+      }
+
+      cachedSailForce = lerpedSailForce;
       return lerpedSailForce;
     }
 

@@ -93,7 +93,7 @@
       public List<GameObject> convexHullTriggerMeshes =>
         m_convexHullAPI.convexHullTriggerMeshes;
 
-      public bool enableOriginRecentering = true;
+      public bool enableOriginRecentering = false;
       public bool recenterOnlyXZ = true;
       public float originShiftMinDistance = 0.01f;
 

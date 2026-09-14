@@ -64,17 +64,22 @@
       if (!PrefabConfig.ProtectVehiclePiecesOnErrorFromWearNTearDamage.Value)
         return false;
 
+      if (__instance.m_nview == null || __instance.m_nview.GetZDO() == null)
+        return false;
+
       var parentVehicleHash =
-        __instance.m_nview.m_zdo.GetInt(VehicleZdoVars.MBParentId, 0);
+        __instance.m_nview.GetZDO().GetInt(VehicleZdoVars.MBParentId, 0);
 
       var hasParentVehicleHash = parentVehicleHash != 0;
       if (!hasParentVehicleHash) return false;
 
-      var id = ZdoUtils.ZdoIdToId(__instance.m_nview.GetZDO().m_uid);
-      var zdoExists = ZdoWatchController.Instance.GetZdo(id);
-      if (zdoExists == null) return false;
+      var zdoExists = ZdoWatchController.Instance.GetZdo(parentVehicleHash);
+      if (zdoExists != null || VehicleManager.VehicleInstances.ContainsKey(parentVehicleHash))
+      {
+        return true;
+      }
 
-      __instance.enabled = false;
+      // If the piece belongs to a vehicle, protect it while the raft is initializing or loading
       return true;
     }
 
@@ -211,14 +216,16 @@
     private static bool UpdateSupport(WearNTear __instance)
     {
       if (!__instance.isActiveAndEnabled) return false;
+      var zdo = __instance.m_nview != null ? __instance.m_nview.GetZDO() : null;
+      var parentVehicleId = zdo != null ? zdo.GetInt(VehicleZdoVars.MBParentId, 0) : 0;
       var baseVehicle =
         __instance.GetComponentInParent<IPieceActivatorHost>();
-      if (baseVehicle == null) return true;
+      if (baseVehicle == null && parentVehicleId == 0) return true;
 
       // makes all support values below 1f very high for anything within a vehicle/swivel/activator
-      if (!Mathf.Approximately(__instance.m_support, 1500f) && __instance.m_nview != null && __instance.m_nview.GetZDO() != null)
+      if (!Mathf.Approximately(__instance.m_support, 1500f) && zdo != null)
       {
-        __instance.m_nview.GetZDO().Set(ZDOVars.s_support, 1500f);
+        zdo.Set(ZDOVars.s_support, 1500f);
       }
       __instance.m_support = 1500f;
       __instance.m_supports = true;

@@ -9,8 +9,18 @@ public static class ZNet_WorldSession_Patches
   private static void SessionStart()
   {
     if (!ZNet.instance) return;
-    var currentWorldId = ZNet.instance.GetWorldUID();
-    WorldSessionState.EnsureWorldScope(currentWorldId);
+    try
+    {
+      if (ZNet.instance.GetWorld() != null)
+      {
+        var currentWorldId = ZNet.instance.GetWorldUID();
+        WorldSessionState.EnsureWorldScope(currentWorldId);
+      }
+    }
+    catch (System.Exception)
+    {
+      // World is null on multiplayer clients until received from server
+    }
   }
 
   [HarmonyPatch(typeof(ZNet), nameof(ZNet.OnDestroy))]

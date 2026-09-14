@@ -169,14 +169,23 @@
 
       var movementController = vehiclePiecesController.MovementController;
 
-      // Only retract if the vessel is in flight mode, has an active pilot at the steering wheel, and is not anchored
-      var isFlying = movementController.IsFlying();
-      var hasPilot = movementController.HaveControllingPlayer();
-      var isAnchored = movementController.isAnchored;
-
-      if (isFlying && hasPilot && !isAnchored)
+      // If anchored, always extend ladder.
+      if (movementController.isAnchored)
       {
-        return true;
+        return false;
+      }
+
+      // If flying: only retract if actively moving (> 0.01f). When stopped/hovering, extend as if anchored.
+      if (movementController.IsFlying())
+      {
+        var isMoving = movementController.m_body != null &&
+                       (movementController.m_body.linearVelocity.sqrMagnitude > 0.01f ||
+                        movementController.GetSpeedSetting() != Ship.Speed.Stop);
+
+        if (isMoving)
+        {
+          return true;
+        }
       }
 
       return false;

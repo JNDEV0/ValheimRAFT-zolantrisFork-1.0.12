@@ -40,7 +40,10 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
 
   // Propulsion Configs
   public static ConfigEntry<float> MaxSailSpeed { get; set; }
+  public static ConfigEntry<float> MinSailSpeed { get; set; }
   public static ConfigEntry<float> SpeedCapMultiplier { get; set; }
+  public static ConfigEntry<float> SailVerticalOffset { get; set; } = null!;
+  public static ConfigEntry<float> KarveSailVerticalOffset { get; set; } = null!;
 
 
   public static ConfigEntry<bool> FlightVerticalToggle { get; set; }
@@ -211,10 +214,24 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
       ConfigHelpers.CreateConfigDescription(
         "Sets the absolute max speed a ship can ever hit with sails. Prevents or enables space launches, cannot exceed MaxPropulsionSpeed.",
         true, false, new AcceptableValueRange<float>(10, 200)));
+    MinSailSpeed = config.BindUnique(GenericSectionName, "MinSailSpeed", 10f,
+      ConfigHelpers.CreateConfigDescription(
+        "Sets the baseline minimum sailing force granted when at least one sail is present on the vehicle.",
+        true, false, new AcceptableValueRange<float>(1, 50)));
     SpeedCapMultiplier = config.BindUnique(GenericSectionName, "SpeedCapMultiplier", 1f,
       ConfigHelpers.CreateConfigDescription(
         "Sets the speed at which it becomes significantly harder to gain speed per sail area",
         true));
+
+    SailVerticalOffset = config.BindUnique(GenericSectionName, "SailVerticalOffset", 1.05f,
+      ConfigHelpers.CreateConfigDescription(
+        "Vertical offset (in meters) to raise the sail canvas towards the yardarm crossbeam.",
+        true, false, new AcceptableValueRange<float>(0f, 3f)));
+
+    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 2.15f,
+      ConfigHelpers.CreateConfigDescription(
+        "Vertical offset (in meters) to raise the Karve sail canvas towards the yardarm crossbeam.",
+        true, false, new AcceptableValueRange<float>(0f, 5f)));
 
     // rudder
 

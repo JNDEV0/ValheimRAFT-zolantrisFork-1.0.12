@@ -46,25 +46,22 @@ public class CustomTextureGroup
 
   public static string[] GetFiles(string groupName, string modFolderName)
   {
-    /*
-     * Early exit to retry with other options
-     */
-    if (!Directory.Exists(Path.Combine(Paths.PluginPath, modFolderName)))
+    var folderPath = Path.IsPathRooted(modFolderName)
+      ? modFolderName
+      : Path.Combine(Paths.PluginPath, modFolderName);
+
+    if (!Directory.Exists(folderPath))
       return Array.Empty<string>();
 
-    var assetDirectory =
-      Path.Combine(Paths.PluginPath, modFolderName, "Assets");
-
+    var assetDirectory = Path.Combine(folderPath, "Assets");
     if (!Directory.Exists(assetDirectory))
-      /*
-       * fallback so if user somehow breaks their install, the mod will warn them.
-       */
-      Logger.LogError(
-        $"Invalid setup, Asset Directory missing within {assetDirectory}");
+      return Array.Empty<string>();
 
-    var files =
-      Directory.GetFiles(Path.Combine(assetDirectory, groupName));
-    return files;
+    var targetDir = Path.Combine(assetDirectory, groupName);
+    if (!Directory.Exists(targetDir))
+      return Array.Empty<string>();
+
+    return Directory.GetFiles(targetDir);
   }
 
   public static CustomTextureGroup Load(string groupName)
@@ -74,42 +71,66 @@ public class CustomTextureGroup
     group = new CustomTextureGroup();
     m_groups.Add(groupName, group);
 
-    var files = new string[] {};
+    var files = Array.Empty<string>();
 
-    var modFolderName = ModSupportConfig.PluginFolderName.Value;
-    /*
-     * This if blocks is provided to make the PluginFolderName check a bit more verbose
-     * - It could be added to the array, but would have to be done after CONFIG initializes
-     */
-    if (modFolderName != "" &&
-        Directory.Exists(
-          Path.Combine(Paths.PluginPath,
-            modFolderName)))
+    // 1. Check directory where the mod's DLL is located (works for all mod managers: Gale, r2modman, Thunderstore, manual)
+    try
     {
-      Logger.LogDebug(
-        $"PluginFolderName path detected, resolving assets from that folder");
-      files = GetFiles(groupName,
-        modFolderName);
-    }
-    else
-    {
+      var asmDir = Path.GetDirectoryName(typeof(CustomTextureGroup).Assembly.Location);
+      if (!string.IsNullOrEmpty(asmDir))
       {
-        foreach (var possibleModFolderName in ValheimRAFT_API.possibleModFolderNames)
+        files = GetFiles(groupName, asmDir);
+        if (files.Length == 0 && Directory.Exists(Path.Combine(asmDir, "ValheimRAFT")))
         {
-          if (!Directory.Exists(Path.Combine(Paths.PluginPath,
-                possibleModFolderName))) continue;
-
-          files = GetFiles(groupName, possibleModFolderName);
-          break;
+          files = GetFiles(groupName, Path.Combine(asmDir, "ValheimRAFT"));
         }
-
-        /*
-         * this log will not be reached if the "guess" path matches
-         */
-        if (files.Length == 0)
-          Logger.LogError(
-            $"ValheimRAFT: Unable to detect modFolder path, this will cause mesh issues with sails. Please set ValheimRAFT mod folder in the BepInExConfig file. The ValheimRAFT folder should found within this directory {Paths.PluginPath}");
       }
+    }
+    catch { }
+
+    // 2. Check user-configured PluginFolderName
+    if (files.Length == 0)
+    {
+      var modFolderName = ModSupportConfig.PluginFolderName.Value;
+      if (!string.IsNullOrEmpty(modFolderName))
+      {
+        files = GetFiles(groupName, modFolderName);
+      }
+    }
+
+    // 3. Check known possible folder names under Paths.PluginPath
+    if (files.Length == 0)
+    {
+      foreach (var possibleModFolderName in ValheimRAFT_API.possibleModFolderNames)
+      {
+        files = GetFiles(groupName, possibleModFolderName);
+        if (files.Length > 0) break;
+      }
+    }
+
+    // 4. Recursive fallback: find groupName inside any Assets directory under Paths.PluginPath
+    if (files.Length == 0 && Directory.Exists(Paths.PluginPath))
+    {
+      try
+      {
+        var matchingDirs = Directory.GetDirectories(Paths.PluginPath, groupName, SearchOption.AllDirectories);
+        foreach (var dir in matchingDirs)
+        {
+          var parent = Path.GetDirectoryName(dir);
+          if (parent != null && Path.GetFileName(parent).Equals("Assets", StringComparison.OrdinalIgnoreCase))
+          {
+            files = Directory.GetFiles(dir);
+            if (files.Length > 0) break;
+          }
+        }
+      }
+      catch { }
+    }
+
+    if (files.Length == 0)
+    {
+      Logger.LogWarning(
+        $"ValheimRAFT: Unable to detect modFolder path containing Assets/{groupName}. Custom sail textures will not load.");
     }
 
     foreach (var file in files)

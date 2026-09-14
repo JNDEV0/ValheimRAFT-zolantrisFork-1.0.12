@@ -1,4 +1,4 @@
-# ValheimRAFT v4.3.1 (Valheim 1.0.12 Compatibility Update)
+# ValheimRAFT v4.3.2 (Valheim 1.0.12 Compatibility & Polish Update)
 
 **ValheimRAFT** allows you to build custom, fully functional movable rafts, ships, and vehicles in Valheim. Expand your vessels with standard building pieces, craft custom sails and steering wheels, drop anchors, navigate open seas, and take flight!
 
@@ -44,25 +44,39 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
-## 🛠️ Changelog (v4.3.1)
+## 🛠️ Changelog (v4.3.2)
 
-### Engine & Platform Upgrades
+### Stability & Multi-Zone Loading
+- **Fast Travel / Portal Desync & Separated Parts Fixed**: Fixed a critical issue where portaling away from or loading near a ship caused pieces to detach, separate, or throw null references. Added safety timeouts and zone load checks to `Teleport_Patch`, protected vehicle pieces in `WearNTear_Patch` and `VehiclePiecesController` during sector initialization, and disabled violent origin recentering on teleport transitions.
+- **FixedJoint & Rigidbody Removal Error Fixed**: Resolved the Unity error `Can't remove Rigidbody because FixedJoint depends on it` in `TargetController` and `VehiclePiecesController` by guaranteeing all attached joint dependencies and connected bodies are cleanly unhooked and destroyed before Rigidbody removal.
+- **Multiplayer Session Initialization Guard**: Protected world UID lookups during player join/connect in `ZNet_WorldSession_Patches` before the remote server sends the world profile.
+- **Corrected ZDO.Load Harmony Signature**: Updated patch signature for `Zdo_Patch` to match Valheim 1.0.12 / Unity 6 `Version.World` parameter changes.
+
+### Sails, Propulsion & Visuals
+- **Dynamic Sail Furling & Unfurling**: Sails now realistically furl and unfurl according to movement state:
+  - **Anchored, Stop, or Speed 1 (Rowing)**: Sail is fully retracted/furled.
+  - **Speed 2 (Half Sail)**: Sail extends to 50% height.
+  - **Speed 3 (Full Sail)**: Sail extends to 100% full sail.
+- **Top-Down Sail Extension & Crossbeam Offsets**: Corrected vertical sail scaling pivot so sails extend downward from the crossbeam rather than shrinking toward the deck. Added calibrated vertical offsets (`SailVerticalOffset = 1.05`, `KarveSailVerticalOffset = 2.15`) for perfect alignment with Raft and Karve masts.
+- **Minimum Sail Propulsion Enforced**: Set a minimum baseline propulsion speed of `10` (`MinSailSpeed`) so vessels with hulls move comfortably even with a single sail.
+- **Storm Wind Velocity Capped**: Lowered default `MaxLinearVelocity` from 100 to 50 m/s to prevent uncontrollable runaway speeds and physics destabilization during severe storms.
+- **Disabled Glitchy Sails & Masts from Hammer**: Removed custom square sail, triangle sail, and custom masts 1-3 from the build menu to prevent physics glitches while keeping existing placed prefabs fully functional.
+
+### Usability & Quality of Life
+- **Automatic Rope Ladder Deployment**: Rope ladders now automatically extend when the vessel is anchored, hovering, or stationary (`speed <= 0.01`), ensuring swimming players can always climb back aboard without requiring manual anchor drops. Ladders retract cleanly during active flight or navigation.
+- **Steering Wheel Anchored Alert**: Attempting to move forward (<kbd>W</kbd>) or reverse (<kbd>S</kbd>) while the vessel is anchored now displays a floating yellow `"RAISE ANCHOR FIRST"` alert directly above the steering wheel helm.
+- **Font & Localization Improvements**: Registered all active game fonts (AveriaSerifLibre, Norse) and dynamically generated Arial SDF Unicode fallbacks in `TMPProHelpers` to prevent missing glyph errors. Cleaned up outdated foreign translation bundles and added missing localization keys.
+- **Robust Mod Folder Detection**: Rewrote `CustomTextureGroup` path resolution to automatically find mod assets across all mod managers (Thunderstore, r2modman, Gale, Vortex, manual installs).
+
+---
+
+## 🛠️ Changelog (v4.3.1 Summary)
 - **Valheim 1.0.12 & Unity 6 Runtime**: Fully recompiled and updated for Unity `v6000.0.75` and Jotunn `2.30.0`.
-- **Cleaned Telemetry**: Audited codebase to remove unused external telemetry and tracking wrappers.
-
-### Stability & Bug Fixes
-- **Save & Logout Freeze Fixed**: Fixed a critical hang where `SingletonBehaviour` marked Valheim's core `Game.instance` GameObject as `DontDestroyOnLoad`. Returning to the main menu no longer hangs on a black screen or crashes with `UnifiedPopup` / `ArgumentException` errors.
-- **Steering Wheel FixedJoint Error Fixed**: Fixed the Unity error `Can't remove Rigidbody because FixedJoint depends on it` when grabbing helm controls or reloading vehicles.
-- **Silenced Convex Hull Boundary Warnings**: Eliminated the recurring `Not enough boundary points to generate boundary mesh: 0` warning for normal ships.
-- **Collision Debug Console Spam Silenced**: Disabled the intensive per-frame contact logging loop during `OnCollisionStay`. Added a dedicated `EnableCollisionDebugLogging` configuration toggle (default `false`) under `[Vehicle Physics: Floatation]` and corrected log levels so debug logs never spam the console as Info messages.
-- **Restored Vanilla Esc Menu Pause & Camera Pan**: Disabled background pause suppression patches. Single-player games pause normally and the camera pans smoothly when pressing **Esc**.
-- **Centered Mechanism UI**: Fixed coordinate math that clamped the Mechanism Toggle action selector and Swivel UI menus to the bottom-left corner of the screen.
-
-### Controls & Physics Polish
-- **Tuned Sail Propulsion Speeds**: Scaled down excessive tailwind speeds for controllable navigation:
-  - **Speed 2 (Half Sail)**: Scaled to **25%** force (configurable via `SpeedHalfSailFactor`).
-  - **Speed 3 (Full Sail)**: Scaled to **50%** force (configurable via `SpeedFullSailFactor`).
-- **Smooth Flight-to-Water Landing**: Descending from flight (holding Ctrl/C) now automatically detects water contact, immediately exits flight mode, resets height offsets, frees rotation constraints, and transitions smoothly into natural water floating and wave bobbing.
+- **Save & Logout Freeze Fixed**: Fixed black screen hang when returning to main menu caused by `DontDestroyOnLoad` on `Game.instance`.
+- **Convex Hull & Collision Spam Silenced**: Suppressed 0-point boundary warnings and disabled per-frame collision contact debug logging.
+- **Vanilla Esc Menu Restored**: Single-player pause and smooth camera panning restored when pressing **Esc**.
+- **Centered Mechanism UI**: Fixed coordinate math for Mechanism Toggle and Swivel UI menus.
+- **Tuned Sail Speeds & Flight Landing**: Balanced sail speed factors and added smooth flight-to-water landing transitions.
 
 ---
 

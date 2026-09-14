@@ -311,7 +311,7 @@ public class PhysicsConfig : BepInExBaseConfig<PhysicsConfig>
     VehicleLandTreadVerticalOffset.SettingChanged += (sender, args) => VehicleManager.UpdateAllLandMovementControllers();
 
     // guards for max values
-    MaxLinearVelocity = config.BindUnique(SectionKey, $"MaxVehicleLinearVelocity_{VersionedConfigUtil.GetDynamicMinorVersionKey()}", 100f,
+    MaxLinearVelocity = config.BindUnique(SectionKey, $"MaxVehicleLinearVelocity_{VersionedConfigUtil.GetDynamicMinorVersionKey()}", 50f,
       ConfigHelpers.CreateConfigDescription(
         "Sets the absolute max speed a vehicle can ever move in. This is X Y Z directions. This will prevent the ship from rapidly flying away. Try staying between 5 and 100. Higher values will increase potential of vehicle flying off to space or rapidly accelerating through objects before physics can apply to an unloaded zone.",
         true, false, maxLinearVelocityAcceptableValues));

@@ -357,5 +357,6 @@
   "valheim_vehicles_boundary_mesh_eraser": "Boundary Chunk Eraser",
   "valheim_vehicles_boundary_mesh_eraser_desc": "Delete the boundary mesh. These can be viewed in the vehicle physics debugger",
   "valheim_vehicles_boundary_mesh": "Boundary Chunk Addition",
-  "valheim_vehicles_boundary_mesh_desc": "Vehicle Boundary Mesh allows constraining the boundary of the vehicle within the placed mesh. This will allow any prefab placed to expand until it exceed the area of the boundary."
+  "valheim_vehicles_boundary_mesh_desc": "Vehicle Boundary Mesh allows constraining the boundary of the vehicle within the placed mesh. This will allow any prefab placed to expand until it exceed the area of the boundary.",
+  "valheim_vehicles_raise_anchor_first": "Raise anchor first"
 }

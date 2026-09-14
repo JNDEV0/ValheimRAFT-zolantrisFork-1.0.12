@@ -567,7 +567,7 @@
       }
       else
       {
-        Logger.LogWarning(
+        LoggerProvider.LogDebug(
           $"Player {player.GetPlayerName()} detected leaving ship, but not within the ship's player list");
       }
 

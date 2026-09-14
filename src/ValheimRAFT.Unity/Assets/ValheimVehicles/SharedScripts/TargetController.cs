@@ -223,11 +223,26 @@ namespace ValheimVehicles.SharedScripts
       }
       else
       {
+#if VALHEIM
+        // Do NOT destroy the Rigidbody if attached to a vehicle or if joints depend on it!
+        var isVehicle = GetComponent<VehiclePiecesController>() != null ||
+                        GetComponent<VehicleManager>() != null ||
+                        GetComponent<VehicleMovementController>() != null;
+        if (!isVehicle)
+        {
+          var rb = GetComponent<Rigidbody>();
+          if (rb != null && GetComponents<Joint>().Length == 0)
+          {
+            Destroy(rb);
+          }
+        }
+#else
         var rb = GetComponent<Rigidbody>();
-        if (rb)
+        if (rb != null && GetComponents<Joint>().Length == 0)
         {
           Destroy(rb);
         }
+#endif
         if (detectionAreaObj)
         {
           Destroy(detectionAreaObj);

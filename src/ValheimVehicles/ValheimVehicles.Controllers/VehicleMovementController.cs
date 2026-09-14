@@ -3172,23 +3172,24 @@
       var num = 0f;
       var speed = VehicleSpeed;
 
-      switch (speed)
+      if (!isAnchored)
       {
-        case Ship.Speed.Back:
-          num = 0.1f;
-          break;
-        case Ship.Speed.Half:
-          num = 0.5f;
-          break;
-        case Ship.Speed.Full:
-          num = 1f;
-          break;
-        case Ship.Speed.Slow:
-          num = 0.1f;
-          break;
-        case Ship.Speed.Stop:
-          num = 0.1f;
-          break;
+        switch (speed)
+        {
+          case Ship.Speed.Half:
+            num = 0.5f;
+            break;
+          case Ship.Speed.Full:
+            num = 1f;
+            break;
+          default: // Stop, Slow, Back (propulsion 0 or 1/rowing)
+            num = 0f;
+            break;
+        }
+      }
+      else
+      {
+        num = 0f;
       }
 
       var localScale = m_sailObject.transform.localScale;
@@ -3320,7 +3321,7 @@
         if (mast.m_allowSailRotation &&
             PropulsionConfig.AllowBaseGameSailRotation.Value)
         {
-          var isWindSync = vehicleSpeed == Ship.Speed.Full || vehicleSpeed == Ship.Speed.Half;
+          var isWindSync = !isAnchored && (vehicleSpeed == Ship.Speed.Full || vehicleSpeed == Ship.Speed.Half);
           var newRotation = m_mastObject.transform.localRotation;
           if (mast.m_rotationTransform != null)
           {
@@ -3332,22 +3333,62 @@
           }
         }
 
-        // custom masts do not have sailcloth or sail objects yet.
-        if (mast.m_sailCloth)
+        if (mast.m_sailObject != null)
         {
+          var sailScaleY = m_sailObject.transform.localScale.y;
+          var isRetracted = sailScaleY <= 0.05f;
+
           if (mast.m_allowSailShrinking)
           {
-            if (mast.m_sailObject.transform.localScale !=
-                m_sailObject.transform.localScale)
-              mast.m_sailCloth.enabled = false;
-            mast.m_sailObject.transform.localScale =
-              m_sailObject.transform.localScale;
-            mast.m_sailCloth.enabled = true;
+            mast.InitSailPositions();
+            var targetScale = new Vector3(1f, Mathf.Max(0.01f, sailScaleY), 1f);
+            mast.m_sailObject.transform.localScale = targetScale;
+
+            // Compensate position so the top edge stays attached to the crossbeam/yardarm
+            var verticalOffset = (mast.m_sailObject != mast.gameObject) ? mast.GetVerticalOffset() : 0f;
+            var newPos = mast.m_initialSailLocalPos;
+            newPos.y += (1f - targetScale.y) * mast.m_sailTopLocalY + verticalOffset;
+            mast.m_sailObject.transform.localPosition = newPos;
+
+            if (mast.m_sailCloth != null)
+            {
+              mast.m_sailCloth.enabled = !isRetracted && !mast.m_disableCloth;
+            }
+
+            foreach (var behaviour in mast.GetComponentsInChildren<Behaviour>(true))
+            {
+              if (behaviour != null && behaviour.GetType().Name == "MagicaCloth")
+              {
+                behaviour.enabled = !isRetracted && !mast.m_disableCloth;
+              }
+            }
+
+            var renderers = mast.m_sailObject.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in renderers)
+            {
+              r.enabled = !isRetracted || sailScaleY > 0.02f;
+            }
           }
           else
           {
             mast.m_sailObject.transform.localScale = Vector3.one;
-            mast.m_sailCloth.enabled = !mast.m_disableCloth;
+            if (mast.m_hasInitializedSailPositions)
+            {
+              var verticalOffset = (mast.m_sailObject != mast.gameObject) ? mast.GetVerticalOffset() : 0f;
+              var newPos = mast.m_initialSailLocalPos;
+              newPos.y += verticalOffset;
+              mast.m_sailObject.transform.localPosition = newPos;
+            }
+
+            if (mast.m_sailCloth != null)
+              mast.m_sailCloth.enabled = !mast.m_disableCloth;
+            foreach (var behaviour in mast.GetComponentsInChildren<Behaviour>(true))
+            {
+              if (behaviour != null && behaviour.GetType().Name == "MagicaCloth")
+              {
+                behaviour.enabled = !mast.m_disableCloth;
+              }
+            }
           }
         }
       }
@@ -4913,7 +4954,21 @@
 
     public void SendSpeedChange(DirectionChange directionChange)
     {
-      if (isAnchored) return;
+      if (isAnchored)
+      {
+        if (PropulsionConfig.ShouldLiftAnchorOnSpeedChange.Value)
+        {
+          vehicleAnchorState = HandleSetAnchor(AnchorState.Reeling);
+        }
+        else
+        {
+          if (directionChange == DirectionChange.Forward || directionChange == DirectionChange.Backward)
+          {
+            ShowRaiseAnchorFirstMessage();
+          }
+          return;
+        }
+      }
 
       switch (directionChange)
       {
@@ -4943,11 +4998,30 @@
     }
 
 
+    private void ShowRaiseAnchorFirstMessage()
+    {
+      var rawMsg = Localization.instance != null ? Localization.instance.Localize("$valheim_vehicles_raise_anchor_first") : "Raise anchor first";
+      if (string.IsNullOrEmpty(rawMsg) || rawMsg == "$valheim_vehicles_raise_anchor_first") rawMsg = "Raise anchor first";
+      var msg = rawMsg.ToUpperInvariant();
+
+      var wheel = lastUsedWheelComponent ?? PiecesController?._steeringWheelPiece;
+      if (wheel == null && PiecesController != null)
+      {
+        wheel = PiecesController.GetComponentInChildren<SteeringWheelComponent>();
+      }
+
+      if (wheel != null)
+      {
+        wheel.UpdateSteeringHoverMessage(msg);
+      }
+    }
+
     private void SetForward()
     {
       if (isAnchored && !PropulsionConfig.ShouldLiftAnchorOnSpeedChange.Value)
       {
         vehicleSpeed = Ship.Speed.Stop;
+        ShowRaiseAnchorFirstMessage();
         return;
       }
 
@@ -4983,6 +5057,7 @@
       if (isAnchored && !PropulsionConfig.ShouldLiftAnchorOnSpeedChange.Value)
       {
         vehicleSpeed = Ship.Speed.Stop;
+        ShowRaiseAnchorFirstMessage();
         return;
       }
 
