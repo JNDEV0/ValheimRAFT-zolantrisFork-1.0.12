@@ -311,12 +311,12 @@ public class Teleport_Patch
 
     ZNetView? go = null;
     var zoneId = ZoneSystem.GetZone(zdo.m_position);
-    var startTime = Time.time;
+    var startTime = Time.unscaledTime;
     const float timeout = 10f;
 
     while (go == null)
     {
-      if (Time.time - startTime > timeout)
+      if (Time.unscaledTime - startTime > timeout)
       {
         Jotunn.Logger.LogWarning($"DebouncedTeleportCoordinateUpdater: Timed out waiting for portal instance {zdoid}.");
         break;
@@ -324,18 +324,24 @@ public class Teleport_Patch
       go = ZNetScene.instance.FindInstance(zdo);
       if (go) break;
       zoneId = ZoneSystem.GetZone(zdo.m_position);
-      ZoneSystem.instance.PokeLocalZone(zoneId);
-      yield return new WaitForFixedUpdate();
+      if (ZoneSystem.instance != null)
+      {
+        ZoneSystem.instance.PokeLocalZone(zoneId);
+      }
+      yield return null;
     }
 
     if (go != null)
     {
       zoneId = ZoneSystem.GetZone(zdo.m_position);
-      ZoneSystem.instance.PokeLocalZone(zoneId);
-      var zoneWaitStart = Time.time;
-      while (!ZoneSystem.instance.IsZoneLoaded(zoneId) && Time.time - zoneWaitStart < 5f)
+      if (ZoneSystem.instance != null)
       {
-        yield return new WaitForFixedUpdate();
+        ZoneSystem.instance.PokeLocalZone(zoneId);
+        var zoneWaitStart = Time.unscaledTime;
+        while (!ZoneSystem.instance.IsZoneLoaded(zoneId) && Time.unscaledTime - zoneWaitStart < 5f)
+        {
+          yield return null;
+        }
       }
 
       var teleportPosition = GetTeleportPosition(go.gameObject);

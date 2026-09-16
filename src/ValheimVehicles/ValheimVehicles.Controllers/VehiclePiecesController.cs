@@ -1635,8 +1635,28 @@
       ForceUpdateAllPiecePositions(position.Value);
     }
 
+    public static void MigratePortalSectorInZdoMan(ZDO zdo, Vector3 targetPos)
+    {
+      if (zdo == null || !zdo.IsValid() || ZDOMan.instance == null) return;
+      var oldSector = zdo.GetSectorIndex();
+      var newSector = ZoneSystem.GetSectorIndex(targetPos);
+      zdo.SetPosition(targetPos);
+      if (oldSector != newSector)
+      {
+        ZDOMan.instance.RemoveFromSector(zdo, oldSector);
+        ZDOMan.instance.AddToSector(zdo, newSector);
+        if (ZNet.instance != null && ZNet.instance.IsServer())
+        {
+          ZDOMan.instance.ZDOSectorInvalidated(zdo);
+        }
+      }
+    }
+
     public static void SetPrefabWorldPosition(ZDO zdo, Vector3 vehiclePosition)
     {
+      var isPortal = Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab());
+      var oldSector = isPortal ? zdo.GetSectorIndex() : default;
+
       if (CanUseActualPiecePosition)
       {
         var zdoRelativePosition = vehiclePosition + zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
@@ -1645,6 +1665,20 @@
       else
       {
         zdo.SetPosition(vehiclePosition);
+      }
+
+      if (isPortal && ZDOMan.instance != null)
+      {
+        var newSector = zdo.GetSectorIndex();
+        if (oldSector != newSector)
+        {
+          ZDOMan.instance.RemoveFromSector(zdo, oldSector);
+          ZDOMan.instance.AddToSector(zdo, newSector);
+          if (ZNet.instance != null && ZNet.instance.IsServer())
+          {
+            ZDOMan.instance.ZDOSectorInvalidated(zdo);
+          }
+        }
       }
     }
 
@@ -1686,7 +1720,7 @@
           if (nv.GetComponent<TeleportWorld>() != null)
           {
             var portalPos = nv.transform.position;
-            zdo.SetPosition(portalPos);
+            MigratePortalSectorInZdoMan(zdo, portalPos);
             if (!m_portals.Contains(nv))
             {
               m_portals.Add(nv);
@@ -1711,8 +1745,7 @@
         {
           var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
           var portalWorldPos = vehiclePosition + transform.TransformDirection(pieceOffset);
-          zdo.SetPosition(portalWorldPos);
-          zdo.SetSector(ZoneSystem.GetSectorIndex(portalWorldPos));
+          MigratePortalSectorInZdoMan(zdo, portalWorldPos);
           continue;
         }
 
@@ -1734,7 +1767,7 @@
           if (nv.GetComponent<TeleportWorld>() != null)
           {
             var portalPos = nv.transform.position;
-            zdo.SetPosition(portalPos);
+            MigratePortalSectorInZdoMan(zdo, portalPos);
             if (!m_portals.Contains(nv))
             {
               m_portals.Add(nv);
@@ -1834,8 +1867,7 @@
           ZDOMan.instance.SetDirtyPortals();
         }
 
-        zdo.SetPosition(portalWorldPos);
-        zdo.SetSector(newSector);
+        MigratePortalSectorInZdoMan(zdo, portalWorldPos);
       }
     }
 
@@ -2013,8 +2045,6 @@
 
     public static bool IsServerInstance()
     {
-      // single player servers should not count as their ZDOs do not need to sync across all clients (For performance reasons).
-      if (ZNet.IsSinglePlayer) return false;
       return ZNet.instance != null && ZNet.instance.IsServer();
     }
 
@@ -2099,23 +2129,28 @@
         instance.CancelInvoke(nameof(StartActivatePendingPieces));
       }
 
-      if (instance != null && instance.isActiveAndEnabled)
+      if (ActiveInstances.TryGetValue(id, out var activeInstance) && activeInstance != null && activeInstance.isActiveAndEnabled && !activeInstance.IsInvalid())
       {
-        if (ActiveInstances.TryGetValue(id, out var activeInstance))
-        {
-          activeInstance.ActivatePiece(netView);
-          return;
-        }
+        activeInstance.ActivatePiece(netView);
+        return;
+      }
+
+      if (VehicleManager.VehicleInstances.TryGetValue(id, out var vm) && vm != null && vm.PiecesController != null && vm.PiecesController.isActiveAndEnabled && !vm.PiecesController.IsInvalid())
+      {
+        vm.PiecesController.ActivatePiece(netView);
+        return;
       }
 
       AddPendingPiece(id, netView, skipActivation);
+      BasePieceActivatorComponent.AddPendingPiece(id, netView, skipActivation, isVehicle: true);
 
       var wnt = netView.GetComponent<WearNTear>();
       if ((bool)wnt) wnt.enabled = false;
 
-      if (!skipActivation && instance != null && ZNet.instance != null && !instance.IsInvalid())
+      var targetInstance = instance ?? (ActiveInstances.TryGetValue(id, out var ai) ? ai : null);
+      if (!skipActivation && targetInstance != null && ZNet.instance != null && !targetInstance.IsInvalid())
         // This will queue up a re-run of ActivatePendingPieces if there are any
-        instance.Invoke(nameof(StartActivatePendingPieces), 0.1f);
+        targetInstance.Invoke(nameof(StartActivatePendingPieces), 0.1f);
     }
 
 /*
@@ -2451,11 +2486,21 @@
 
         // Clear processed items and add any newly queued items
         currentPieces?.Clear();
-        if (_newPendingPiecesQueue.Count <= 0) continue;
-        currentPieces ??= [];
-        currentPieces.AddRange(_newPendingPiecesQueue);
-        _newPendingPiecesQueue.Clear();
-        _pendingPiecesDirty = true; // Mark dirty to re-run coroutine
+        if (_newPendingPiecesQueue.Count > 0)
+        {
+          currentPieces ??= [];
+          currentPieces.AddRange(_newPendingPiecesQueue);
+          _newPendingPiecesQueue.Clear();
+          _pendingPiecesDirty = true;
+        }
+
+        if (m_pendingPieces.TryGetValue(persistentZdoId, out var directPending) && directPending != null && directPending.Count > 0)
+        {
+          currentPieces ??= [];
+          currentPieces.AddRange(directPending);
+          directPending.Clear();
+          _pendingPiecesDirty = true;
+        }
       } while
         (_pendingPiecesDirty); // Loop if new items were added during this run
 

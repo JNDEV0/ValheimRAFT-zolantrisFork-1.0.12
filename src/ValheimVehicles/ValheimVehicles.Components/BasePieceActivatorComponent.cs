@@ -191,31 +191,31 @@
     {
       if (!ValheimExtensions.IsCurrentGameHealthy()) return;
       if (netView == null || netView.GetZDO() == null) return;
-      if (!m_pendingPieces.TryGetValue(parentId, out var list) || list.Count == 0)
+      if (!m_pendingPieces.TryGetValue(parentId, out var list) || list == null || list.Count == 0)
       {
         list = [netView];
-
-        // must set the list.
         m_pendingPieces[parentId] = list;
-        return;
       }
-
-      if (!list.Contains(netView))
+      else if (!list.Contains(netView))
       {
         list.Add(netView);
       }
 
       if (!skipActivation && isVehicle)
       {
-        if (VehiclePiecesController.ActiveInstances.TryGetValue(parentId, out var vehicle))
+        if (VehiclePiecesController.ActiveInstances.TryGetValue(parentId, out var vehicle) && vehicle != null && vehicle.isActiveAndEnabled)
         {
           vehicle.StartActivatePendingPieces();
+        }
+        else if (VehicleManager.VehicleInstances.TryGetValue(parentId, out var vm) && vm != null && vm.PiecesController != null && vm.PiecesController.isActiveAndEnabled)
+        {
+          vm.PiecesController.StartActivatePendingPieces();
         }
       }
 
       if (!skipActivation && isSwivel)
       {
-        if (SwivelComponentBridge.ActiveInstances.TryGetValue(parentId, out var swivel))
+        if (SwivelComponentBridge.ActiveInstances.TryGetValue(parentId, out var swivel) && swivel != null && swivel.isActiveAndEnabled)
         {
           swivel.StartActivatePendingSwivelPieces();
         }
@@ -226,6 +226,16 @@
     {
       var id = GetSwivelParentId(zdo);
       if (id == 0) return false;
+
+      if (SwivelComponentBridge.ActiveInstances.TryGetValue(id, out var activeSwivel) && activeSwivel != null && activeSwivel.isActiveAndEnabled)
+      {
+        var activator = activeSwivel.GetComponent<SwivelPieceActivator>();
+        if (activator != null)
+        {
+          activator.ActivatePiece(netView);
+          return true;
+        }
+      }
 
       var parentObj = ZdoWatchController.Instance.GetGameObject(id);
 
@@ -246,8 +256,22 @@
       var id = VehiclePiecesController.GetParentID(zdo);
       if (id == 0) return false;
 
-      var parentObj = ZdoWatchController.Instance.GetGameObject(id);
+      // 1. Direct active instance lookup - if pieces controller is already active in memory, activate piece immediately
+      if (VehiclePiecesController.ActiveInstances.TryGetValue(id, out var activeController) && activeController != null && activeController.isActiveAndEnabled && !activeController.IsInvalid())
+      {
+        activeController.ActivatePiece(netView);
+        return true;
+      }
 
+      // 2. Direct vehicle manager lookup
+      if (VehicleManager.VehicleInstances.TryGetValue(id, out var vm) && vm != null && vm.PiecesController != null && vm.PiecesController.isActiveAndEnabled && !vm.PiecesController.IsInvalid())
+      {
+        vm.PiecesController.ActivatePiece(netView);
+        return true;
+      }
+
+      // 3. Fallback to ZdoWatchController GameObject resolution
+      var parentObj = ZdoWatchController.Instance.GetGameObject(id);
       var vehicleBaseController = parentObj == null ? null : parentObj.GetComponent<VehicleManager>();
       if (vehicleBaseController != null && vehicleBaseController.PiecesController != null)
       {
