@@ -1,8 +1,8 @@
-# ValheimRAFT v4.3.2 (Valheim 1.0.12 Compatibility & Polish Update)
+# ValheimRAFT v4.3.3 (Valheim 1.0.12 Compatibility & Polish Update)
 
 **ValheimRAFT** build custom movable rafts ships and movable bases in Valheim. Expand your vessels with standard building pieces, drop anchors, navigate the open seas, and take flight!
 
-> Maintained by **[JNDEV0](https://github.com/JNDEV0)** to update ValheimRAFT for **Valheim 1.0.12**, **[ValheimModding-Jotunn-2.30.0+](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)**, and **[denikson-BepInExPack_Valheim-5.4.2350+](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)**.
+> Update ValheimRAFT for **Valheim 1.0.12**, **[ValheimModding-Jotunn-2.30.0+](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)**, and **[denikson-BepInExPack_Valheim-5.4.2350+](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)**.
 
 ---
 
