@@ -33,11 +33,12 @@ public class ZdoWatcherPlugin : BaseUnityPlugin
     _harmony.PatchAll(typeof(ZDOMan_Patch));
 
 
-    if (ZdoWatcherConfig.GuardAgainstInvalidZNetSceneSpam != null &&
-        ZdoWatcherConfig.GuardAgainstInvalidZNetSceneSpam.Value)
-    {
-      _harmony.PatchAll(typeof(InvalidZNetScenePatch));
-    }
+    // Disabled: Conflicts with ValheimVehicles.Patches.ZNetScene_Patch
+    // if (ZdoWatcherConfig.GuardAgainstInvalidZNetSceneSpam != null &&
+    //     ZdoWatcherConfig.GuardAgainstInvalidZNetSceneSpam.Value)
+    // {
+    //   _harmony.PatchAll(typeof(InvalidZNetScenePatch));
+    // }
 
     ZdoWatchController.Instance = gameObject.AddComponent<ZdoWatchController>();
   }

@@ -8,6 +8,7 @@
   using ValheimVehicles.Integrations;
   using ValheimVehicles.Shared.Constants;
   using Zolantris.Shared;
+  using ZdoWatcher;
 
 #endregion
 
@@ -145,9 +146,37 @@
 
       if (parentPersistentId == 0)
       {
+        if (ZdoWatchController.GetPersistentID(zdo, out var persistentVehicleId) && persistentVehicleId != 0)
+        {
+          if (VehiclePiecesController.ActiveInstances.TryGetValue(persistentVehicleId, out var controller) && controller != null && controller.isActiveAndEnabled)
+          {
+            if (Player.m_localPlayer != null)
+            {
+              if (controller.Manager != null && controller.Manager.OnboardController != null &&
+                  controller.Manager.OnboardController.m_localPlayers.Contains(Player.m_localPlayer))
+              {
+                return true;
+              }
+              if (controller.MovementController != null && controller.MovementController.HaveControllingPlayer())
+              {
+                return true;
+              }
+              var vehPos = controller.m_syncRigidbody != null ? controller.m_syncRigidbody.position : zdo.GetPosition();
+              if (Vector3.Distance(Player.m_localPlayer.transform.position, vehPos) < 150f)
+              {
+                return true;
+              }
+            }
+          }
+        }
+
         var swivelPersistentId = zdo.GetInt(VehicleZdoVars.SwivelParentId, 0);
-        VehiclePiecesController.VehicleParentIdCache[zdo] = swivelPersistentId;
-        return IsSwivelParentActive(swivelPersistentId);
+        if (swivelPersistentId != 0)
+        {
+          VehiclePiecesController.VehicleParentIdCache[zdo] = swivelPersistentId;
+          return IsSwivelParentActive(swivelPersistentId);
+        }
+        return false;
       }
 
       VehiclePiecesController.VehicleParentIdCache[zdo] = parentPersistentId;

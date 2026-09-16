@@ -428,7 +428,7 @@
 
       if (totalTime.ElapsedMilliseconds < 500)
       {
-        yield return new WaitForSeconds(1000f - totalTime.ElapsedMilliseconds);
+        yield return new WaitForSeconds(Mathf.Clamp((1000f - totalTime.ElapsedMilliseconds) / 1000f, 0.1f, 1f));
       }
 
       yield return null;
@@ -1266,11 +1266,8 @@
     {
       foreach (var mBedPiece in m_bedPieces)
       {
-        if (mBedPiece.m_nview == null) continue;
-        if (mBedPiece.m_nview.m_zdo == null) continue;
-        var zdoPosition = mBedPiece.m_nview.m_zdo.GetPosition();
-        if (zdoPosition == mBedPiece.m_spawnPoint.position) continue;
-        mBedPiece.m_spawnPoint.position = zdoPosition;
+        if (mBedPiece == null || mBedPiece.m_nview == null || mBedPiece.m_nview.m_zdo == null) continue;
+        UpdateBedPiece(mBedPiece);
       }
     }
 
@@ -1507,6 +1504,10 @@
       if (IsDedicatedServerInstance()) return;
       Client_UpdateAllPieces();
       UpdateBedPieces();
+      if (m_syncRigidbody != null)
+      {
+        SyncVehiclePortals(m_syncRigidbody.position);
+      }
     }
 
     /// <summary>
@@ -1567,7 +1568,21 @@
     {
       var bedNetView = mBedPiece.m_nview;
       if (!bedNetView) return;
-      bedNetView.GetZDO()?.SetPosition(mBedPiece.m_nview.transform.position);
+      var spawnPos = mBedPiece.GetSpawnPoint();
+      bedNetView.GetZDO()?.SetPosition(spawnPos);
+
+      if (Game.instance != null && Player.m_localPlayer != null)
+      {
+        var profile = Game.instance.GetPlayerProfile();
+        if (profile != null)
+        {
+          var currentSpawn = profile.GetCustomSpawnPoint();
+          if (Vector3.Distance(currentSpawn, spawnPos) < 4f || (mBedPiece.IsCurrent() && currentSpawn != spawnPos))
+          {
+            profile.SetCustomSpawnPoint(spawnPos);
+          }
+        }
+      }
     }
 
     /// <summary>
@@ -1589,10 +1604,17 @@
         return null;
       }
 
+      if (ZdoWatchController.GetPersistentID(zdo, out var vehicleId) && vehicleId != 0 &&
+          VehiclePiecesController.ActiveInstances.TryGetValue(vehicleId, out var controller) &&
+          controller != null && controller.m_syncRigidbody != null)
+      {
+        return controller.m_syncRigidbody.position;
+      }
+
       if (IsPlayerOwner(zdo))
       {
         var netView = ZNetScene.instance.FindInstance(zdo);
-        if (netView)
+        if (netView && netView.m_body)
         {
           return netView.m_body.position;
         }
@@ -1608,7 +1630,7 @@
     public void ForceUpdateAllPiecePositions()
     {
       if (!m_nview) return;
-      var position = GetVehiclePosition(m_nview.GetZDO());
+      var position = m_syncRigidbody != null ? m_syncRigidbody.position : GetVehiclePosition(m_nview.GetZDO());
       if (!position.HasValue) return;
       ForceUpdateAllPiecePositions(position.Value);
     }
@@ -1659,17 +1681,37 @@
 
         // NOTE: this might be a heavy task (alternatively we could use local dictionary)
         var nv = ZNetScene.instance.FindInstance(zdo);
-        if (nv && m_prefabPieceDataItems.TryGetValue(nv.gameObject, out var prefabPieceData))
+        if (nv)
         {
-          if (prefabPieceData.IsBed)
+          if (nv.GetComponent<TeleportWorld>() != null)
           {
-            UpdatePieceZdoPosition(zdo, vehiclePosition, prefabPieceData.IsBed);
+            var portalPos = nv.transform.position;
+            zdo.SetPosition(portalPos);
+            if (!m_portals.Contains(nv))
+            {
+              m_portals.Add(nv);
+            }
             continue;
           }
-          if (prefabPieceData.IsSwivelChild && TrySetSwivelPiecePosition(nv))
+
+          if (m_prefabPieceDataItems.TryGetValue(nv.gameObject, out var prefabPieceData))
           {
-            continue;
+            if (prefabPieceData.IsBed)
+            {
+              UpdatePieceZdoPosition(zdo, vehiclePosition, prefabPieceData.IsBed);
+              continue;
+            }
+            if (prefabPieceData.IsSwivelChild && TrySetSwivelPiecePosition(nv))
+            {
+              continue;
+            }
           }
+        }
+        else if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal) != ZDOID.None)
+        {
+          var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          zdo.SetPosition(vehiclePosition + transform.TransformDirection(pieceOffset));
+          continue;
         }
 
         SetPrefabWorldPosition(zdo, vehiclePosition);
@@ -1687,6 +1729,17 @@
         var nv = ZNetScene.instance.FindInstance(zdo);
         if (nv)
         {
+          if (nv.GetComponent<TeleportWorld>() != null)
+          {
+            var portalPos = nv.transform.position;
+            zdo.SetPosition(portalPos);
+            if (!m_portals.Contains(nv))
+            {
+              m_portals.Add(nv);
+            }
+            continue;
+          }
+
           if (m_prefabPieceDataItems.TryGetValue(nv.gameObject, out var prefabPieceData))
           {
             if (prefabPieceData.IsBed)
@@ -1704,6 +1757,12 @@
             LoggerProvider.LogDevDebounced($"SwivelComponent piece not in vehicle pieces {nv.name}");
           }
         }
+        else if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal) != ZDOID.None)
+        {
+          var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          zdo.SetPosition(vehiclePosition + transform.TransformDirection(pieceOffset));
+          continue;
+        }
 
         SetPrefabWorldPosition(zdo, vehiclePosition);
       }
@@ -1719,6 +1778,47 @@
               $"invalid zdo found during ForceUpdateAllPiecePositions for piece {netViewToRemove.name}");
             m_pieces.Remove(netViewToRemove);
           }
+        }
+      }
+
+      SyncVehiclePortals(vehiclePosition);
+    }
+
+    public void SyncVehiclePortals(Vector3 vehiclePosition)
+    {
+      if (m_portals == null || m_portals.Count == 0 || ZDOMan.instance == null) return;
+      var portalObjects = ZDOMan.instance.GetPortals();
+      if (portalObjects == null) return;
+
+      for (var i = m_portals.Count - 1; i >= 0; i--)
+      {
+        var portalNv = m_portals[i];
+        if (portalNv == null || !portalNv.IsValid()) continue;
+        var zdo = portalNv.GetZDO();
+        if (zdo == null || !zdo.IsValid()) continue;
+
+        var portalWorldPos = portalNv.transform.position;
+        zdo.SetPosition(portalWorldPos);
+
+        var currentSector = zdo.GetSectorIndex();
+        var newSector = ZoneSystem.GetSectorIndex(portalWorldPos);
+        if (currentSector != newSector)
+        {
+          if (portalObjects.TryGetValue(currentSector, out var oldList))
+          {
+            oldList.Remove(zdo);
+            if (oldList.Count == 0) portalObjects.Remove(currentSector);
+          }
+          if (!portalObjects.TryGetValue(newSector, out var newList))
+          {
+            newList = new List<ZDO>();
+            portalObjects[newSector] = newList;
+          }
+          if (!newList.Contains(zdo))
+          {
+            newList.Add(zdo);
+          }
+          ZDOMan.instance.SetDirtyPortals();
         }
       }
     }
@@ -3103,6 +3203,25 @@
       {
         RemoveVehicleDataFromZdo(netView.m_zdo);
         return;
+      }
+
+      // Check if this is an orphaned land portal mistakenly parented to this vehicle
+      var portal = netView.GetComponent<TeleportWorld>();
+      if (portal != null)
+      {
+        var worldPos = netView.transform.position;
+        if (Physics.Raycast(worldPos + Vector3.up * 0.5f, Vector3.down, out var gHit, 3f, LayerHelpers.GroundLayers))
+        {
+          if (gHit.collider.GetComponent<Heightmap>() != null && gHit.collider.GetComponentInParent<IPieceController>() == null)
+          {
+            LoggerProvider.LogWarning($"[Auto-Fix] Land Portal {netView.name} (ZDO: {zdo.m_uid}) was mistakenly parented to vehicle. Restoring as independent land portal.");
+            RemoveVehicleDataFromZdo(netView.m_zdo);
+            netView.transform.SetParent(null);
+            zdo.SetPosition(worldPos);
+            zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
+            return;
+          }
+        }
       }
 
       TrySetPieceToParent(netView);

@@ -90,6 +90,7 @@ namespace ValheimVehicles.Shared.Constants
     public const string VehicleIsTeleporting = "VehicleIsTeleporting";
 
     public const string VehicleChunkBounds = "VehicleChunkBounds";
+    public const string VehicleFlightMode = "ValheimVehicles_VehicleFlightMode";
 
     public static readonly int VehicleTargetHeight =
       "VehicleTargetHeight".GetStableHashCode();

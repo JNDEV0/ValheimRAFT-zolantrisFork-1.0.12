@@ -821,12 +821,21 @@
       if (!(bool)m_nview || m_nview.GetZDO() == null || m_nview.m_ghost ||
           PiecesController == null ||
           !isActiveAndEnabled) return;
-      var position = transform.position;
 
-      var sector = ZoneSystem.GetSectorIndex(position);
       var zdo = m_nview.GetZDO();
+      if (!zdo.IsValid()) return;
 
-      zdo.SetPosition(PiecesController.m_localRigidbody.worldCenterOfMass);
+      if ((!zdo.HasOwner() || (MovementController != null && MovementController.HaveControllingPlayer())) && !zdo.IsOwner())
+      {
+        m_nview.ClaimOwnership();
+      }
+
+      var pos = PiecesController.m_syncRigidbody != null ? PiecesController.m_syncRigidbody.position : transform.position;
+      var rot = PiecesController.m_syncRigidbody != null ? PiecesController.m_syncRigidbody.rotation : transform.rotation;
+      var sector = ZoneSystem.GetSectorIndex(pos);
+
+      zdo.SetPosition(pos);
+      zdo.SetRotation(rot);
       zdo.SetSector(sector);
     }
 

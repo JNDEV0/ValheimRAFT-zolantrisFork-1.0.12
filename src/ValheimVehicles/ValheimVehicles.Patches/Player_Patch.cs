@@ -185,9 +185,30 @@
       var pieceController = PatchSharedData.PlayerLastRayPiece.GetComponentInParent<IPieceController>();
       if (pieceController != null)
       {
+        // Safety check 1: ensure placed piece is within reasonable placement distance of the raycast piece (< 12m).
+        var dist = Vector3.Distance(gameObject.transform.position, PatchSharedData.PlayerLastRayPiece.transform.position);
+        if (dist > 12f)
+        {
+          PatchSharedData.PlayerLastRayPiece = null;
+          TryFixPieceOverlap(gameObject);
+          return gameObject;
+        }
+
+        // Safety check 2: if placed directly on world terrain/ground outside vehicle, do not parent to vehicle.
+        if (Physics.Raycast(gameObject.transform.position + Vector3.up * 0.5f, Vector3.down, out var groundHit, 2f, LayerHelpers.GroundLayers))
+        {
+          if (groundHit.collider.GetComponent<Heightmap>() != null && groundHit.collider.GetComponentInParent<IPieceController>() == null)
+          {
+            PatchSharedData.PlayerLastRayPiece = null;
+            TryFixPieceOverlap(gameObject);
+            return gameObject;
+          }
+        }
+
         if (gameObject.name.StartsWith(PrefabNames.CustomWaterFloatation))
         {
           pieceController.AddCustomPiece(gameObject);
+          PatchSharedData.PlayerLastRayPiece = null;
           return gameObject;
         }
 
@@ -202,9 +223,11 @@
           TryFixPieceOverlap(gameObject);
         }
 
+        PatchSharedData.PlayerLastRayPiece = null;
         return gameObject;
       }
 
+      PatchSharedData.PlayerLastRayPiece = null;
       TryFixPieceOverlap(gameObject);
 
       return gameObject;

@@ -1,3 +1,4 @@
+using ValheimVehicles.Shared.Constants;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,9 +31,27 @@ public class Teleport_Patch
         .Portal));
     if (zDO == null) return;
 
+    var parentId = zDO.GetInt(VehicleZdoVars.MBParentId, 0);
     var nv = ZNetScene.instance.FindInstance(zDO);
     var position = nv ? nv.transform.position : zDO.GetPosition();
     var rotation = nv ? nv.transform.rotation : zDO.GetRotation();
+
+    // If destination portal is on a vehicle and not loaded locally yet, compute current vehicle world coords
+    if (parentId != 0 && nv == null)
+    {
+      var vehicleZdo = ZDOMan.instance.GetZDO(new ZDOID(zDO.m_uid.UserID, (uint)parentId))
+                    ?? ZDOMan.instance.GetZDO(new ZDOID(1, (uint)parentId));
+      if (vehicleZdo != null)
+      {
+        var vPos = vehicleZdo.GetPosition();
+        var vRot = vehicleZdo.GetRotation();
+        var localPos = zDO.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+        var localRot = Quaternion.Euler(zDO.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+        position = vPos + vRot * localPos;
+        rotation = vRot * localRot;
+      }
+    }
+
     var vector = rotation * Vector3.forward;
     var pos = position + vector * __instance.m_exitDistance + Vector3.up;
     var playerGo = ZNetScene.instance.FindInstance(playerId);
@@ -136,6 +155,17 @@ public class Teleport_Patch
       yield break;
     }
 
+    // If destination portal is on land (no vehicle parent), vanilla Valheim has already placed
+    // the player properly at the portal once floor was found. We must not run a 10s wait
+    // or poke zones or fall back to stale coordinates.
+    var parentId = zdo.GetInt(VehicleZdoVars.MBParentId, 0);
+    if (parentId == 0)
+    {
+      __instance.m_teleporting = false;
+      m_teleportTarget.Remove(__instance);
+      yield break;
+    }
+
     ZNetView? go = null;
     var zoneId = ZoneSystem.GetZone(zdo.m_position);
     var startTime = Time.time;
@@ -145,7 +175,7 @@ public class Teleport_Patch
     {
       if (Time.time - startTime > timeout)
       {
-        Jotunn.Logger.LogWarning($"DebouncedTeleportCoordinateUpdater: Timed out waiting for portal instance {zdoid}. Falling back to ZDO position.");
+        Jotunn.Logger.LogWarning($"DebouncedTeleportCoordinateUpdater: Timed out waiting for portal instance {zdoid}.");
         break;
       }
       go = ZNetScene.instance.FindInstance(zdo);
@@ -167,10 +197,6 @@ public class Teleport_Patch
 
       var teleportPosition = GetTeleportPosition(go.gameObject);
       __instance.transform.position = teleportPosition;
-    }
-    else
-    {
-      __instance.transform.position = zdo.m_position + Vector3.up;
     }
 
     __instance.m_teleporting = false;

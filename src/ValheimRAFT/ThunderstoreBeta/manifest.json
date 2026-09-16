@@ -1,6 +1,6 @@
 {
   "name": "ValheimRAFT",
-  "version_number": "4.3.2",
+  "version_number": "4.3.3",
   "website_url": "https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12",
   "description": "ValheimRAFT - Build custom rafts, ships, and vehicles with physics, sailing, and flight. Updated and fixed for Valheim 1.0.12 (Unity 6).",
   "dependencies": [
