@@ -52,6 +52,7 @@ public static class PatchController
       typeof(RPCManager_Patches),
       typeof(Humanoid_EquipPatch),
       typeof(Container_Patches),
+      typeof(VehicleOwnership_Patches),
       typeof(ZNet_WorldSession_Patches)
     );
 

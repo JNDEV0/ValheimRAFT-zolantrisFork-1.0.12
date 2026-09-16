@@ -1,3 +1,4 @@
+using ValheimVehicles.Controllers;
 using ValheimVehicles.Shared.Constants;
 using System.Collections;
 using System.Collections.Generic;
@@ -53,7 +54,8 @@ public class Teleport_Patch
     }
 
     var vector = rotation * Vector3.forward;
-    var pos = position + vector * __instance.m_exitDistance + Vector3.up;
+    var exitDistance = Mathf.Max(__instance.m_exitDistance, 1.6f);
+    var pos = position + vector * exitDistance + Vector3.up * 0.2f;
     var playerGo = ZNetScene.instance.FindInstance(playerId);
     if (!(bool)playerGo) return;
 
@@ -99,6 +101,109 @@ public class Teleport_Patch
   }
 
   [HarmonyPatch(typeof(Player), "UpdateTeleport")]
+  [HarmonyPrefix]
+  public static bool Player_UpdateTeleport_Prefix(Player __instance, float dt)
+  {
+    if (!__instance.m_teleporting)
+    {
+      return true;
+    }
+
+    if (!m_teleportTarget.TryGetValue(__instance, out var targetZdoid))
+    {
+      return true;
+    }
+
+    var targetZdo = ZDOMan.instance != null ? ZDOMan.instance.GetZDO(targetZdoid) : null;
+    var parentId = targetZdo != null ? targetZdo.GetInt(VehicleZdoVars.MBParentId, 0) : 0;
+    if (parentId == 0)
+    {
+      return true;
+    }
+
+    // Specific handler for vehicle portals to prevent infinite hang on FindFloor or distant zone loading
+    __instance.m_teleportCooldown = 0f;
+    __instance.m_teleportTimer += dt;
+    if (__instance.m_teleportTimer <= 2f)
+    {
+      return false;
+    }
+
+    var targetPos = GetTeleportTargetPos(__instance);
+    var targetRot = __instance.m_teleportTargetRot;
+    var nv = ZNetScene.instance != null ? ZNetScene.instance.FindInstance(targetZdoid) : null;
+    if (nv != null)
+    {
+      targetRot = nv.transform.rotation;
+    }
+    else if (targetZdo != null)
+    {
+      var vehicleZdo = ZDOMan.instance.GetZDO(new ZDOID(targetZdo.m_uid.UserID, (uint)parentId))
+                    ?? ZDOMan.instance.GetZDO(new ZDOID(1, (uint)parentId));
+      if (vehicleZdo != null)
+      {
+        var vRot = vehicleZdo.GetRotation();
+        var localRot = Quaternion.Euler(targetZdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+        targetRot = vRot * localRot;
+      }
+    }
+
+    var dir = targetRot * Vector3.forward;
+    __instance.transform.position = targetPos;
+    __instance.transform.rotation = targetRot;
+    if (__instance.m_body != null)
+    {
+      __instance.m_body.linearVelocity = Vector3.zero;
+    }
+    __instance.m_maxAirAltitude = targetPos.y;
+    if (EnvMan.instance != null)
+    {
+      EnvMan.instance.ForceInstantEnvironmentSwitch();
+    }
+    __instance.SetLookDir(dir);
+
+    var zone = ZoneSystem.GetZone(targetPos);
+    if (ZoneSystem.instance != null && !ZoneSystem.instance.IsZoneLoaded(zone))
+    {
+      ZoneSystem.instance.PokeLocalZone(zone);
+      return false;
+    }
+
+    var areaReady = (ZNetScene.instance != null && ZNetScene.instance.IsAreaReady(targetPos)) || __instance.m_teleportTimer > 4f;
+    if (!areaReady)
+    {
+      return false;
+    }
+
+    // Floor placement: check FindFloor, fallback to targetPos on deck if missed
+    if (ZoneSystem.instance != null && ZoneSystem.instance.FindFloor(targetPos, out var floorHeight))
+    {
+      __instance.transform.position = new Vector3(targetPos.x, Mathf.Max(targetPos.y, floorHeight), targetPos.z);
+    }
+    else
+    {
+      __instance.transform.position = targetPos;
+    }
+
+    __instance.m_teleportTimer = 0f;
+    __instance.m_teleporting = false;
+    __instance.ResetCloth();
+    m_teleportTarget.Remove(__instance);
+
+    if (nv != null)
+    {
+      var controller = nv.GetComponentInParent<VehiclePiecesController>();
+      if (controller != null && controller.Manager != null && controller.Manager.OnboardController != null)
+      {
+        controller.Manager.OnboardController.AddPlayerToLocalShip(__instance);
+        controller.Manager.OnboardController.AddCharacter(__instance);
+      }
+    }
+
+    return false;
+  }
+
+  [HarmonyPatch(typeof(Player), "UpdateTeleport")]
   [HarmonyTranspiler]
   public static IEnumerable<CodeInstruction> Player_UpdateTeleport(
     IEnumerable<CodeInstruction> instructions)
@@ -137,10 +242,9 @@ public class Teleport_Patch
     var tp = go.GetComponent<TeleportWorld>();
 
     if ((bool)tp)
-      return tp.transform.position + tp.transform.forward * tp.m_exitDistance +
-             Vector3.up;
+      return tp.transform.position + tp.transform.forward * 1.6f + Vector3.up * 0.2f;
 
-    return go.transform.position;
+    return go.transform.position + go.transform.forward * 1.6f + Vector3.up * 0.2f;
   }
 
   private static IEnumerator DebouncedTeleportCoordinateUpdater(

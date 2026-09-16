@@ -25,6 +25,7 @@ public static class VehicleOwnership_Patches
       if (zdo != null)
       {
         if (zdo.GetInt(VehicleZdoVars.MBParentId, 0) != 0) return true;
+        if (zdo.GetInt(VehicleZdoVars.TempPieceParentId, 0) != 0) return true;
         if (ZdoWatchController.GetPersistentID(zdo, out var pId) &&
             (VehicleManager.VehicleInstances.ContainsKey(pId) || VehiclePiecesController.ActiveInstances.ContainsKey(pId)))
           return true;
@@ -32,13 +33,26 @@ public static class VehicleOwnership_Patches
       }
     }
 
-    return go.GetComponentInParent<VehicleManager>() != null ||
-           go.GetComponentInParent<VehiclePiecesController>() != null;
+    if (go.GetComponentInParent<VehicleManager>() != null ||
+        go.GetComponentInParent<VehiclePiecesController>() != null)
+      return true;
+
+    // Check if the object is physically within any active vehicle's deck bounds
+    foreach (var controller in VehiclePiecesController.ActiveInstances.Values)
+    {
+      if (controller != null && controller.isActiveAndEnabled && controller.OnboardCollider != null)
+      {
+        if (controller.OnboardCollider.bounds.Contains(go.transform.position))
+          return true;
+      }
+    }
+
+    return false;
   }
 
-  [HarmonyPatch(typeof(Container), "CheckAccess")]
+  [HarmonyPatch(typeof(Container), "CheckAccess", typeof(long))]
   [HarmonyPrefix]
-  public static bool Container_CheckAccess(Container __instance, ref bool __result)
+  public static bool Container_CheckAccess(Container __instance, long playerID, ref bool __result)
   {
     if (IsVehiclePiece(__instance.gameObject))
     {

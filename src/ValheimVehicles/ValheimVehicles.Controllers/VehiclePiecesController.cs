@@ -1710,7 +1710,9 @@
         else if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal) != ZDOID.None)
         {
           var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-          zdo.SetPosition(vehiclePosition + transform.TransformDirection(pieceOffset));
+          var portalWorldPos = vehiclePosition + transform.TransformDirection(pieceOffset);
+          zdo.SetPosition(portalWorldPos);
+          zdo.SetSector(ZoneSystem.GetSectorIndex(portalWorldPos));
           continue;
         }
 
@@ -1760,7 +1762,9 @@
         else if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal) != ZDOID.None)
         {
           var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-          zdo.SetPosition(vehiclePosition + transform.TransformDirection(pieceOffset));
+          var portalWorldPos = vehiclePosition + transform.TransformDirection(pieceOffset);
+          zdo.SetPosition(portalWorldPos);
+          zdo.SetSector(ZoneSystem.GetSectorIndex(portalWorldPos));
           continue;
         }
 
@@ -1798,17 +1802,26 @@
         if (zdo == null || !zdo.IsValid()) continue;
 
         var portalWorldPos = portalNv.transform.position;
-        zdo.SetPosition(portalWorldPos);
-
-        var currentSector = zdo.GetSectorIndex();
         var newSector = ZoneSystem.GetSectorIndex(portalWorldPos);
-        if (currentSector != newSector)
+
+        // Ensure portal is correctly indexed in ZDOMan's portalObjects by current sector
+        if (!portalObjects.TryGetValue(newSector, out var currentSectorList) || !currentSectorList.Contains(zdo))
         {
-          if (portalObjects.TryGetValue(currentSector, out var oldList))
+          // Find and remove from any old/stale sector
+          foreach (var kvp in portalObjects)
           {
-            oldList.Remove(zdo);
-            if (oldList.Count == 0) portalObjects.Remove(currentSector);
+            if (kvp.Value.Contains(zdo))
+            {
+              kvp.Value.Remove(zdo);
+              if (kvp.Value.Count == 0)
+              {
+                portalObjects.Remove(kvp.Key);
+              }
+              break;
+            }
           }
+
+          // Register under the new active sector
           if (!portalObjects.TryGetValue(newSector, out var newList))
           {
             newList = new List<ZDO>();
@@ -1820,6 +1833,9 @@
           }
           ZDOMan.instance.SetDirtyPortals();
         }
+
+        zdo.SetPosition(portalWorldPos);
+        zdo.SetSector(newSector);
       }
     }
 
@@ -3209,17 +3225,25 @@
       var portal = netView.GetComponent<TeleportWorld>();
       if (portal != null)
       {
+        var localPos = netView.m_zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
         var worldPos = netView.transform.position;
-        if (Physics.Raycast(worldPos + Vector3.up * 0.5f, Vector3.down, out var gHit, 3f, LayerHelpers.GroundLayers))
+        var isWithinShip = OnboardCollider != null && OnboardCollider.bounds.Contains(worldPos);
+        var isFarFromShip = Vector3.Distance(worldPos, transform.position) > 35f;
+
+        // Only unparent if it has no valid local vehicle coordinate, is outside ship bounds, and sitting directly on terrain
+        if (isFarFromShip && !isWithinShip && localPos == Vector3.zero)
         {
-          if (gHit.collider.GetComponent<Heightmap>() != null && gHit.collider.GetComponentInParent<IPieceController>() == null)
+          if (Physics.Raycast(worldPos + Vector3.up * 0.5f, Vector3.down, out var gHit, 3f, LayerHelpers.GroundLayers))
           {
-            LoggerProvider.LogWarning($"[Auto-Fix] Land Portal {netView.name} (ZDO: {zdo.m_uid}) was mistakenly parented to vehicle. Restoring as independent land portal.");
-            RemoveVehicleDataFromZdo(netView.m_zdo);
-            netView.transform.SetParent(null);
-            zdo.SetPosition(worldPos);
-            zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
-            return;
+            if (gHit.collider.GetComponent<Heightmap>() != null && gHit.collider.GetComponentInParent<IPieceController>() == null)
+            {
+              LoggerProvider.LogWarning($"[Auto-Fix] Land Portal {netView.name} (ZDO: {zdo.m_uid}) was mistakenly parented to vehicle. Restoring as independent land portal.");
+              RemoveVehicleDataFromZdo(netView.m_zdo);
+              netView.transform.SetParent(null);
+              zdo.SetPosition(worldPos);
+              zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
+              return;
+            }
           }
         }
       }
