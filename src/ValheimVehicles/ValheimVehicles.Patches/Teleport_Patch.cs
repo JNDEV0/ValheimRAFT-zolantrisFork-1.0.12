@@ -1,5 +1,7 @@
 using ValheimVehicles.Controllers;
 using ValheimVehicles.Shared.Constants;
+using ValheimVehicles.SharedScripts;
+using ValheimVehicles.Components;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,19 +39,43 @@ public class Teleport_Patch
     var position = nv ? nv.transform.position : zDO.GetPosition();
     var rotation = nv ? nv.transform.rotation : zDO.GetRotation();
 
-    // If destination portal is on a vehicle and not loaded locally yet, compute current vehicle world coords
-    if (parentId != 0 && nv == null)
+    // If destination portal is on a vehicle, check debug force anchor failsafe
+    if (parentId != 0)
     {
       var vehicleZdo = ZDOMan.instance.GetZDO(new ZDOID(zDO.m_uid.UserID, (uint)parentId))
                     ?? ZDOMan.instance.GetZDO(new ZDOID(1, (uint)parentId));
       if (vehicleZdo != null)
       {
-        var vPos = vehicleZdo.GetPosition();
-        var vRot = vehicleZdo.GetRotation();
-        var localPos = zDO.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-        var localRot = Quaternion.Euler(zDO.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
-        position = vPos + vRot * localPos;
-        rotation = vRot * localRot;
+        var vNv = ZNetScene.instance ? ZNetScene.instance.FindInstance(vehicleZdo) : null;
+        var vmc = vNv ? vNv.GetComponentInChildren<VehicleMovementController>() : null;
+        var shouldForceAnchor = vehicleZdo.GetBool(VehicleZdoVars.ForceAnchorOnPortalTeleport, false);
+        if (!shouldForceAnchor && vmc != null)
+        {
+          shouldForceAnchor = vmc.ShouldForceAnchorOnPortalTeleport();
+        }
+
+        if (shouldForceAnchor)
+        {
+          if (vmc != null)
+          {
+            vmc.TriggerForceAnchorTeleportAlert();
+          }
+          else
+          {
+            vehicleZdo.Set(VehicleZdoVars.VehicleAnchorState, (int)AnchorState.Anchored);
+            vehicleZdo.Set(ZDOVars.s_forward, 0);
+          }
+        }
+
+        if (nv == null)
+        {
+          var vPos = vehicleZdo.GetPosition();
+          var vRot = vehicleZdo.GetRotation();
+          var localPos = zDO.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          var localRot = Quaternion.Euler(zDO.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+          position = vPos + vRot * localPos;
+          rotation = vRot * localRot;
+        }
       }
     }
 
@@ -145,6 +171,19 @@ public class Teleport_Patch
         var vRot = vehicleZdo.GetRotation();
         var localRot = Quaternion.Euler(targetZdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
         targetRot = vRot * localRot;
+
+        var vNv = ZNetScene.instance != null ? ZNetScene.instance.FindInstance(vehicleZdo) : null;
+        var vmc = vNv ? vNv.GetComponentInChildren<VehicleMovementController>() : null;
+        var shouldForceAnchor = vehicleZdo.GetBool(VehicleZdoVars.ForceAnchorOnPortalTeleport, false);
+        if (!shouldForceAnchor && vmc != null)
+        {
+          shouldForceAnchor = vmc.ShouldForceAnchorOnPortalTeleport();
+        }
+
+        if (shouldForceAnchor && vmc != null && !vmc.isAnchored)
+        {
+          vmc.TriggerForceAnchorTeleportAlert();
+        }
       }
     }
 
@@ -317,5 +356,40 @@ public class Teleport_Patch
     __instance.StopCoroutine(nameof(DebouncedTeleportCoordinateUpdater));
     __instance.StartCoroutine(
       DebouncedTeleportCoordinateUpdater(__instance, isTeleporting, zdoid));
+  }
+
+  [HarmonyPatch(typeof(Game), nameof(Game.SpawnPlayer))]
+  [HarmonyPostfix]
+  public static void Game_SpawnPlayer_Postfix(Game __instance, Player __result)
+  {
+    if (__result == null || Game.instance == null) return;
+    var profile = Game.instance.GetPlayerProfile();
+    if (profile == null) return;
+    var customSpawn = profile.GetCustomSpawnPoint();
+    if (customSpawn == Vector3.zero) return;
+
+    if (VehicleManager.VehicleInstances != null)
+    {
+      foreach (var vm in VehicleManager.VehicleInstances.Values)
+      {
+        if (vm != null && vm.Instance != null && vm.Instance.MovementController != null && vm.Instance.PiecesController != null)
+        {
+          if (vm.Instance.MovementController.ShouldForceAnchorOnBedTeleport())
+          {
+            if (vm.Instance.PiecesController.m_bedPieces != null)
+            {
+              foreach (var b in vm.Instance.PiecesController.m_bedPieces)
+              {
+                if (b != null && Vector3.Distance(b.GetSpawnPoint(), customSpawn) < 5f)
+                {
+                  vm.Instance.MovementController.TriggerForceAnchorTeleportAlert();
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

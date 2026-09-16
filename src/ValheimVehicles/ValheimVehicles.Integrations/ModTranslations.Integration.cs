@@ -98,6 +98,10 @@ public partial class ModTranslations
     MechanismSwitch_CommandsHudText = SafeLocalize(
       "$valheim_vehicles_commands_edit_menu");
     MechanismSwitch_SwitchName = SafeLocalize("$valheim_vehicles_toggle_switch");
+    AnchorAlert_Teleport = SafeLocalize("$valheim_vehicles_anchor_alert_teleport");
+    MechanismSwitch_DebugForceAnchorTitle = SafeLocalize("$valheim_vehicles_debug_force_anchor_title");
+    MechanismSwitch_DebugForceAnchorPortals = SafeLocalize("$valheim_vehicles_debug_force_anchor_portals");
+    MechanismSwitch_DebugForceAnchorBeds = SafeLocalize("$valheim_vehicles_debug_force_anchor_beds");
     MechanismMode_None = SafeLocalize("$valheim_vehicles_mechanism_mode_none");
     MechanismSwitch_CurrentActionString = SafeLocalize(
       "[<color=yellow><b>$KEY_Use</b></color>] $valheim_vehicles_activate");

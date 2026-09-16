@@ -116,6 +116,13 @@ public class DynamicLocationsLoginIntegration : DynamicLoginIntegration
   private bool MovePlayerToBedOnShip(VehicleManager vehicle)
   {
     if (vehicle.PiecesController == null || Player.m_localPlayer == null) return false;
+    if (vehicle.Instance != null && vehicle.Instance.MovementController != null)
+    {
+      if (vehicle.Instance.MovementController.ShouldForceAnchorOnBedTeleport())
+      {
+        vehicle.Instance.MovementController.TriggerForceAnchorTeleportAlert();
+      }
+    }
     var bedPieces = vehicle.PiecesController.GetBedPieces();
     if (bedPieces.Count < 1) return false;
     if (bedPieces.Count == 1)

@@ -7889,6 +7889,7 @@
       // anchor logic
 
       m_nview.Unregister(nameof(RPC_SetAnchor));
+      m_nview.Unregister(nameof(RPC_ForceAnchorTeleportAlert));
 
 
 
@@ -7967,6 +7968,7 @@
       // anchor logic
 
       m_nview.Register<int>(nameof(RPC_SetAnchor), RPC_SetAnchor);
+      m_nview.Register(nameof(RPC_ForceAnchorTeleportAlert), RPC_ForceAnchorTeleportAlert);
 
 
 
@@ -9620,6 +9622,66 @@
 
       SetAnchor(safeAnchorState);
 
+    }
+
+    public bool ShouldForceAnchorOnPortalTeleport()
+    {
+      if (m_nview != null && m_nview.GetZDO() != null && m_nview.GetZDO().GetBool(VehicleZdoVars.ForceAnchorOnPortalTeleport, false))
+        return true;
+      if (PiecesController != null)
+      {
+        var switches = PiecesController.GetComponentsInChildren<MechanismSwitch>();
+        if (switches != null)
+        {
+          foreach (var s in switches)
+          {
+            if (s != null && s.ForceAnchorOnPortalTeleport) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    public bool ShouldForceAnchorOnBedTeleport()
+    {
+      if (m_nview != null && m_nview.GetZDO() != null && m_nview.GetZDO().GetBool(VehicleZdoVars.ForceAnchorOnBedTeleport, false))
+        return true;
+      if (PiecesController != null)
+      {
+        var switches = PiecesController.GetComponentsInChildren<MechanismSwitch>();
+        if (switches != null)
+        {
+          foreach (var s in switches)
+          {
+            if (s != null && s.ForceAnchorOnBedTeleport) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    public void TriggerForceAnchorTeleportAlert()
+    {
+      if (!isAnchored)
+      {
+        SendSetAnchor(AnchorState.Anchored);
+      }
+      ShowWheelHoverMessage("$valheim_vehicles_anchor_alert_teleport");
+
+      if (m_nview != null && m_nview.IsValid())
+      {
+        m_nview.InvokeRPC(ZNetView.Everybody, nameof(RPC_ForceAnchorTeleportAlert));
+      }
+    }
+
+    public void RPC_ForceAnchorTeleportAlert(long sender)
+    {
+      if (!isAnchored)
+      {
+        SetAnchor(AnchorState.Anchored);
+        SendSpeedChange(DirectionChange.Stop);
+      }
+      ShowWheelHoverMessage("$valheim_vehicles_anchor_alert_teleport");
     }
 
 

@@ -250,6 +250,28 @@ namespace ValheimVehicles.SharedScripts.UI
 
       AddOrUpdateSwivelDropdown();
 
+      var forceAnchorTitle = Localization.instance != null ? Localization.instance.Localize("$valheim_vehicles_debug_force_anchor_title") : "Debug: Force Anchor on Teleport";
+      if (string.IsNullOrEmpty(forceAnchorTitle) || forceAnchorTitle.StartsWith("$")) forceAnchorTitle = "Debug: Force Anchor on Teleport";
+
+      var portalLabel = Localization.instance != null ? Localization.instance.Localize("$valheim_vehicles_debug_force_anchor_portals") : "Portals";
+      if (string.IsNullOrEmpty(portalLabel) || portalLabel.StartsWith("$")) portalLabel = "Portals";
+
+      var bedLabel = Localization.instance != null ? Localization.instance.Localize("$valheim_vehicles_debug_force_anchor_beds") : "Beds";
+      if (string.IsNullOrEmpty(bedLabel) || bedLabel.StartsWith("$")) bedLabel = "Beds";
+
+      SwivelUIHelpers.AddMultiToggleRow(panelContent.transform, viewStyles, forceAnchorTitle,
+        new[] { portalLabel, bedLabel },
+        new[] { _currentPanelConfig.ForceAnchorOnPortalTeleport, _currentPanelConfig.ForceAnchorOnBedTeleport },
+        states =>
+        {
+          if (states != null && states.Length >= 2)
+          {
+            _currentPanelConfig.ForceAnchorOnPortalTeleport = states[0];
+            _currentPanelConfig.ForceAnchorOnBedTeleport = states[1];
+            UnsetSavedState();
+          }
+        });
+
       SwivelUIHelpers.AddRowWithButton(panelContent.transform, viewStyles, null, SwivelUIPanelStrings.Save, 96f, 48f, out _saveStatus, () =>
       {
         OnPanelSave();

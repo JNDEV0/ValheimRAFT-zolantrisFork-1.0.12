@@ -68,14 +68,14 @@
   "valheim_vehicles_wheel_use_error": "Wheel not on vehicle",
   "valheim_vehicles_wheel_use_anchor_disable_detail": "To raise Anchor",
   "valheim_vehicles_wheel_use_anchor_enable_detail": "To lower Anchor",
-  "valheim_vehicles_wheel_use_anchored": "anchored",
+  "valheim_vehicles_wheel_use_anchored": "Anchor Dropped",
   "valheim_vehicles_wheel_tutorial_flight": "In flight mode: [Jump] to ascend. [Crouch] to descend.",
   "valheim_vehicles_wheel_flight_controls": "to enable flight",
   "valheim_vehicles_wheel_ballast_controls": "to ballast",
-  "valheim_vehicles_anchor_state_anchored": "Anchored",
+  "valheim_vehicles_anchor_state_anchored": "Anchor Dropped",
   "valheim_vehicles_anchor_state_lowering": "Lowering",
   "valheim_vehicles_anchor_state_reeling": "Reeling",
-  "valheim_vehicles_anchor_state_recovered": "Recovered",
+  "valheim_vehicles_anchor_state_recovered": "Anchor Retrieved",
   "valheim_vehicles_keel": "Ship Keel",
   "valheim_vehicles_keel_desc": "Use the ship keel to carve through the water better when facing the wind. The keel will also extend water effects of the ship's rudder",
   "valheim_vehicles_hull_slab": "Hull Slab",
@@ -360,5 +360,9 @@
   "valheim_vehicles_boundary_mesh_desc": "Vehicle Boundary Mesh allows constraining the boundary of the vehicle within the placed mesh. This will allow any prefab placed to expand until it exceed the area of the boundary.",
   "valheim_vehicles_raise_anchor_first": "Raise anchor first",
   "valheim_vehicles_mode_float": "Float mode",
-  "valheim_vehicles_mode_flight": "Flight mode"
+  "valheim_vehicles_mode_flight": "Flight mode",
+  "valheim_vehicles_anchor_alert_teleport": "Anchored: Player Arriving",
+  "valheim_vehicles_debug_force_anchor_title": "Debug: Force Anchor on Teleport",
+  "valheim_vehicles_debug_force_anchor_portals": "Portals",
+  "valheim_vehicles_debug_force_anchor_beds": "Beds"
 }

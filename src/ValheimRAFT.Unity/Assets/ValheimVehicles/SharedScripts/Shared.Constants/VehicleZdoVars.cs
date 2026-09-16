@@ -30,6 +30,8 @@ namespace ValheimVehicles.Shared.Constants
     public const string VehicleFloatationCustomModeEnabled = "ValheimVehicles_VehicleFloatationCustomModeEnabled";
 
     public const string ToggleSwitchAction = "ValheimVehicles_ToggleSwitchAction";
+    public const string ForceAnchorOnPortalTeleport = "ValheimVehicles_ForceAnchorOnPortalTeleport";
+    public const string ForceAnchorOnBedTeleport = "ValheimVehicles_ForceAnchorOnBedTeleport";
 
     public const string RopeConnections = "MBRopeAnchor_Ropes"; // connection points for the rope prefabs
 

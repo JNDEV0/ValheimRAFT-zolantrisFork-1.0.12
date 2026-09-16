@@ -15,6 +15,8 @@ namespace ValheimVehicles.SharedScripts
     public MechanismAction SelectedAction = MechanismAction.None;
     public int TargetSwivelId = 0;
     public SwivelComponent? TargetSwivel;
+    public bool ForceAnchorOnPortalTeleport = false;
+    public bool ForceAnchorOnBedTeleport = false;
     public MechanismSwitchCustomConfig Config => this;
 
     public void ApplyFrom(IMechanismSwitchConfig component)
@@ -24,6 +26,8 @@ namespace ValheimVehicles.SharedScripts
         ? ZdoWatchController.Instance.GetOrCreatePersistentID(view.GetZDO())
         : 0;
       TargetSwivel = ResolveSwivel(component.TargetSwivelId);
+      ForceAnchorOnPortalTeleport = component.ForceAnchorOnPortalTeleport;
+      ForceAnchorOnBedTeleport = component.ForceAnchorOnBedTeleport;
     }
 
     public int GetStableHashCode()
@@ -33,6 +37,8 @@ namespace ValheimVehicles.SharedScripts
         var hash = 17;
         hash = hash * 31 + SelectedAction.GetHashCode();
         hash = hash * 31 + TargetSwivelId;
+        hash = hash * 31 + (ForceAnchorOnPortalTeleport ? 1 : 0);
+        hash = hash * 31 + (ForceAnchorOnBedTeleport ? 1 : 0);
         return hash;
       }
     }
@@ -42,6 +48,8 @@ namespace ValheimVehicles.SharedScripts
       component.SelectedAction = SelectedAction;
       component.TargetSwivelId = TargetSwivelId;
       component.TargetSwivel = ResolveSwivel(TargetSwivelId);
+      component.ForceAnchorOnPortalTeleport = ForceAnchorOnPortalTeleport;
+      component.ForceAnchorOnBedTeleport = ForceAnchorOnBedTeleport;
     }
 
     public MechanismSwitchCustomConfig Load(ZDO zdo, IMechanismSwitchConfig component, string[]? filterKeys)
@@ -49,7 +57,9 @@ namespace ValheimVehicles.SharedScripts
       return new MechanismSwitchCustomConfig
       {
         SelectedAction = ParseAction(zdo.GetString(VehicleZdoVars.ToggleSwitchAction, nameof(MechanismAction.CommandsHud))),
-        TargetSwivelId = zdo.GetInt(VehicleZdoVars.Mechanism_Swivel_TargetId, 0)
+        TargetSwivelId = zdo.GetInt(VehicleZdoVars.Mechanism_Swivel_TargetId, 0),
+        ForceAnchorOnPortalTeleport = zdo.GetBool(VehicleZdoVars.ForceAnchorOnPortalTeleport, false),
+        ForceAnchorOnBedTeleport = zdo.GetBool(VehicleZdoVars.ForceAnchorOnBedTeleport, false)
       };
     }
 
@@ -57,23 +67,36 @@ namespace ValheimVehicles.SharedScripts
     {
       zdo.Set(VehicleZdoVars.ToggleSwitchAction, config.SelectedAction.ToString());
       zdo.Set(VehicleZdoVars.Mechanism_Swivel_TargetId, config.TargetSwivelId);
+      zdo.Set(VehicleZdoVars.ForceAnchorOnPortalTeleport, config.ForceAnchorOnPortalTeleport);
+      zdo.Set(VehicleZdoVars.ForceAnchorOnBedTeleport, config.ForceAnchorOnBedTeleport);
     }
 
     public void Serialize(ZPackage pkg)
     {
       pkg.Write((int)SelectedAction);
       pkg.Write(TargetSwivelId);
+      pkg.Write(ForceAnchorOnPortalTeleport);
+      pkg.Write(ForceAnchorOnBedTeleport);
     }
 
     public MechanismSwitchCustomConfig Deserialize(ZPackage pkg)
     {
       pkg.SetPos(0); // Always reset read pointer otherwise we start at end and fail.
 
-      return new MechanismSwitchCustomConfig
+      var cfg = new MechanismSwitchCustomConfig
       {
         SelectedAction = (MechanismAction)pkg.ReadInt(),
         TargetSwivelId = pkg.ReadInt()
       };
+      if (pkg.GetPos() < pkg.Size())
+      {
+        cfg.ForceAnchorOnPortalTeleport = pkg.ReadBool();
+      }
+      if (pkg.GetPos() < pkg.Size())
+      {
+        cfg.ForceAnchorOnBedTeleport = pkg.ReadBool();
+      }
+      return cfg;
     }
 
     public static SwivelComponent? ResolveSwivel(int id)
@@ -106,6 +129,18 @@ namespace ValheimVehicles.SharedScripts
       set => TargetSwivelId = value != null && value.TryGetComponent(out ZNetView view) && view.GetZDO() != null
         ? ZdoWatchController.Instance.GetOrCreatePersistentID(view.GetZDO())
         : 0;
+    }
+
+    bool IMechanismSwitchConfig.ForceAnchorOnPortalTeleport
+    {
+      get => ForceAnchorOnPortalTeleport;
+      set => ForceAnchorOnPortalTeleport = value;
+    }
+
+    bool IMechanismSwitchConfig.ForceAnchorOnBedTeleport
+    {
+      get => ForceAnchorOnBedTeleport;
+      set => ForceAnchorOnBedTeleport = value;
     }
   }
 }

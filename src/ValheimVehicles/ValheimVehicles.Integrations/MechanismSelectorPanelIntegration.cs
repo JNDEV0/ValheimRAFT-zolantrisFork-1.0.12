@@ -1,6 +1,8 @@
 using System.Linq;
 using UnityEngine;
 using ValheimVehicles.Components;
+using ValheimVehicles.Controllers;
+using ValheimVehicles.Shared.Constants;
 using ValheimVehicles.BepInExConfig;
 using ValheimVehicles.Constants;
 using ValheimVehicles.Helpers;
@@ -15,7 +17,7 @@ public class MechanismSelectorPanelIntegration : MechanismSelectorPanel
   public Unity2dViewStyles panelStyles = new()
   {
     width = 500,
-    height = 200
+    height = 270
   };
   public Unity2dViewStyles buttonStyles = new()
   {
@@ -41,6 +43,15 @@ public class MechanismSelectorPanelIntegration : MechanismSelectorPanel
     mechanismSwitch.SelectedAction = _currentPanelConfig.SelectedAction;
     mechanismSwitch.TargetSwivelId = _currentPanelConfig.TargetSwivelId;
     mechanismSwitch.TargetSwivel = _currentPanelConfig.TargetSwivel ?? MechanismSwitchCustomConfig.ResolveSwivel(_currentPanelConfig.TargetSwivelId);
+    mechanismSwitch.ForceAnchorOnPortalTeleport = _currentPanelConfig.ForceAnchorOnPortalTeleport;
+    mechanismSwitch.ForceAnchorOnBedTeleport = _currentPanelConfig.ForceAnchorOnBedTeleport;
+
+    var vpc = mechanismSwitch.GetComponentInParent<VehiclePiecesController>();
+    if (vpc != null && vpc.m_nview != null && vpc.m_nview.GetZDO() != null)
+    {
+      vpc.m_nview.GetZDO().Set(VehicleZdoVars.ForceAnchorOnPortalTeleport, _currentPanelConfig.ForceAnchorOnPortalTeleport);
+      vpc.m_nview.GetZDO().Set(VehicleZdoVars.ForceAnchorOnBedTeleport, _currentPanelConfig.ForceAnchorOnBedTeleport);
+    }
 
     mechanismSwitch.prefabConfigSync.Request_CommitConfigChange(saveConfig);
     mechanismSwitch.prefabConfigSync.Load();

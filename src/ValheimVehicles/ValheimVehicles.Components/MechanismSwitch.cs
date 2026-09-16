@@ -91,6 +91,18 @@ public class MechanismSwitch : AnimatedLeverMechanism, IAnimatorHandler, Interac
     set => Config.SelectedAction = value;
   }
 
+  public bool ForceAnchorOnPortalTeleport
+  {
+    get => Config.ForceAnchorOnPortalTeleport;
+    set => Config.ForceAnchorOnPortalTeleport = value;
+  }
+
+  public bool ForceAnchorOnBedTeleport
+  {
+    get => Config.ForceAnchorOnBedTeleport;
+    set => Config.ForceAnchorOnBedTeleport = value;
+  }
+
   public List<SwivelComponent> GetNearestSwivels()
   {
     SwivelHelpers.FindAllSwivelsWithinRange(transform.position, out var nearbySwivels);

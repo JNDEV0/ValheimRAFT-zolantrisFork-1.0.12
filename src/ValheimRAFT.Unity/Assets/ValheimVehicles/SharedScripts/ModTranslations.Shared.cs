@@ -39,6 +39,10 @@ namespace ValheimVehicles.SharedScripts
     public static string MechanismSwitch_CurrentActionString = null!;
     public static string MechanismSwitch_AltActionString = null!;
     public static string MechanismSwitch_AltHoldActionString = null!;
+    public static string AnchorAlert_Teleport = null!;
+    public static string MechanismSwitch_DebugForceAnchorTitle = null!;
+    public static string MechanismSwitch_DebugForceAnchorPortals = null!;
+    public static string MechanismSwitch_DebugForceAnchorBeds = null!;
 
     // modes
     public static string MechanismMode_None = null!;
