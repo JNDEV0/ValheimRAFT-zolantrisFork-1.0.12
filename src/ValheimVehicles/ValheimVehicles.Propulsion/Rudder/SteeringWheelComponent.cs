@@ -101,22 +101,25 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
     if (ControllersInstance.PiecesController == null) return false;
 
     var piecesController = ControllersInstance.PiecesController;
-    var sailArea = piecesController.cachedTotalSailArea;
     var totalMass = piecesController.TotalMass;
     var shipMass = piecesController.ShipMass;
-    var shipPropulsion = piecesController.GetSailingForce();
 
-    var shipMassToPush =
-      PropulsionConfig.SailingMassPercentageFactor.Value;
-    shipStatsText += $"\nsailArea: {sailArea}";
     shipStatsText += $"\ntotalMass: {totalMass}";
     shipStatsText +=
       $"\nshipMass(no-containers): {shipMass}";
 
+    shipStatsText += $"\nraft sails total: {piecesController.numberOfTier1Sails}";
+    shipStatsText += $"\nkarve sails total: {piecesController.numberOfTier2Sails}";
+    if (piecesController.numberOfTier3Sails > 0)
+    {
+      shipStatsText += $"\nlongship sails total: {piecesController.numberOfTier3Sails}";
+    }
+    if (piecesController.numberOfTier4Sails > 0)
+    {
+      shipStatsText += $"\ndrakkar sails total: {piecesController.numberOfTier4Sails}";
+    }
     shipStatsText +=
-      $"\ntotalMassToPush: {shipMassToPush}% * {totalMass} = {totalMass * shipMassToPush / 100f}";
-    shipStatsText +=
-      $"\nshipPropulsion: {shipPropulsion}";
+      $"\ncurrent max propulsion: {piecesController.GetMaxPropulsion():F1}";
 
     /* final formatting */
     shipStatsText = $"<color=white>{shipStatsText}</color>";

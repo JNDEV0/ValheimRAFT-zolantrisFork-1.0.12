@@ -50,6 +50,11 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
   public static ConfigEntry<bool> FlightHasRudderOnly { get; set; }
 
 
+  public static ConfigEntry<float> SailTier1Propulsion { get; set; } = null!;
+  public static ConfigEntry<float> SailTier2Propulsion { get; set; } = null!;
+  public static ConfigEntry<float> SailTier3Propulsion { get; set; } = null!;
+  public static ConfigEntry<float> SailTier4Propulsion { get; set; } = null!;
+
   public static ConfigEntry<float> SailTier1Area { get; set; }
   public static ConfigEntry<float> SailTier2Area { get; set; }
   public static ConfigEntry<float> SailTier3Area { get; set; }
@@ -243,6 +248,26 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
         true, false, new AcceptableValueRange<float>(5f, 50f))
     );
 
+    SailTier1Propulsion = config.BindUnique(GenericSectionName,
+      "SailTier1Propulsion", 3f,
+      ConfigHelpers.CreateConfigDescription(
+        "Flat propulsion added per Raft sail (Tier 1).", true, false));
+
+    SailTier2Propulsion = config.BindUnique(GenericSectionName,
+      "SailTier2Propulsion", 5f,
+      ConfigHelpers.CreateConfigDescription(
+        "Flat propulsion added per Karve sail (Tier 2).", true, false));
+
+    SailTier3Propulsion = config.BindUnique(GenericSectionName,
+      "SailTier3Propulsion", 7f,
+      ConfigHelpers.CreateConfigDescription(
+        "Flat propulsion added per Longship sail (Tier 3).", true, false));
+
+    SailTier4Propulsion = config.BindUnique(GenericSectionName,
+      "SailTier4Propulsion", 9f,
+      ConfigHelpers.CreateConfigDescription(
+        "Flat propulsion added per Drakkar sail (Tier 4).", true, false));
+
     SailTier1Area = config.BindUnique(GenericSectionName,
       "SailTier1Area", SailAreaForce.Tier1,
       ConfigHelpers.CreateConfigDescription(
@@ -304,7 +329,7 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
       ConfigHelpers.CreateConfigDescription(
         "Set the Back speed of rudder, this will not apply sail speed.", true, false, new AcceptableValueRange<float>(2f, 20f)));
     VehicleRudderSpeedSlow = config.BindUnique(PropulsionSpeedSection, "Rudder Slow Speed",
-      5f,
+      10f,
       ConfigHelpers.CreateConfigDescription(
         "Set the Slow speed of rudder, this will not apply sail speed.", true, false, new AcceptableValueRange<float>(2f, 20f)));
     VehicleRudderSpeedHalf = config.BindUnique(PropulsionSpeedSection, "Rudder Half Speed",

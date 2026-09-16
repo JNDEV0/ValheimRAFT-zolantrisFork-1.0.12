@@ -2871,6 +2871,60 @@
       return cachedTotalSailArea;
     }
 
+    public float GetMinPropulsion()
+    {
+      return PropulsionConfig.MinSailSpeed?.Value ?? 10f;
+    }
+
+    public bool HasAnySails()
+    {
+      GetTotalSailArea();
+      return (numberOfTier1Sails + numberOfTier2Sails + numberOfTier3Sails + numberOfTier4Sails) > 0 || customSailsArea > 0f;
+    }
+
+    public float GetSumOfSailPropulsion()
+    {
+      GetTotalSailArea();
+      var tier1Gain = PropulsionConfig.SailTier1Propulsion?.Value ?? 3f;
+      var tier2Gain = PropulsionConfig.SailTier2Propulsion?.Value ?? 5f;
+      var tier3Gain = PropulsionConfig.SailTier3Propulsion?.Value ?? 7f;
+      var tier4Gain = PropulsionConfig.SailTier4Propulsion?.Value ?? 9f;
+      var customMultiplier = PropulsionConfig.SailCustomAreaTier1Multiplier?.Value ?? 1f;
+      var customGain = customSailsArea * customMultiplier;
+
+      return (numberOfTier1Sails * tier1Gain) +
+             (numberOfTier2Sails * tier2Gain) +
+             (numberOfTier3Sails * tier3Gain) +
+             (numberOfTier4Sails * tier4Gain) +
+             customGain;
+    }
+
+    public float GetMaxPropulsion()
+    {
+      return GetMinPropulsion() + GetSumOfSailPropulsion();
+    }
+
+    public float GetPropulsionForSpeed(Ship.Speed speed)
+    {
+      var minProp = GetMinPropulsion();
+      var sailSum = GetSumOfSailPropulsion();
+
+      switch (speed)
+      {
+        case Ship.Speed.Slow:
+          return minProp;
+        case Ship.Speed.Half:
+          return (HasAnySails() ? minProp : 0f) + (sailSum * 0.5f);
+        case Ship.Speed.Full:
+          return (HasAnySails() ? minProp : 0f) + (sailSum * 1.0f);
+        case Ship.Speed.Back:
+          return PropulsionConfig.VehicleRudderSpeedBack?.Value ?? 5f;
+        case Ship.Speed.Stop:
+        default:
+          return 0f;
+      }
+    }
+
     public float GetSailingForce()
     {
       if (cachedSailForce >= 0f)
@@ -2878,23 +2932,12 @@
         return cachedSailForce;
       }
 
-      var area = Mathf.Max(GetTotalSailArea(), 0f);
-      var mpFactor = Mathf.Clamp01(PropulsionConfig.SailingMassPercentageFactor.Value);
-      var speedCapMultiplier =
-        PropulsionConfig.SpeedCapMultiplier.Value;
-      var surfaceArea = speedCapMultiplier * area;
-      var maxSpeed = Mathf.Min(PhysicsConfig.MaxLinearVelocity.Value, PropulsionConfig.MaxSailSpeed.Value);
-      var massToPush = Mathf.Max(1f, TotalMass * mpFactor);
-      var lerpedSailForce = Mathf.Lerp(0f, maxSpeed, Mathf.Clamp01(surfaceArea / massToPush));
+      var maxProp = GetMaxPropulsion();
+      var maxAllowedSpeed = Mathf.Min(PhysicsConfig.MaxLinearVelocity.Value, PropulsionConfig.MaxSailSpeed.Value);
+      var clampedForce = Mathf.Min(maxProp, maxAllowedSpeed);
 
-      if (area > 0f)
-      {
-        var minSpeed = PropulsionConfig.MinSailSpeed?.Value ?? 10f;
-        lerpedSailForce = Mathf.Clamp(Mathf.Max(minSpeed, lerpedSailForce), minSpeed, maxSpeed);
-      }
-
-      cachedSailForce = lerpedSailForce;
-      return lerpedSailForce;
+      cachedSailForce = clampedForce;
+      return clampedForce;
     }
 
     public static void InitZdo(ZDO zdo)

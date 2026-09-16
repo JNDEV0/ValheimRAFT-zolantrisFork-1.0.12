@@ -2928,7 +2928,7 @@
 
           _rudderForce = Mathf.Clamp(
 
-            PropulsionConfig.VehicleRudderSpeedSlow.Value, 0,
+            PiecesController != null ? PiecesController.GetMinPropulsion() : PropulsionConfig.VehicleRudderSpeedSlow.Value, 0,
 
             PhysicsConfig.MaxLinearVelocity.Value);
 
@@ -7066,7 +7066,7 @@
 
 
 
-      return Vector3.ClampMagnitude(m_sailForce, 20f);
+      return Vector3.ClampMagnitude(m_sailForce, Mathf.Min(PhysicsConfig.MaxLinearVelocity.Value, PropulsionConfig.MaxSailSpeed.Value));
 
     }
 
@@ -7499,92 +7499,42 @@
 
 
     private static void ApplySailForce(VehicleMovementController instance,
-
       bool isFlying = false)
-
     {
-
       if (instance == null || instance.isAnchored || instance.m_body == null || instance.ShipDirection == null) return;
 
-
-
-      var sailArea = 0f;
-
-
+      var sailPropulsion = 0f;
 
       if (instance.PiecesController != null)
-
-        sailArea =
-
-          instance.PiecesController.GetSailingForce();
-
-
-
-      // intellij seems to think 1370 does not have enough guards if this check is at the top of the function.
+      {
+        sailPropulsion = instance.PiecesController.GetPropulsionForSpeed(instance.VehicleSpeed);
+      }
 
       if (instance == null) return;
 
-
-
-      switch (instance.VehicleSpeed)
-
+      // At rowing speed (Speed.Slow), ApplyRudderLinearForce provides the rowing movement.
+      // At Stop or Back, sail force is 0.
+      if (instance.VehicleSpeed == Ship.Speed.Slow ||
+          instance.VehicleSpeed == Ship.Speed.Stop ||
+          instance.VehicleSpeed == Ship.Speed.Back)
       {
-
-        case Ship.Speed.Full:
-
-          sailArea *= PropulsionConfig.SpeedFullSailFactor?.Value ?? 0.50f;
-
-          break;
-
-        case Ship.Speed.Half:
-
-          sailArea *= PropulsionConfig.SpeedHalfSailFactor?.Value ?? 0.25f;
-
-          break;
-
-        case Ship.Speed.Slow:
-
-          sailArea = 0;
-
-          break;
-
-        case Ship.Speed.Stop:
-
-        case Ship.Speed.Back:
-
-        default:
-
-          sailArea = 0f;
-
-          break;
-
+        return;
       }
 
-
+      if (sailPropulsion <= 0f) return;
 
       var sailForce =
-
-        instance.GetSailForce(sailArea, Time.fixedDeltaTime, isFlying);
-
-
+        instance.GetSailForce(sailPropulsion, Time.fixedDeltaTime, isFlying);
 
       var position = instance.m_body.worldCenterOfMass;
 
-
-
       instance.AddForceAtPosition(
-
         sailForce,
-
         position,
-
         PhysicsConfig.sailingVelocityMode.Value);
-
     }
 
-
-
-    public void OnFlightChangePolling()
+        public void OnFlightChangePolling()
 
     {
 
