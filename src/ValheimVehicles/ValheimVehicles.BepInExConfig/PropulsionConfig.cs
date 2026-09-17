@@ -54,6 +54,7 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
   public static ConfigEntry<float> SailTier2Propulsion { get; set; } = null!;
   public static ConfigEntry<float> SailTier3Propulsion { get; set; } = null!;
   public static ConfigEntry<float> SailTier4Propulsion { get; set; } = null!;
+  public static ConfigEntry<float> SailPropulsionMultiplier { get; set; } = null!;
 
   public static ConfigEntry<float> SailTier1Area { get; set; }
   public static ConfigEntry<float> SailTier2Area { get; set; }
@@ -200,7 +201,7 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
 
     BallastClimbingOffset = config.BindUnique(GenericSectionName,
       "BallastClimbingOffset",
-      2f,
+      0.4f,
       ConfigHelpers.CreateConfigDescription(
         "Ascent and Descent speed for the vehicle in the water. This value is interpolated to prevent jitters.",
         true, true, new AcceptableValueRange<float>(0.01f, 10)));
@@ -267,6 +268,12 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
       "SailTier4Propulsion", 9f,
       ConfigHelpers.CreateConfigDescription(
         "Flat propulsion added per Drakkar sail (Tier 4).", true, false));
+
+    SailPropulsionMultiplier = config.BindUnique(GenericSectionName,
+      "SailPropulsionMultiplier", 1.0f,
+      ConfigHelpers.CreateConfigDescription(
+        "Multiplier applied to the total sail propulsion at half and full sail. 1 matches the previous sailing speed, 0.5 halves it. Does not affect rowing (slow) or reverse.",
+        true, false, new AcceptableValueRange<float>(0.05f, 2f)));
 
     SailTier1Area = config.BindUnique(GenericSectionName,
       "SailTier1Area", SailAreaForce.Tier1,

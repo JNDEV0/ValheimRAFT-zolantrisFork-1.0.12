@@ -3120,15 +3120,16 @@
     {
       var minProp = GetMinPropulsion();
       var sailSum = GetSumOfSailPropulsion();
+      var sailMultiplier = PropulsionConfig.SailPropulsionMultiplier?.Value ?? 1f;
 
       switch (speed)
       {
         case Ship.Speed.Slow:
           return minProp;
         case Ship.Speed.Half:
-          return (HasAnySails() ? minProp : 0f) + (sailSum * 0.5f);
+          return ((HasAnySails() ? minProp : 0f) + (sailSum * 0.5f)) * sailMultiplier;
         case Ship.Speed.Full:
-          return (HasAnySails() ? minProp : 0f) + (sailSum * 1.0f);
+          return ((HasAnySails() ? minProp : 0f) + (sailSum * 1.0f)) * sailMultiplier;
         case Ship.Speed.Back:
           return PropulsionConfig.VehicleRudderSpeedBack?.Value ?? 5f;
         case Ship.Speed.Stop:

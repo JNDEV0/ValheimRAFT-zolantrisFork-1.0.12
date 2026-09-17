@@ -4916,7 +4916,7 @@
 
       {
 
-        ApplyRightingForce();
+        ApplyRightingForce(GetRightingTargetUp(shipFloatation));
 
       }
 
@@ -4930,6 +4930,76 @@
 
     /// <summary>
 
+    /// Upward normal of the water surface under the hull, built from the water heights
+
+    /// already sampled at the forward/back/left/right force points.
+
+    /// </summary>
+
+    public static Vector3 GetWaterSurfaceNormal(ShipFloatation shipFloatation)
+
+    {
+
+      var alongHull = new Vector3(shipFloatation.ShipForward.x, shipFloatation.WaterLevelForward, shipFloatation.ShipForward.z) -
+
+                      new Vector3(shipFloatation.ShipBack.x, shipFloatation.WaterLevelBack, shipFloatation.ShipBack.z);
+
+      var acrossHull = new Vector3(shipFloatation.ShipRight.x, shipFloatation.WaterLevelRight, shipFloatation.ShipRight.z) -
+
+                       new Vector3(shipFloatation.ShipLeft.x, shipFloatation.WaterLevelLeft, shipFloatation.ShipLeft.z);
+
+      var normal = Vector3.Cross(alongHull, acrossHull);
+
+      if (normal.sqrMagnitude < 0.000001f) return Vector3.up;
+
+      normal.Normalize();
+
+      return normal.y < 0f ? -normal : normal;
+
+    }
+
+
+
+    /// <summary>
+
+    /// The "up" the righting force aligns the hull to. Vector3.up keeps the legacy always-level behavior;
+
+    /// waterSurfaceTiltFactor blends toward the real wave surface, capped by waterSurfaceMaxTiltAngle.
+
+    /// </summary>
+
+    public Vector3 GetRightingTargetUp(ShipFloatation shipFloatation)
+
+    {
+
+      var factor = PhysicsConfig.waterSurfaceTiltFactor.Value;
+
+      if (factor <= 0f || HasOceanSwayDisabled || isBeached || IsSubmerged()) return Vector3.up;
+
+
+
+      var targetUp = Vector3.Slerp(Vector3.up, GetWaterSurfaceNormal(shipFloatation), factor);
+
+      var tilt = Vector3.Angle(Vector3.up, targetUp);
+
+      var maxTilt = PhysicsConfig.waterSurfaceMaxTiltAngle.Value;
+
+      if (tilt > maxTilt && tilt > 0f)
+
+      {
+
+        targetUp = Vector3.Slerp(Vector3.up, targetUp, maxTilt / tilt);
+
+      }
+
+      return targetUp;
+
+    }
+
+
+
+    /// <summary>
+
     /// For righting the ship when it tilts too far or while anchored.
 
     /// </summary>
@@ -4938,9 +5008,25 @@
 
     {
 
+      ApplyRightingForce(Vector3.up);
+
+    }
+
+
+
+    /// <summary>
+
+    /// Rights the ship toward targetUp (world up = level) while keeping its current heading.
+
+    /// </summary>
+
+    public void ApplyRightingForce(Vector3 targetUp)
+
+    {
+
       var currentRot = m_body.rotation;
 
-      var targetRot = Quaternion.Euler(0f, currentRot.eulerAngles.y, 0f);
+      var targetRot = Quaternion.FromToRotation(Vector3.up, targetUp) * Quaternion.Euler(0f, currentRot.eulerAngles.y, 0f);
 
       var angleDiff = Quaternion.Angle(currentRot, targetRot);
 
