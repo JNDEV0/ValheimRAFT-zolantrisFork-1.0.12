@@ -1827,6 +1827,8 @@
       var portalObjects = ZDOMan.instance.GetPortals();
       if (portalObjects == null) return;
 
+      var rootZdo = m_nview != null && m_nview.IsValid() ? m_nview.GetZDO() : null;
+
       for (var i = m_portals.Count - 1; i >= 0; i--)
       {
         var portalNv = m_portals[i];
@@ -1835,7 +1837,12 @@
         if (zdo == null || !zdo.IsValid()) continue;
 
         var portalWorldPos = portalNv.transform.position;
+        var portalWorldRot = portalNv.transform.rotation;
         var newSector = ZoneSystem.GetSectorIndex(portalWorldPos);
+
+        // Keep ZDO position and rotation fresh in ZDOMan for external mods (TargetPortal, map pins) and vanilla
+        zdo.SetPosition(portalWorldPos);
+        zdo.SetRotation(portalWorldRot);
 
         // Ensure portal is correctly indexed in ZDOMan's portalObjects by current sector
         if (!portalObjects.TryGetValue(newSector, out var currentSectorList) || !currentSectorList.Contains(zdo))
@@ -1868,6 +1875,54 @@
         }
 
         MigratePortalSectorInZdoMan(zdo, portalWorldPos);
+
+        // Fast-pair matching tag if unconnected
+        EnforcePortalPairing(zdo);
+
+        // Actively push portal and vehicle root to all peers if server
+        if (ZNet.instance != null && ZNet.instance.IsServer())
+        {
+          ZDOMan.instance.ForceSendZDO(zdo.m_uid);
+          if (rootZdo != null)
+          {
+            ZDOMan.instance.ForceSendZDO(rootZdo.m_uid);
+          }
+        }
+      }
+    }
+
+    public static void EnforcePortalPairing(ZDO zdo)
+    {
+      if (zdo == null || !zdo.IsValid() || ZDOMan.instance == null || Game.instance == null) return;
+      var myTag = zdo.GetString(ZDOVars.s_tag, string.Empty);
+      if (string.IsNullOrEmpty(myTag)) return;
+
+      var currentTargetId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal);
+      if (!currentTargetId.IsNone())
+      {
+        var currentTarget = ZDOMan.instance.GetZDO(currentTargetId);
+        if (currentTarget != null && currentTarget.GetString(ZDOVars.s_tag, string.Empty) == myTag)
+        {
+          return;
+        }
+      }
+
+      var allPortals = ZDOMan.instance.GetPortalList();
+      if (allPortals == null) return;
+
+      foreach (var other in allPortals)
+      {
+        if (other == null || other == zdo || !other.IsValid()) continue;
+        if (other.GetString(ZDOVars.s_tag, string.Empty) != myTag) continue;
+
+        var otherTargetId = other.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal);
+        if (otherTargetId.IsNone() || otherTargetId == zdo.m_uid || ZDOMan.instance.GetZDO(otherTargetId) == null)
+        {
+          Game.instance.SetConnection(zdo, other.m_uid, false);
+          Game.instance.SetConnection(other, zdo.m_uid, false);
+          LoggerProvider.LogDebug($"[ValheimRAFT] Fast-paired vehicle portal {zdo.m_uid} <-> {other.m_uid} (tag: '{myTag}')");
+          break;
+        }
       }
     }
 

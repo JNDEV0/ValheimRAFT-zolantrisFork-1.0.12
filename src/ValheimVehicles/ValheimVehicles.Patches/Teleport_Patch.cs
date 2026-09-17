@@ -29,10 +29,15 @@ public class Teleport_Patch
   public static void TeleportToActivePosition(TeleportWorld __instance,
     ZDOID playerId)
   {
-    var zDO = ZDOMan.instance.GetZDO(
-      __instance.m_nview.m_zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType
-        .Portal));
-    if (zDO == null) return;
+    var connId = __instance.m_nview.m_zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal);
+    if (connId.IsNone()) return;
+
+    var zDO = ZDOMan.instance.GetZDO(connId);
+    if (zDO == null)
+    {
+      ZDOMan.instance.RequestZDO(connId);
+      return;
+    }
 
     var parentId = zDO.GetInt(VehicleZdoVars.MBParentId, 0);
     var nv = ZNetScene.instance.FindInstance(zDO);
@@ -208,8 +213,19 @@ public class Teleport_Patch
       return false;
     }
 
-    var areaReady = (ZNetScene.instance != null && ZNetScene.instance.IsAreaReady(targetPos)) || __instance.m_teleportTimer > 4f;
-    if (!areaReady)
+    VehicleManager? vm = null;
+    if (VehicleManager.VehicleInstances != null)
+    {
+      VehicleManager.VehicleInstances.TryGetValue(parentId, out vm);
+    }
+
+    var isAreaReady = ZNetScene.instance != null && ZNetScene.instance.IsAreaReady(targetPos);
+    var isVehicleReady = vm != null && vm.Instance != null && vm.Instance.PiecesController != null && vm.Instance.PiecesController.isActiveAndEnabled;
+    var isPortalReady = nv != null;
+
+    // Do not abort prematurely at 4 seconds. Wait for area and vehicle/portal, with 10s fallback timeout.
+    var canComplete = (isAreaReady && (isVehicleReady || isPortalReady)) || __instance.m_teleportTimer > 10f;
+    if (!canComplete)
     {
       return false;
     }
@@ -229,14 +245,22 @@ public class Teleport_Patch
     __instance.ResetCloth();
     m_teleportTarget.Remove(__instance);
 
-    if (nv != null)
+    // Guaranteed Onboarding: add player to local ship
+    if (vm != null && vm.Instance != null && vm.Instance.OnboardController != null)
+    {
+      vm.Instance.OnboardController.TryAddPlayerIfMissing(__instance);
+    }
+    else if (nv != null)
     {
       var controller = nv.GetComponentInParent<VehiclePiecesController>();
       if (controller != null && controller.Manager != null && controller.Manager.OnboardController != null)
       {
-        controller.Manager.OnboardController.AddPlayerToLocalShip(__instance);
-        controller.Manager.OnboardController.AddCharacter(__instance);
+        controller.Manager.OnboardController.TryAddPlayerIfMissing(__instance);
       }
+    }
+    else if (VehicleManager.VehicleInstances != null && VehicleManager.VehicleInstances.TryGetValue(parentId, out var fallbackVm) && fallbackVm.Instance != null && fallbackVm.Instance.OnboardController != null)
+    {
+      fallbackVm.Instance.OnboardController.TryAddPlayerIfMissing(__instance);
     }
 
     return false;
@@ -270,8 +294,46 @@ public class Teleport_Patch
     if (!m_teleportTarget.TryGetValue(__instance, out var zdoid))
       return __instance.m_teleportTargetPos;
 
-    var go = ZNetScene.instance.FindInstance(zdoid);
-    if ((bool)go) return GetTeleportPosition(go);
+    var go = ZNetScene.instance != null ? ZNetScene.instance.FindInstance(zdoid) : null;
+    if (go != null) return GetTeleportPosition(go.gameObject);
+
+    var targetZdo = ZDOMan.instance != null ? ZDOMan.instance.GetZDO(zdoid) : null;
+    if (targetZdo != null)
+    {
+      var parentId = targetZdo.GetInt(VehicleZdoVars.MBParentId, 0);
+      if (parentId != 0)
+      {
+        VehicleManager? vm = null;
+        if (VehicleManager.VehicleInstances != null)
+        {
+          VehicleManager.VehicleInstances.TryGetValue(parentId, out vm);
+        }
+
+        var vehicleZdo = ZDOMan.instance.GetZDO(new ZDOID(targetZdo.m_uid.UserID, (uint)parentId))
+                      ?? ZDOMan.instance.GetZDO(new ZDOID(1, (uint)parentId));
+
+        if (vm != null && vm.Instance != null && vm.Instance.PiecesController != null)
+        {
+          var vPos = vm.transform.position;
+          var vRot = vm.transform.rotation;
+          var localPos = targetZdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          var localRot = Quaternion.Euler(targetZdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+          var portalPos = vPos + vRot * localPos;
+          var portalRot = vRot * localRot;
+          return portalPos + portalRot * Vector3.forward * 1.6f + Vector3.up * 0.2f;
+        }
+        else if (vehicleZdo != null)
+        {
+          var vPos = vehicleZdo.GetPosition();
+          var vRot = vehicleZdo.GetRotation();
+          var localPos = targetZdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          var localRot = Quaternion.Euler(targetZdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+          var portalPos = vPos + vRot * localPos;
+          var portalRot = vRot * localRot;
+          return portalPos + portalRot * Vector3.forward * 1.6f + Vector3.up * 0.2f;
+        }
+      }
+    }
 
     return __instance.m_teleportTargetPos;
   }
@@ -346,6 +408,16 @@ public class Teleport_Patch
 
       var teleportPosition = GetTeleportPosition(go.gameObject);
       __instance.transform.position = teleportPosition;
+
+      var controller = go.GetComponentInParent<VehiclePiecesController>();
+      if (controller != null && controller.Manager != null && controller.Manager.OnboardController != null)
+      {
+        controller.Manager.OnboardController.TryAddPlayerIfMissing(__instance);
+      }
+      else if (VehicleManager.VehicleInstances != null && VehicleManager.VehicleInstances.TryGetValue(parentId, out var vm) && vm.Instance != null && vm.Instance.OnboardController != null)
+      {
+        vm.Instance.OnboardController.TryAddPlayerIfMissing(__instance);
+      }
     }
 
     __instance.m_teleporting = false;
@@ -392,6 +464,37 @@ public class Teleport_Patch
                   return;
                 }
               }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  [HarmonyPatch(typeof(ZDOMan), nameof(ZDOMan.AddPeer))]
+  public static class ZDOMan_AddPeer_Patch
+  {
+    private static void Postfix(ZDOMan __instance, ZNetPeer netPeer)
+    {
+      if (ZNet.instance == null || !ZNet.instance.IsServer() || netPeer == null) return;
+      if (VehicleManager.VehicleInstances == null) return;
+
+      foreach (var vm in VehicleManager.VehicleInstances.Values)
+      {
+        if (vm == null || vm.Instance == null) continue;
+        var rootZdo = vm.m_zdo ?? (vm.m_nview != null && vm.m_nview.IsValid() ? vm.m_nview.GetZDO() : null);
+        if (rootZdo != null)
+        {
+          __instance.ForceSendZDO(netPeer.m_uid, rootZdo.m_uid);
+        }
+
+        if (vm.Instance.PiecesController != null && vm.Instance.PiecesController.m_portals != null)
+        {
+          foreach (var p in vm.Instance.PiecesController.m_portals)
+          {
+            if (p != null && p.IsValid())
+            {
+              __instance.ForceSendZDO(netPeer.m_uid, p.GetZDO().m_uid);
             }
           }
         }
