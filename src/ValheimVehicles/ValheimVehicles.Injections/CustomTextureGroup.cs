@@ -129,8 +129,8 @@ public class CustomTextureGroup
 
     if (files.Length == 0)
     {
-      Logger.LogWarning(
-        $"ValheimRAFT: Unable to detect modFolder path containing Assets/{groupName}. Custom sail textures will not load.");
+      Logger.LogDebug(
+        $"ValheimRAFT: No custom textures found in Assets/{groupName}.");
     }
 
     foreach (var file in files)

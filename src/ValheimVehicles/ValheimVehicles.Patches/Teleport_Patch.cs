@@ -81,10 +81,6 @@ public class Teleport_Patch
     var total = pieces.Count;
     var msg = $"[BoatPortal] Destination Vehicle ID {parentId} at {vehiclePos:F1}: Found {total} pieces ({raftCount} ValheimRAFT, {vanillaCount} Vanilla, {modCount} OdinArchitect/Modded).";
     Jotunn.Logger.LogInfo(msg);
-    if (MessageHud.instance != null)
-    {
-      MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, msg);
-    }
   }
 
   public static void TeleportToActivePosition(TeleportWorld __instance,
@@ -323,10 +319,6 @@ public class Teleport_Patch
 
     var completionMsg = $"[BoatPortal] Completed teleport to Vehicle {parentId}. Loaded pieces: {loadedPieceCount}/{targetPieceCount}";
     Jotunn.Logger.LogInfo(completionMsg);
-    if (MessageHud.instance != null)
-    {
-      MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, completionMsg);
-    }
 
     // Floor placement: check FindFloor, fallback to targetPos on deck if missed
     if (ZoneSystem.instance != null && ZoneSystem.instance.FindFloor(targetPos, out var floorHeight))

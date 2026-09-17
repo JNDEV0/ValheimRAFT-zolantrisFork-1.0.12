@@ -460,6 +460,13 @@
     /// <param name="zdoPieces"></param>
     public static HashSet<ZDO> EnsurePiecesForVehicle(int vehiclePersistentId)
     {
+      if (ActiveInstances.TryGetValue(vehiclePersistentId, out var activeVpc) && activeVpc != null && activeVpc.m_pieces != null && activeVpc.m_pieces.Count > 0)
+      {
+        var activeSet = activeVpc.m_pieces.Select(p => p != null ? p.GetZDO() : null).Where(z => z != null && z.IsValid()).ToHashSet();
+        m_allPieces[vehiclePersistentId] = activeSet;
+        return activeSet;
+      }
+
       if (!m_allPieces.TryGetValue(vehiclePersistentId, out var pieceSet) || pieceSet == null || pieceSet.Count == 0)
       {
         pieceSet = new HashSet<ZDO>();
@@ -473,6 +480,8 @@
             if (zdo == null || !zdo.IsValid()) continue;
             if (zdo.GetInt(VehicleZdoVars.MBParentId, 0) == vehiclePersistentId)
             {
+              var hasLocalOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.negativeInfinity) != Vector3.negativeInfinity;
+              if (!hasLocalOffset) continue;
               pieceSet.Add(zdo);
             }
           }
@@ -1534,10 +1543,14 @@
     /// <summary>
     /// All clients must run this or their zdos get stale (even though other peers are also setting these values the positional values never get synced properly).
     /// </summary>
+    private float _lastAllClientsSyncTime;
+
     public void AllClientsSync()
     {
       // dedicated does not need to run this as it has a coroutine.
       if (IsDedicatedServerInstance()) return;
+      if (Time.time - _lastAllClientsSyncTime < 2.0f) return;
+      _lastAllClientsSyncTime = Time.time;
       Client_UpdateAllPieces();
       UpdateBedPieces();
       if (m_syncRigidbody != null)
@@ -1774,14 +1787,9 @@
       // use center of rigidbody to set position.
       m_zdo.SetPosition(vehiclePosition);
 
-      if (!m_allPieces.TryGetValue(Manager.PersistentZdoId, out var pieceToUpdateList) || pieceToUpdateList == null || pieceToUpdateList.Count == 0)
-      {
-        pieceToUpdateList = EnsurePiecesForVehicle(Manager.PersistentZdoId);
-      }
-      if (pieceToUpdateList == null || pieceToUpdateList.Count == 0)
-      {
-        pieceToUpdateList = m_pieces.Select(x => x.GetZDO()).ToHashSet();
-      }
+      var pieceToUpdateList = m_pieces != null && m_pieces.Count > 0
+        ? m_pieces.Select(x => x != null ? x.GetZDO() : null).Where(z => z != null && z.IsValid()).ToHashSet()
+        : EnsurePiecesForVehicle(Manager.PersistentZdoId);
 
       var itemsToRemove = new List<ZDO>();
 
@@ -2235,6 +2243,7 @@
           continue;
         }
         yield return Server_SyncAllVehiclePiecesToVehiclePosition();
+        yield return new WaitForSeconds(Math.Max(2.0f, VehicleGlobalConfig.ServerRaftUpdateZoneInterval.Value));
       }
 
       LoggerProvider.LogDebug("UpdatePiecesInEachSectorWorker finished");
@@ -3144,6 +3153,9 @@
       var id = GetParentID(zdo);
       if (id != 0)
       {
+        var hasLocalOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.negativeInfinity) != Vector3.negativeInfinity;
+        if (!hasLocalOffset) return;
+
         if (!m_allPieces.TryGetValue(id, out var list))
         {
           list = [];
