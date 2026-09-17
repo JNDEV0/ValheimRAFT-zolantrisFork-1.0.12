@@ -458,14 +458,48 @@
     /// </summary>
     /// <param name="vehicleZdo"></param>
     /// <param name="zdoPieces"></param>
+    public static HashSet<ZDO> EnsurePiecesForVehicle(int vehiclePersistentId)
+    {
+      if (!m_allPieces.TryGetValue(vehiclePersistentId, out var pieceSet) || pieceSet == null || pieceSet.Count == 0)
+      {
+        pieceSet = new HashSet<ZDO>();
+        m_allPieces[vehiclePersistentId] = pieceSet;
+
+        if (ZDOMan.instance != null && ZDOMan.instance.m_objectsByID != null)
+        {
+          foreach (var kvp in ZDOMan.instance.m_objectsByID)
+          {
+            var zdo = kvp.Value;
+            if (zdo == null || !zdo.IsValid()) continue;
+            if (zdo.GetInt(VehicleZdoVars.MBParentId, 0) == vehiclePersistentId)
+            {
+              pieceSet.Add(zdo);
+            }
+          }
+        }
+      }
+      return pieceSet;
+    }
+
     public static void SyncAllPrefabsToVehiclePosition(ZDO vehicleZdo, HashSet<ZDO> zdoPieces)
     {
       var vehiclePosition = GetVehiclePosition(vehicleZdo);
       if (!vehiclePosition.HasValue) return;
+      var vRot = vehicleZdo.GetRotation();
       foreach (var zdo in zdoPieces)
       {
         if (zdo == null) continue;
         if (!zdo.IsValid()) continue;
+
+        var isPortal = Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab());
+        if (isPortal)
+        {
+          var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          var portalWorldPos = vehiclePosition.Value + vRot * pieceOffset;
+          MigratePortalSectorInZdoMan(zdo, portalWorldPos);
+          continue;
+        }
+
         SetPrefabWorldPosition(zdo, vehiclePosition.Value);
       }
     }
@@ -473,8 +507,9 @@
     public static void SyncAllPrefabsToVehiclePosition(int vehiclePersistentId)
     {
       var vehicleZdo = ZdoWatchController.Instance.GetZdo(vehiclePersistentId);
-      if (vehicleZdo != null && m_allPieces.TryGetValue(vehiclePersistentId, out var zdoPieces))
+      if (vehicleZdo != null)
       {
+        var zdoPieces = EnsurePiecesForVehicle(vehiclePersistentId);
         SyncAllPrefabsToVehiclePosition(vehicleZdo, zdoPieces);
       }
     }
@@ -1063,7 +1098,8 @@
 
       // ensures that all pieces are requested to be brought into the current area
       var vehicleZdo = ZdoWatchController.Instance.GetZdo(Manager.PersistentZdoId);
-      if (vehicleZdo != null && m_allPieces.TryGetValue(Manager.PersistentZdoId, out var zdoPieces))
+      var zdoPieces = EnsurePiecesForVehicle(Manager.PersistentZdoId);
+      if (vehicleZdo != null && zdoPieces != null && zdoPieces.Count > 0)
       {
         SyncAllPrefabsToVehiclePosition(vehicleZdo, zdoPieces);
       }
@@ -1645,6 +1681,26 @@
       {
         ZDOMan.instance.RemoveFromSector(zdo, oldSector);
         ZDOMan.instance.AddToSector(zdo, newSector);
+
+        var isPortal = Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab());
+        if (isPortal && ZDOMan.instance.m_portalObjects != null)
+        {
+          if (ZDOMan.instance.m_portalObjects.TryGetValue(oldSector, out var oldList))
+          {
+            oldList.Remove(zdo);
+          }
+          if (!ZDOMan.instance.m_portalObjects.TryGetValue(newSector, out var newList))
+          {
+            newList = new List<ZDO>();
+            ZDOMan.instance.m_portalObjects[newSector] = newList;
+          }
+          if (!newList.Contains(zdo))
+          {
+            newList.Add(zdo);
+          }
+          ZDOMan.instance.SetDirtyPortals();
+        }
+
         if (ZNet.instance != null && ZNet.instance.IsServer())
         {
           ZDOMan.instance.ZDOSectorInvalidated(zdo);
@@ -1654,26 +1710,49 @@
 
     public static void SetPrefabWorldPosition(ZDO zdo, Vector3 vehiclePosition)
     {
+      if (zdo == null || !zdo.IsValid()) return;
       var isPortal = Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab());
-      var oldSector = isPortal ? zdo.GetSectorIndex() : default;
+      var oldSector = zdo.GetSectorIndex();
 
-      if (CanUseActualPiecePosition)
+      Vector3 targetPos;
+      if (CanUseActualPiecePosition || isPortal)
       {
         var zdoRelativePosition = vehiclePosition + zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-        zdo.SetPosition(zdoRelativePosition);
+        targetPos = zdoRelativePosition;
       }
       else
       {
-        zdo.SetPosition(vehiclePosition);
+        targetPos = vehiclePosition;
       }
 
-      if (isPortal && ZDOMan.instance != null)
+      zdo.SetPosition(targetPos);
+
+      if (ZDOMan.instance != null)
       {
         var newSector = zdo.GetSectorIndex();
         if (oldSector != newSector)
         {
           ZDOMan.instance.RemoveFromSector(zdo, oldSector);
           ZDOMan.instance.AddToSector(zdo, newSector);
+
+          if (isPortal && ZDOMan.instance.m_portalObjects != null)
+          {
+            if (ZDOMan.instance.m_portalObjects.TryGetValue(oldSector, out var oldList))
+            {
+              oldList.Remove(zdo);
+            }
+            if (!ZDOMan.instance.m_portalObjects.TryGetValue(newSector, out var newList))
+            {
+              newList = new List<ZDO>();
+              ZDOMan.instance.m_portalObjects[newSector] = newList;
+            }
+            if (!newList.Contains(zdo))
+            {
+              newList.Add(zdo);
+            }
+            ZDOMan.instance.SetDirtyPortals();
+          }
+
           if (ZNet.instance != null && ZNet.instance.IsServer())
           {
             ZDOMan.instance.ZDOSectorInvalidated(zdo);
@@ -1695,7 +1774,11 @@
       // use center of rigidbody to set position.
       m_zdo.SetPosition(vehiclePosition);
 
-      if (!m_allPieces.TryGetValue(Manager.PersistentZdoId, out var pieceToUpdateList))
+      if (!m_allPieces.TryGetValue(Manager.PersistentZdoId, out var pieceToUpdateList) || pieceToUpdateList == null || pieceToUpdateList.Count == 0)
+      {
+        pieceToUpdateList = EnsurePiecesForVehicle(Manager.PersistentZdoId);
+      }
+      if (pieceToUpdateList == null || pieceToUpdateList.Count == 0)
       {
         pieceToUpdateList = m_pieces.Select(x => x.GetZDO()).ToHashSet();
       }
@@ -1741,12 +1824,25 @@
             }
           }
         }
-        else if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal) != ZDOID.None)
+        else if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal) != ZDOID.None || (Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab())))
         {
           var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
           var portalWorldPos = vehiclePosition + transform.TransformDirection(pieceOffset);
           MigratePortalSectorInZdoMan(zdo, portalWorldPos);
           continue;
+        }
+        else
+        {
+          // nv is null (GameObject is currently unloaded!)
+          // Check if this is a bed (has owner or spawn data):
+          var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+          var pieceWorldPos = vehiclePosition + transform.TransformDirection(pieceOffset);
+          var isBed = zdo.GetLong(ZDOVars.s_owner) != 0 || zdo.GetString(ZDOVars.s_ownerName) != "";
+          if (isBed && CanBedsUseActualWorldPosition)
+          {
+            zdo.SetPosition(pieceWorldPos);
+            continue;
+          }
         }
 
         SetPrefabWorldPosition(zdo, vehiclePosition);
@@ -3077,6 +3173,12 @@
     {
       if (zdo.m_prefab ==
           PrefabNames.WaterVehicleShip.GetStableHashCode() || zdo.m_prefab == PrefabNames.LandVehicle.GetStableHashCode()) return;
+
+      if (ZDOMan.instance != null && ZDOMan.instance.GetZDO(zdo.m_uid) != null)
+      {
+        // Live ZDO is still active in ZDOMan — this is a temporary save-data clone or recycled instance, do NOT remove
+        return;
+      }
 
       var id = GetParentID(zdo);
 

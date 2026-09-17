@@ -21,8 +21,21 @@ public class ZdoPatch
 
   [HarmonyPatch(typeof(ZDO), "Reset")]
   [HarmonyPrefix]
-  private static void ZDO_Reset(ZDO __instance)
+  private static bool ZDO_Reset(ZDO __instance)
   {
+    if (ZDOMan.instance != null)
+    {
+      var liveZdo = ZDOMan.instance.GetZDO(__instance.m_uid);
+      if (liveZdo != null)
+      {
+        // Live ZDO is still active in ZDOMan.m_objectsByID!
+        // This is a temporary save-data clone recycled during SaveCleanup, or an active world object.
+        // DO NOT deregister or wipe from lookups.
+        return true;
+      }
+    }
+
     ZdoWatchController.Instance.Reset(__instance);
+    return true;
   }
 }

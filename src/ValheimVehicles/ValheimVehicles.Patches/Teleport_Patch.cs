@@ -26,6 +26,67 @@ public class Teleport_Patch
       m_teleportTarget[__instance] = objectId;
   }
 
+  public static void SyncVehiclePiecesBeforeTeleport(int parentId, Vector3 vehiclePos, Quaternion vehicleRot)
+  {
+    var pieces = VehiclePiecesController.EnsurePiecesForVehicle(parentId);
+    int raftCount = 0;
+    int vanillaCount = 0;
+    int modCount = 0;
+
+    foreach (var zdo in pieces)
+    {
+      if (zdo == null || !zdo.IsValid()) continue;
+      var prefab = zdo.GetPrefab();
+      var prefabGo = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(prefab) : null;
+      var prefabName = prefabGo != null ? prefabGo.name : "";
+
+      if (prefabName.StartsWith("MB_") || prefabName.StartsWith("MBRaft") ||
+          prefabName.StartsWith("ShipHull") || prefabName.StartsWith("Sail") ||
+          prefabName.StartsWith("Mast") || prefabName.StartsWith("Rudder") ||
+          prefabName.StartsWith("Rope") || prefabName.StartsWith("Swivel") ||
+          prefabName.StartsWith("VehiclePiece") || prefabName.StartsWith("animated_") ||
+          prefabName.StartsWith("WaterVehicle"))
+      {
+        raftCount++;
+      }
+      else if (prefabName.StartsWith("OA_") || prefabName.StartsWith("Odin") ||
+               prefabName.StartsWith("VF_") || prefabName.StartsWith("Clutter_"))
+      {
+        modCount++;
+      }
+      else
+      {
+        vanillaCount++;
+      }
+
+      // Synchronize ZDO position and sector so ZNetScene loads them in the target sector
+      var nv = ZNetScene.instance != null ? ZNetScene.instance.FindInstance(zdo) : null;
+      if (nv == null)
+      {
+        var localPos = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+        var localRot = Quaternion.Euler(zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+        var pieceWorldPos = vehiclePos + vehicleRot * localPos;
+        var pieceWorldRot = vehicleRot * localRot;
+
+        zdo.SetPosition(pieceWorldPos);
+        zdo.SetRotation(pieceWorldRot);
+
+        if (ZDOMan.instance != null)
+        {
+          VehiclePiecesController.MigratePortalSectorInZdoMan(zdo, pieceWorldPos);
+        }
+      }
+    }
+
+    var total = pieces.Count;
+    var msg = $"[BoatPortal] Destination Vehicle ID {parentId} at {vehiclePos:F1}: Found {total} pieces ({raftCount} ValheimRAFT, {vanillaCount} Vanilla, {modCount} OdinArchitect/Modded).";
+    Jotunn.Logger.LogInfo(msg);
+    if (MessageHud.instance != null)
+    {
+      MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, msg);
+    }
+  }
+
   public static void TeleportToActivePosition(TeleportWorld __instance,
     ZDOID playerId)
   {
@@ -81,6 +142,12 @@ public class Teleport_Patch
           position = vPos + vRot * localPos;
           rotation = vRot * localRot;
         }
+
+        SyncVehiclePiecesBeforeTeleport(parentId, vehicleZdo.GetPosition(), vehicleZdo.GetRotation());
+      }
+      else
+      {
+        SyncVehiclePiecesBeforeTeleport(parentId, position, rotation);
       }
     }
 
@@ -220,14 +287,45 @@ public class Teleport_Patch
     }
 
     var isAreaReady = ZNetScene.instance != null && ZNetScene.instance.IsAreaReady(targetPos);
-    var isVehicleReady = vm != null && vm.Instance != null && vm.Instance.PiecesController != null && vm.Instance.PiecesController.isActiveAndEnabled;
+    var piecesController = vm != null && vm.Instance != null ? vm.Instance.PiecesController : null;
+    var isVehicleReady = piecesController != null && piecesController.isActiveAndEnabled;
     var isPortalReady = nv != null;
 
-    // Do not abort prematurely at 4 seconds. Wait for area and vehicle/portal, with 10s fallback timeout.
-    var canComplete = (isAreaReady && (isVehicleReady || isPortalReady)) || __instance.m_teleportTimer > 10f;
+    var targetPieces = VehiclePiecesController.EnsurePiecesForVehicle(parentId);
+    if (ZNetScene.instance != null)
+    {
+      foreach (var pZdo in targetPieces)
+      {
+        if (pZdo != null && pZdo.IsValid() && ZNetScene.instance.FindInstance(pZdo) == null)
+        {
+          try
+          {
+            ZNetScene.instance.CreateObject(pZdo);
+          }
+          catch (System.Exception ex)
+          {
+            Jotunn.Logger.LogWarning($"[BoatPortal] Failed to create object for piece {pZdo.m_uid}: {ex.Message}");
+          }
+        }
+      }
+    }
+
+    int loadedPieceCount = piecesController != null ? piecesController.m_pieces.Count : 0;
+    int targetPieceCount = targetPieces.Count;
+    bool piecesReady = (targetPieceCount == 0) || (loadedPieceCount >= targetPieceCount) || (__instance.m_teleportTimer > 6f);
+
+    // Do not abort prematurely at 4 seconds. Wait for area, vehicle/portal, and pieces, with 10s fallback timeout.
+    var canComplete = (isAreaReady && (isVehicleReady || isPortalReady) && piecesReady) || __instance.m_teleportTimer > 10f;
     if (!canComplete)
     {
       return false;
+    }
+
+    var completionMsg = $"[BoatPortal] Completed teleport to Vehicle {parentId}. Loaded pieces: {loadedPieceCount}/{targetPieceCount}";
+    Jotunn.Logger.LogInfo(completionMsg);
+    if (MessageHud.instance != null)
+    {
+      MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, completionMsg);
     }
 
     // Floor placement: check FindFloor, fallback to targetPos on deck if missed
@@ -385,6 +483,22 @@ public class Teleport_Patch
       }
       go = ZNetScene.instance.FindInstance(zdo);
       if (go) break;
+      if (ZNetScene.instance != null)
+      {
+        try
+        {
+          var created = ZNetScene.instance.CreateObject(zdo);
+          if (created != null)
+          {
+            go = created.GetComponent<ZNetView>();
+            if (go) break;
+          }
+        }
+        catch (System.Exception ex)
+        {
+          Jotunn.Logger.LogWarning($"DebouncedTeleportCoordinateUpdater: Could not create portal instance {zdoid}: {ex.Message}");
+        }
+      }
       zoneId = ZoneSystem.GetZone(zdo.m_position);
       if (ZoneSystem.instance != null)
       {
