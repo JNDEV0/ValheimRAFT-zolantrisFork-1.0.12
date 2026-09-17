@@ -9812,12 +9812,24 @@
 
 
 
+      targetPlayer.HideHandItems(false, false);
+      targetPlayer.m_moveDir = Vector3.zero;
+      targetPlayer.m_run = false;
+      targetPlayer.m_autoRun = false;
+      targetPlayer.m_walk = false;
+      targetPlayer.m_currentVel = Vector3.zero;
+      targetPlayer.m_currentTurnVel = 0f;
+      if (targetPlayer.m_zanim != null)
+      {
+        targetPlayer.m_zanim.SetFloat("forward_speed", 0f);
+        targetPlayer.m_zanim.SetFloat("sideway_speed", 0f);
+        targetPlayer.m_zanim.SetFloat("turn_speed", 0f);
+        targetPlayer.m_zanim.SetBool("falling", false);
+      }
+
       // non-local player too as this will show them controlling the object.
-
       targetPlayer.AttachStart(attachTransform, null,
-
-        false, false,
-
+        true, false,
         true, m_attachAnimation, detachOffset);
 
 

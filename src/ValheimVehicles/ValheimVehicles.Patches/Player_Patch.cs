@@ -613,14 +613,31 @@
         }
       }
 
-      var wheel = __instance.m_attachPoint.parent
-        .GetComponent<SteeringWheelComponent>();
+      var wheel = __instance.m_attachPoint.parent != null
+        ? __instance.m_attachPoint.parent.GetComponent<SteeringWheelComponent>()
+        : null;
 
-      if (!(bool)wheel || __instance.m_doodadController == null) return true;
+      if (wheel == null) return true;
 
-      __instance.SetDoodadControlls(ref movedir,
-        ref ((Character)__instance).m_lookDir, ref run,
-        ref autoRun, blockHold);
+      if (__instance.m_doodadController != null)
+      {
+        __instance.SetDoodadControlls(ref movedir,
+          ref ((Character)__instance).m_lookDir, ref run,
+          ref autoRun, blockHold);
+      }
+
+      __instance.m_moveDir = Vector3.zero;
+      __instance.m_run = false;
+      __instance.m_autoRun = false;
+      __instance.m_walk = false;
+      __instance.m_currentVel = Vector3.zero;
+      __instance.m_currentTurnVel = 0f;
+      if (__instance.m_zanim != null)
+      {
+        __instance.m_zanim.SetFloat("forward_speed", 0f);
+        __instance.m_zanim.SetFloat("sideway_speed", 0f);
+        __instance.m_zanim.SetFloat("turn_speed", 0f);
+      }
       return false;
     }
 

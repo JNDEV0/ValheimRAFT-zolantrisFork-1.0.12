@@ -300,6 +300,23 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
 
     var player = user as Player;
 
+    if (player != null)
+    {
+      player.HideHandItems(false, false);
+      player.m_moveDir = Vector3.zero;
+      player.m_run = false;
+      player.m_autoRun = false;
+      player.m_walk = false;
+      player.m_currentVel = Vector3.zero;
+      player.m_currentTurnVel = 0f;
+      if (player.m_zanim != null)
+      {
+        player.m_zanim.SetFloat("forward_speed", 0f);
+        player.m_zanim.SetFloat("sideway_speed", 0f);
+        player.m_zanim.SetFloat("turn_speed", 0f);
+      }
+    }
+
     var playerOnShipViaShipInstance =
       ControllersInstance.PiecesController?.GetComponentsInChildren<Player>();
     if (player != null)
