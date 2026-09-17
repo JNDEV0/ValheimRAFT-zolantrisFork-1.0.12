@@ -65,8 +65,8 @@
 
     internal bool m_lastMovedLeft;
 
-    public bool isRunning = false;
-    public bool hasAutoClimb = false;
+    public bool isRunning = true;
+    public bool hasAutoClimb = true;
 
     private MoveDirection _autoClimbDir = MoveDirection.None;
 
@@ -82,27 +82,7 @@
 
     public string GetHoverText()
     {
-      var localizationString =
-        $"{WithYellowBold("$KEY_Use")} $mb_rope_ladder_use";
-
-      List<string> modifiers =
-        [isRunning ? "$valheim_vehicles_fast" : "$valheim_vehicles_slow"];
-      if (hasAutoClimb) modifiers.Add("$valheim_vehicles_auto");
-
-      var modifiersString =
-        WithYellowBold(string.Join(", ", modifiers.ToArray()));
-      localizationString += $" {modifiersString}";
-
-      if (PrefabConfig.RopeLadderHints.Value)
-      {
-        localizationString +=
-          $"\n{WithYellowBold("$KEY_AutoRun")} $mb_rope_ladder_use $valheim_vehicles_auto";
-        localizationString +=
-          $"\n{WithYellowBold("$KEY_Run")} $mb_rope_ladder_use $valheim_vehicles_fast";
-      }
-
-      return Localization.instance.Localize(
-        localizationString);
+      return Localization.instance.Localize($"{WithYellowBold("$KEY_Use")} $mb_rope_ladder_use");
     }
 
     public float GetHoverOffset() => 0f;
@@ -150,6 +130,11 @@
       m_targetLeft = INVALID_STEP;
       m_targetRight = INVALID_STEP;
       if (m_attachPoint.parent == null) return;
+
+      isRunning = true;
+      hasAutoClimb = true;
+      var exitY = m_exitPoint != null ? m_exitPoint.position.y : transform.position.y;
+      _autoClimbDir = player.transform.position.y >= exitY - 1f ? MoveDirection.Down : MoveDirection.Up;
 
       m_attachPoint.localPosition = new Vector3(m_attachPoint.localPosition.x,
         ClampOffset(m_attachPoint.parent
@@ -464,34 +449,36 @@
     /// </summary>
     public void DetectInputKeys(float moveDir)
     {
-      var isPressingRun = ZInput.GetButtonUp("Run") || ZInput.GetButton("JoyRun");
-      var isAutoRunPressed = ZInput.GetButtonUp("AutoRun");
-
-      if (isAutoRunPressed)
-      {
-        hasAutoClimb = !hasAutoClimb;
-        _autoClimbDir = hasAutoClimb
-          ? GetMovementDir(moveDir)
-          : MoveDirection.None;
-      }
-
-      if (isPressingRun) isRunning = !isRunning;
+      isRunning = true;
+      hasAutoClimb = true;
     }
 
     public void MoveOnLadder(Player player, float moveDir)
     {
-      DetectInputKeys(moveDir);
+      isRunning = true;
+      hasAutoClimb = true;
 
       var offset = m_attachPoint.localPosition.y;
-
       var dir = GetMovementDir(moveDir);
 
-      if (hasAutoClimb && dir != MoveDirection.None && dir != _autoClimbDir)
-        _autoClimbDir = _autoClimbDir == MoveDirection.None
-          ? dir
-          : MoveDirection.None;
+      if (dir != MoveDirection.None && dir != _autoClimbDir)
+      {
+        _autoClimbDir = dir;
+      }
 
-      offset = UpdateMoveOffset(hasAutoClimb ? _autoClimbDir : dir, offset);
+      var atTop = offset >= 0.48f;
+      var atBottom = offset <= (0f - m_collider.size.y + 0.05f);
+
+      if (atTop && _autoClimbDir == MoveDirection.Up)
+      {
+        _autoClimbDir = MoveDirection.None;
+      }
+      else if (atBottom && _autoClimbDir == MoveDirection.Down)
+      {
+        _autoClimbDir = MoveDirection.None;
+      }
+
+      offset = UpdateMoveOffset(_autoClimbDir, offset);
 
       m_attachPoint.localPosition = new Vector3(m_attachPoint.localPosition.x,
         ClampOffset(offset),

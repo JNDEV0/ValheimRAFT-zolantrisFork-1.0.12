@@ -83,15 +83,12 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
   {
     var anchoredStatus =
       isAnchored
-        ? $"[<color=red><b>{ModTranslations.AnchorPrefab_anchoredText}</b></color>]"
+        ? $"[<color=red><b>{ModTranslations.AnchorPrefab_anchoredText}</b></color>]\n"
         : "";
-    var anchorText =
-      isAnchored
-        ? ModTranslations.Anchor_WheelUse_DisableAnchor
-        : ModTranslations.Anchor_WheelUse_EnableAnchor;
+    var anchorText = "Toggle Anchor";
 
     return
-      $"{anchoredStatus}\n[<color=yellow><b>{anchorKeyString}</b></color>] <color=white>{anchorText}</color>";
+      $"{anchoredStatus}[<color=yellow><b>{anchorKeyString}</b></color>] <color=white>{anchorText}</color>";
   }
 
   public bool TryGetShipStats(out string shipStatsText)
@@ -101,28 +98,8 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
     if (ControllersInstance.PiecesController == null) return false;
 
     var piecesController = ControllersInstance.PiecesController;
-    var totalMass = piecesController.TotalMass;
-    var shipMass = piecesController.ShipMass;
-
-    shipStatsText += $"\ntotalMass: {totalMass}";
-    shipStatsText +=
-      $"\nshipMass(no-containers): {shipMass}";
-
-    shipStatsText += $"\nraft sails total: {piecesController.numberOfTier1Sails}";
-    shipStatsText += $"\nkarve sails total: {piecesController.numberOfTier2Sails}";
-    if (piecesController.numberOfTier3Sails > 0)
-    {
-      shipStatsText += $"\nlongship sails total: {piecesController.numberOfTier3Sails}";
-    }
-    if (piecesController.numberOfTier4Sails > 0)
-    {
-      shipStatsText += $"\ndrakkar sails total: {piecesController.numberOfTier4Sails}";
-    }
-    shipStatsText +=
-      $"\ncurrent max propulsion: {piecesController.GetMaxPropulsion():F1}";
-
-    /* final formatting */
-    shipStatsText = $"<color=white>{shipStatsText}</color>";
+    shipStatsText =
+      $"<color=white>current max propulsion: {piecesController.GetMaxPropulsion():F1}</color>";
 
     return true;
   }
@@ -144,47 +121,22 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
 
     interactMessage += $"\n{anchorMessage}";
 
-    if (isFlightCapable || isBallastCapable)
-    {
-      interactMessage += "\n--------";
-    }
-
     // propulsion messages
     if (isFlightCapable)
     {
-      interactMessage += $"\n{ModTranslations.WheelControls_FlightActivation}";
+      interactMessage += $"\n[{ModTranslations.WithBoldText("Jump", "yellow")}] and [{ModTranslations.WithBoldText("crouch", "yellow")}] adjust elevation/depth";
     }
     if (isBallastCapable)
     {
-      interactMessage += $"\n{ModTranslations.WheelControls_BallastActivation}";
-    }
-
-    var additionalMessages = "";
-
-    if (this.IsNetViewValid(out var nv))
-    {
-      showTutorial = nv.GetZDO().GetBool(Key_ShowTutorial, showTutorial);
-    }
-
-    if (showTutorial)
-    {
-      additionalMessages += $"\n{ModTranslations.Cannon_TutorialShort}";
-
-      if (variant == VehicleVariant.All || variant == VehicleVariant.Air)
-      {
-        additionalMessages += $"\n{ModTranslations.WheelControls_TutorialFlight}";
-      }
+      interactMessage += $"\n[{ModTranslations.WithBoldText("jump", "yellow")}]+[{ModTranslations.WithBoldText("crouch", "yellow")}] toggle float/flight";
     }
 
     if (TryGetShipStats(out var statsMessage))
     {
-      additionalMessages += $"\n{statsMessage}";
+      interactMessage += $"\n{statsMessage}";
     }
 
-    var tutorialToggleMessage = $"{ModTranslations.SharedKeys_InteractAlt} {ModTranslations.WithBoldText(ModTranslations.SharedKeys_Tutorial, "white")}";
-
-    return
-      $"{interactMessage}\n{tutorialToggleMessage}\n{additionalMessages}";
+    return interactMessage;
   }
 
 
