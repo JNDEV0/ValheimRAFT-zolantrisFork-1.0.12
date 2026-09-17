@@ -2243,7 +2243,7 @@
           continue;
         }
         yield return Server_SyncAllVehiclePiecesToVehiclePosition();
-        yield return new WaitForSeconds(Math.Max(2.0f, VehicleGlobalConfig.ServerRaftUpdateZoneInterval.Value));
+        yield return new WaitForSeconds(VehicleGlobalConfig.ServerRaftUpdateZoneInterval.Value);
       }
 
       LoggerProvider.LogDebug("UpdatePiecesInEachSectorWorker finished");
