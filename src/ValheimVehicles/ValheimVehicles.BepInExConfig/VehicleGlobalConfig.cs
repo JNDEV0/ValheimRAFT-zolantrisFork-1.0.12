@@ -14,6 +14,7 @@ public class VehicleGlobalConfig : BepInExBaseConfig<VehicleGlobalConfig>
 
   // updaters
   public static ConfigEntry<float> ServerRaftUpdateZoneInterval = null!;
+    public static ConfigEntry<bool> FastMultiplayerSync = null!;
   public static ConfigEntry<bool> ForceShipOwnerUpdatePerFrame { get; set; }
 
   // section keys
@@ -36,9 +37,16 @@ public class VehicleGlobalConfig : BepInExBaseConfig<VehicleGlobalConfig>
         true, true));
 
 
+    FastMultiplayerSync = config.BindUnique(VehicleGlobalUpdateKey,
+      "FastMultiplayerSync",
+      false,
+      ConfigHelpers.CreateConfigDescription(
+        "When enabled on multiplayer servers, tightens piece sync interval to 1.0s for reduced sync latency at higher network load. When disabled, uses ServerRaftUpdateZoneInterval (default 3.0s).",
+        true, true));
+
     ServerRaftUpdateZoneInterval = config.BindUnique(VehicleGlobalUpdateKey,
       "ServerRaftUpdateZoneInterval",
-      5f,
+      3f,
       ConfigHelpers.CreateConfigDescription(
         "Allows Server Admin control over the update tick for the RAFT location. Larger Rafts will take much longer and lag out players, but making this ticket longer will make the raft turn into a box from a long distance away.",
         true, true, new AcceptableValueRange<float>(1, 30f)));

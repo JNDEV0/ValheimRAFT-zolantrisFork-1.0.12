@@ -48,6 +48,8 @@ public class VehicleGuiMenuConfig : BepInExBaseConfig<VehicleGuiMenuConfig>
   public static ConfigEntry<bool>
     DebugMetricsEnabled { get; private set; } = null!;
 
+  public static ConfigEntry<bool> EnableLoopLogging { get; set; } = null!;
+
   public static ConfigEntry<float>
     DebugMetricsTimer { get; private set; } = null!;
 
@@ -132,6 +134,11 @@ public class VehicleGuiMenuConfig : BepInExBaseConfig<VehicleGuiMenuConfig>
       ConfigHelpers.CreateConfigDescription(
         "Sets the vehicle creative command height, this value is relative to the current height of the ship, negative numbers will sink your ship temporarily",
         false, false, new AcceptableValueRange<int>(-50, 50)));
+
+    EnableLoopLogging = config.BindUnique(SectionName, "EnableLoopLogging", false,
+        ConfigHelpers.CreateConfigDescription(
+          "Outputs diagnostic loop performance logs for ValheimRAFT loops ([LoopPerf] logs).",
+          false, true));
 
     DebugMetricsEnabled = config.BindUnique(SectionName, "DebugMetricsEnabled",
       false,

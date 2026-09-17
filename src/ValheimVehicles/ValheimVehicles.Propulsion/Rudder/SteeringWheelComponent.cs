@@ -91,11 +91,78 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
       $"{anchoredStatus}[<color=yellow><b>{anchorKeyString}</b></color>] <color=white>{anchorText}</color>";
   }
 
+  public bool EnsureControllersInstance()
+  {
+    if (ControllersInstance != null && ControllersInstance.Manager != null)
+      return true;
+
+    // 1. Check parent hierarchy
+    var vm = GetComponentInParent<VehicleManager>();
+    if (vm == null)
+    {
+      var vpc = GetComponentInParent<VehiclePiecesController>();
+      if (vpc != null) vm = vpc.Manager;
+    }
+
+    // 2. Check root hierarchy
+    if (vm == null && transform.root != null)
+    {
+      vm = transform.root.GetComponentInChildren<VehicleManager>() ?? transform.root.GetComponent<VehicleManager>();
+    }
+
+    // 3. Check ZDO parent ID
+    if (vm == null && m_nview != null && m_nview.GetZDO() != null)
+    {
+      var parentId = VehiclePiecesController.GetParentID(m_nview.GetZDO());
+      if (parentId != 0)
+      {
+        if (VehicleManager.VehicleInstances != null && VehicleManager.VehicleInstances.TryGetValue(parentId, out var foundVm))
+        {
+          vm = foundVm;
+        }
+        else if (VehiclePiecesController.ActiveInstances != null && VehiclePiecesController.ActiveInstances.TryGetValue(parentId, out var foundVpc))
+        {
+          vm = foundVpc.Manager;
+        }
+      }
+    }
+
+    // 4. Proximity fallback: find closest vehicle within 15 meters
+    if (vm == null && VehicleManager.VehicleInstances != null && VehicleManager.VehicleInstances.Count > 0)
+    {
+      VehicleManager closest = null;
+      var closestDist = 15f;
+      foreach (var candidate in VehicleManager.VehicleInstances.Values)
+      {
+        if (candidate == null) continue;
+        var d = Vector3.Distance(transform.position, candidate.transform.position);
+        if (d < closestDist)
+        {
+          closestDist = d;
+          closest = candidate;
+        }
+      }
+      vm = closest;
+    }
+
+    if (vm != null)
+    {
+      InitializeControls(m_nview ?? GetComponent<ZNetView>(), vm);
+      if (vm.PiecesController != null && m_nview != null && !vm.PiecesController.m_pieces.Contains(m_nview))
+      {
+        vm.PiecesController.AddPiece(m_nview);
+      }
+      return ControllersInstance != null && ControllersInstance.Manager != null;
+    }
+
+    return false;
+  }
+
   public bool TryGetShipStats(out string shipStatsText)
   {
     shipStatsText = "";
     if (!PropulsionConfig.ShowShipStats.Value) return false;
-    if (ControllersInstance.PiecesController == null) return false;
+    if (ControllersInstance?.PiecesController == null) return false;
 
     var piecesController = ControllersInstance.PiecesController;
     shipStatsText =
@@ -114,7 +181,7 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
 
     var interactMessage = $"{ModTranslations.SharedKeys_InteractPrimary} {ModTranslations.WithBoldText(ModTranslations.Anchor_WheelUse_UseText, "white")}";
 
-    var variant = ControllersInstance.Manager.vehicleVariant;
+    var variant = ControllersInstance?.Manager != null ? ControllersInstance.Manager.vehicleVariant : VehicleVariant.All;
 
     var isFlightCapable = VehicleManager.IsFlightCapable(variant);
     var isBallastCapable = VehicleManager.IsBallastCapable(variant);
@@ -152,7 +219,7 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
   /// <returns>String</returns>
   private string GetOwnerHoverText()
   {
-    var controller = ControllersInstance.Manager;
+    var controller = ControllersInstance?.Manager;
     if (controller == null || controller.m_nview == null || controller.m_nview.GetZDO() == null) return "";
 
     var ownerId = controller.m_nview.GetZDO().GetOwner();
@@ -180,9 +247,14 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
 
   public string GetHoverText()
   {
-    var piecesController = ControllersInstance.PiecesController;
-    var onboardController = ControllersInstance.OnboardController;
-    var movementController = ControllersInstance.MovementController;
+    if (!EnsureControllersInstance())
+    {
+      return ModTranslations.WheelControls_Error;
+    }
+
+    var piecesController = ControllersInstance?.PiecesController;
+    var onboardController = ControllersInstance?.OnboardController;
+    var movementController = ControllersInstance?.MovementController;
     if (piecesController == null || onboardController == null || movementController == null)
     {
       return ModTranslations.WheelControls_Error;
@@ -263,6 +335,7 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
   public bool Interact(Humanoid user, bool hold, bool alt)
   {
     if (!isActiveAndEnabled) return false;
+    if (!EnsureControllersInstance()) return false;
     if (ControllersInstance == null || ControllersInstance.MovementController == null || ControllersInstance.OnboardController == null || ControllersInstance.PiecesController == null) return false;
 
     // prevent interacting with same wheel while already controlling wheel and leaving controls

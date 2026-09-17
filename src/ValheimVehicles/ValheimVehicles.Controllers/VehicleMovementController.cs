@@ -1967,12 +1967,20 @@
 
 
 
-      if (!isPlayerHaulingVehicle && m_body.isKinematic || isPlayerHaulingVehicle && HaulingPlayer != null && HaulingPlayer.transform.root == PiecesController!.transform.root)
-
+      if (isAnchored)
       {
+        if (!m_body.isKinematic)
+        {
+          m_body.isKinematic = true;
+          m_body.linearVelocity = Vector3.zero;
+          m_body.angularVelocity = Vector3.zero;
+        }
+        return;
+      }
 
+      if (!isPlayerHaulingVehicle && m_body.isKinematic || isPlayerHaulingVehicle && HaulingPlayer != null && HaulingPlayer.transform.root == PiecesController!.transform.root)
+      {
         m_body.isKinematic = false;
-
       }
 
 
@@ -2068,7 +2076,7 @@
       {
         var waterLvl = ZoneSystem.instance.m_waterLevel;
         var hullBottomY = FloatCollider != null ? FloatCollider.bounds.min.y : m_body.position.y;
-        if (hullBottomY <= waterLvl + 0.1f)
+        if (hullBottomY <= waterLvl - 0.5f)
         {
           SetFlightMode(false);
         }
@@ -5021,12 +5029,8 @@
     /// <returns></returns>
 
     private bool UpdateAnchorVelocity()
-
     {
-
-      if (OnboardController.m_localPlayers.Count != 0 &&
-
-          !isAnchored) return false;
+      if (!isAnchored) return false;
 
 
 
@@ -6431,37 +6435,21 @@
             break;
 
           default: // Stop, Slow, Back (propulsion 0 or 1/rowing)
-
-            num = 0f;
-
+            num = 0.01f;
             break;
-
         }
-
       }
-
       else
-
       {
-
-        num = 0f;
-
+        num = 0.01f;
       }
-
-
 
       var localScale = m_sailObject.transform.localScale;
-
-      var flag = Mathf.Abs(localScale.y - num) < 0.01f;
-
+      var flag = Mathf.Abs(localScale.y - num) < 0.005f;
       if (!flag)
-
       {
-
-        localScale.y = Mathf.MoveTowards(localScale.y, num, dt);
-
-        m_sailObject.transform.localScale = localScale;
-
+        localScale.y = Mathf.Max(0.01f, Mathf.MoveTowards(localScale.y, Mathf.Max(0.01f, num), dt));
+        m_sailObject.transform.localScale = new Vector3(localScale.x, Mathf.Max(0.01f, localScale.y), localScale.z);
       }
 
 
@@ -6982,7 +6970,7 @@
 
       var hullBottomY = FloatCollider != null ? FloatCollider.bounds.min.y : m_body.position.y;
 
-      if (_flightTakeoffImmunityTimer <= 0f && hullBottomY <= waterLvl + 0.1f && TargetHeight <= waterLvl + GetSurfaceOffsetWaterVehicleOnly() + 0.5f)
+      if (_flightTakeoffImmunityTimer <= 0f && hullBottomY <= waterLvl - 0.5f && TargetHeight <= waterLvl + GetSurfaceOffsetWaterVehicleOnly() + 0.5f)
 
       {
 

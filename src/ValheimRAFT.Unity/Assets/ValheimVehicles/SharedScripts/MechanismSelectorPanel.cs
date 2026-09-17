@@ -10,6 +10,8 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using ValheimVehicles.SharedScripts.Interfaces;
+using ValheimVehicles.BepInExConfig;
+using Jotunn.Managers;
 #endif
 namespace ValheimVehicles.SharedScripts.UI
 {
@@ -268,6 +270,31 @@ namespace ValheimVehicles.SharedScripts.UI
           {
             _currentPanelConfig.ForceAnchorOnPortalTeleport = states[0];
             _currentPanelConfig.ForceAnchorOnBedTeleport = states[1];
+            UnsetSavedState();
+          }
+        });
+
+      var netView = mechanismAction?.gameObject != null ? mechanismAction.gameObject.GetComponent<ZNetView>() : null;
+      var isServerAdminOrOwner = SynchronizationManager.Instance == null || SynchronizationManager.Instance.PlayerIsAdmin || (netView != null && netView.IsOwner());
+
+      var loopLogTitle = "Diagnostics & Sync";
+      var loopLabel = "Loop Log";
+      var fastSyncLabel = "Fast MP Sync";
+
+      SwivelUIHelpers.AddMultiToggleRow(panelContent.transform, viewStyles, loopLogTitle,
+        new[] { loopLabel, fastSyncLabel },
+        new[] { VehicleGuiMenuConfig.EnableLoopLogging?.Value ?? false, VehicleGlobalConfig.FastMultiplayerSync?.Value ?? false },
+        states =>
+        {
+          if (states != null && states.Length >= 2)
+          {
+            if (VehicleGuiMenuConfig.EnableLoopLogging != null)
+              VehicleGuiMenuConfig.EnableLoopLogging.Value = states[0];
+
+            if (isServerAdminOrOwner && VehicleGlobalConfig.FastMultiplayerSync != null)
+            {
+              VehicleGlobalConfig.FastMultiplayerSync.Value = states[1];
+            }
             UnsetSavedState();
           }
         });

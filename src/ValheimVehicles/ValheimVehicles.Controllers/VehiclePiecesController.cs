@@ -397,6 +397,7 @@
     /// 
     public static IEnumerator Server_SyncAllVehiclePiecesToVehiclePosition()
     {
+      using var loopScope = LoopTracker.Scope("VPC.Server_SyncAllVehiclePiecesToVehiclePosition", () => m_allPieces?.Values.Sum(v => v.Count) ?? 0);
       var stopWatchRuntime = Stopwatch.StartNew();
       var totalTime = Stopwatch.StartNew();
 
@@ -1551,11 +1552,14 @@
       if (IsDedicatedServerInstance()) return;
       if (Time.time - _lastAllClientsSyncTime < 2.0f) return;
       _lastAllClientsSyncTime = Time.time;
-      Client_UpdateAllPieces();
-      UpdateBedPieces();
-      if (m_syncRigidbody != null)
+      using (LoopTracker.Scope("VPC.AllClientsSync", () => m_pieces?.Count ?? 0))
       {
-        SyncVehiclePortals(m_syncRigidbody.position);
+        Client_UpdateAllPieces();
+        UpdateBedPieces();
+        if (m_syncRigidbody != null)
+        {
+          SyncVehiclePortals(m_syncRigidbody.position);
+        }
       }
     }
 
@@ -2243,7 +2247,10 @@
           continue;
         }
         yield return Server_SyncAllVehiclePiecesToVehiclePosition();
-        yield return new WaitForSeconds(Math.Max(2.0f, VehicleGlobalConfig.ServerRaftUpdateZoneInterval.Value));
+        float syncWait = (VehicleGlobalConfig.FastMultiplayerSync != null && VehicleGlobalConfig.FastMultiplayerSync.Value)
+          ? 1.0f
+          : (VehicleGlobalConfig.ServerRaftUpdateZoneInterval != null ? VehicleGlobalConfig.ServerRaftUpdateZoneInterval.Value : 3.0f);
+        yield return new WaitForSeconds(syncWait);
       }
 
       LoggerProvider.LogDebug("UpdatePiecesInEachSectorWorker finished");
