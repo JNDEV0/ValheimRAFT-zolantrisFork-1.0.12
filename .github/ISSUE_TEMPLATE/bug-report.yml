@@ -17,7 +17,6 @@ body:
         - ValheimRAFT
         - DynamicLocations
         - ZDOWatcher
-        - YggdrasilTerrain
         - Other
 
   - type: textarea

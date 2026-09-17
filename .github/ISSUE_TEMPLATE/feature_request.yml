@@ -31,7 +31,7 @@ body:
     id: pre_existing_mod
     attributes:
       label: "If your request relates to an existing mod, please specify which one:"
-      description: "_Options: ValheimRAFT, DynamicLocations, ZDOWatcher, YggdrasilTerrain, Other:_"
+      description: "_Options: ValheimRAFT, DynamicLocations, ZDOWatcher, Other:_"
       placeholder: "Enter the mod name or 'Other' if applicable..."
 
   - type: markdown

@@ -1,8 +1,8 @@
-# ValheimRAFT v4.3.3 (Valheim 1.0.12 Compatibility & Polish Update)
+# ValheimRAFT v4.3.4 (Valheim 1.0.12 Compatibility & Polish Update)
 
 **ValheimRAFT** build custom movable rafts ships and movable bases in Valheim. Expand your vessels with standard building pieces, drop anchors, navigate the open seas, and take flight!
 
-> Update ValheimRAFT for **Valheim 1.0.12**, **[ValheimModding-Jotunn-2.30.0+](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)**, and **[denikson-BepInExPack_Valheim-5.4.2350+](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)**.
+> Update ValheimRAFT for **Valheim 1.0.12**, **[ValheimModding-Jotunn-2.30.0+](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)**, **[denikson-BepInExPack_Valheim-5.4.2350+](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)**, and **[ValheimModding-JsonDotNET-13.0.4+](https://thunderstore.io/c/valheim/p/ValheimModding/JsonDotNET/)**.
 
 ---
 
@@ -10,7 +10,7 @@
 
 enjoy, and you can donate at Ko-fi:
 
-👉 **[Support JNDEV0 on Ko-fi (https://ko-fi.com/jndev0)](https://ko-fi.com/jndev0)**
+☕ **[Support JNDEV0 on Ko-fi (https://ko-fi.com/jndev0)](https://ko-fi.com/jndev0)**
 
 ---
 
@@ -18,7 +18,7 @@ enjoy, and you can donate at Ko-fi:
 
 - This fork was created to make ValheimRAFT playable again following Valheim's 1.0 release (Unity 6 engine upgrade).
 - Core features have been tested mainly for single-player: vehicle piece building, floating/sailing, sail propulsion, anchor toggling, flying, ballasting, smooth water landing transitions, steering wheel doodad control, and world saving/loading.
-- ValheimRAFT is a massive and complex codebase containing advanced mechanicsNot all extended features or edge-case interactions have been exhaustively tested. 
+- ValheimRAFT is a massive and complex codebase containing advanced mechanics. Not all extended features or edge-case interactions have been exhaustively tested. 
 - **Offered "As-Is"**: Provided freely and without warranty. Always back up your character and world saves before testing! Players and modders are warmly invited to report issues, bugs, submit suggestions or Pull Requests, and help maintain this mod at the GitHub repository: 
   👉 **[https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)**
 
@@ -28,50 +28,34 @@ enjoy, and you can donate at Ko-fi:
 
 - **Original Creator**: **Sarcen** created the original ValheimRAFT mod that defined ship building in Valheim, and generously released it as open source in 2023 under the GPLv3 license.
 - **Modern Rewrite & Architecture**: **Zolantris** ([zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)) completely overhauled the mod's architecture, adding modular vehicle systems, convex hull boundary physics, and expansive features.
-- **1.0 Compatibility Update**: Because Zolantris has been inactive for several months while Valheim 1.0 broke existing builds, this fork was created by **JNDEV0** to address engine breakages introduced by the Valheim 1.0 / Unity 6 update, ensuring the mod remains accessible and functional for the community.
-- **Telemetry Removed**: Unused external telemetry wrappers (such as Sentry tracking) and leftover debug spam hooks have been audited and removed/disabled, ensuring clean, local, offline-friendly execution.
-
-*Licensed under the [GNU General Public License v3.0 (GPLv3)](LICENSE).*
-
----
-
-## 🎮 Controls Quick Reference
-
-| Action | Control (Default) |
-| :--- | :--- |
-| **Take Helm / Steer** | Press **E** at Steering Wheel |
-| **Forward / Increase Speed** | **W** (1 = Slow / Rudder, 2 = Half Sail, 3 = Full Sail) |
-| **Reverse / Decrease Speed** | **S** |
-| **Turn Rudder** | **A** / **D** |
-| **Ascend / Fly Up** | **Spacebar** ("Jump") |
-| **Descend / Ballast Down** | **Ctrl** or **C** ("Crouch") |
-| **Drop / Raise Anchor** | **Left Shift** ("Run") |
-| **Interact / Open Mechanism UI** | Press **E** on Mechanism Toggle Switch |
-| **Pause Game (Single Player)** | **Esc** |
 
 ---
 
 ## 📥 Installation
 
 ### Option A: Thunderstore / r2modman / Gale (Recommended)
-1. Search for **ValheimRAFT** in your mod manager and click **Install with Mod Manager**.
-2. Launch the game through your mod manager.
+1. Install via your mod manager of choice.
+2. Dependencies are automatically resolved and installed.
 
 ### Option B: NexusMods / Vortex / Manual Installation
 1. If using Vortex, install and enable the zip archive directly.
-2. If installing manually, extract `plugins/ValheimRAFT` into your `Valheim/BepInEx/plugins/` directory:
+2. If installing manually, extract `ValheimRAFT` into your `Valheim/BepInEx/plugins/` directory:
    ```
    Valheim/
    └── BepInEx/
        └── plugins/
-           └── ValheimRAFT/
-               ├── ValheimRAFT.dll
-               ├── ValheimVehicles.dll
-               ├── Zolantris.Shared.dll
-               ├── ZdoWatcher.dll
-               ├── DynamicLocations.dll
-               ├── Assets/
-               └── docs/
+           ├── ValheimRAFT/
+           │   ├── ValheimRAFT.dll
+           │   ├── ValheimVehicles.dll
+           │   ├── Zolantris.Shared.dll
+           │   ├── ZdoWatcher.dll
+           │   ├── DynamicLocations.dll
+           │   ├── ServerSync.dll
+           │   └── Assets/
+           │       └── Translations/
+           │           └── English/
+           │               └── valheimraft.json
+           └── Newtonsoft.Json.dll (from ValheimModding-JsonDotNET)
    ```
 
 ---
@@ -79,12 +63,61 @@ enjoy, and you can donate at Ko-fi:
 ## 📦 Requirements & Dependencies
 
 To use this mod, ensure you have the following required dependencies installed:
-1. **[denikson-BepInExPack_Valheim-5.4.2350](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)** (or newer)
-2. **[ValheimModding-Jotunn-2.30.0](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)** (or newer)
+1. **[denikson-BepInExPack_Valheim-5.4.2350+](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)**
+2. **[ValheimModding-Jotunn-2.30.0+](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/v/2.30.0/)**
+3. **[ValheimModding-JsonDotNET-13.0.4+](https://thunderstore.io/c/valheim/p/ValheimModding/JsonDotNET/)**
 
 ---
 
-## 🛠️ Changelog (v4.3.3)
+## 🚀 Changelog (v4.3.4)
+
+### Steering Wheel & Helm Controls
+- **Refined Hover Interaction Text**:
+  - Overhauled steering wheel tooltip to clearly state:
+    - `[Shift] Toggle Anchor`
+    - `[Jump] and [crouch] adjust elevation/depth`
+    - `[jump]+[crouch] toggle float/flight`
+  - Removed outdated divider lines, obsolete tutorial hints, mass displays, and debug prompts for a clean, immersive interface.
+- **Treadmill Animation & Weapon Holstering Fix**:
+  - Fixed the character running in place on a "treadmill" while mounting the steering wheel if entering it while moving.
+  - Automatically holsters equipped weapons and shields upon taking the helm so the player stands/crouches cleanly with both hands on the wheel.
+
+### Rope Ladder Ergonomics
+- **Instant Auto-Climb by Default**:
+  - Defaulted rope ladder movement to automatic fast climb without requiring manual toggling.
+  - Cleaned up hover interaction text by removing unnecessary mode toggle prompts.
+
+### Collision Damping & Shoreline Physics
+- **Rock Impact Damping & Anti-Stutter**:
+  - Fixed the boat acting like an unstoppable power-drill bulldozing shoreline rocks and freezing the game with collision log flooding.
+  - Added dynamic collision impulse damping: forward velocity is smoothly diminished exponentially upon hitting rocks and a gentle reverse rebound velocity is applied.
+
+### Save-Cleanup Protection & Teleport Piece Sync
+- **Save-Cleanup Poisoning Shielded**:
+  - Shielded `ZDO.Reset` and `RemoveZDO` hooks from being wiped out by Valheim Ashlands+ save cleanup cycles (`SaveCleanup`).
+  - Active world ZDOs are preserved in memory during world saves, preventing all ship pieces from disappearing from `m_allPieces` and `_zdoGuidLookup`.
+- **Vanilla Piece Loading on Boat Teleport Fixed**:
+  - Fixed an issue where beds, chests, crafting tables, walls, and vehicle portals remained invisible when teleporting to a ship in float mode.
+  - Added universal sector migration for all piece types in `ZDOMan.instance.m_objectsBySector` and portal objects in `m_portalObjects`.
+  - Fixed bed map pin desyncing to stale chunk locations by updating bed world positions and sectors even when the bed GameObject is unloaded.
+  - Added self-healing piece scanner (`EnsurePiecesForVehicle`) to guarantee piece recovery from `ZDOMan` under any condition.
+- **Pre-Teleport Piece Sync & Piece Breakdown Logging**:
+  - Synchronizes all piece coordinates and sectors prior to portal arrival.
+  - Categorizes pieces and logs counts to Unity console and on-screen HUD (top left):
+    `[BoatPortal] Destination Vehicle ID {id} at {pos}: Found {total} pieces ({raftCount} ValheimRAFT, {vanillaCount} Vanilla, {modCount} OdinArchitect/Modded).`
+  - Ensures all child GameObjects are fully instantiated before the teleport loading screen completes (`[BoatPortal] Completed teleport to Vehicle {id}. Loaded pieces: {loaded}/{total}`).
+
+### Clean Packaging & Mod Hygiene
+- **Decoupled Newtonsoft.Json**:
+  - Removed bundled `Newtonsoft.Json.dll` from the mod distribution in compliance with modding guidelines; added official dependency on `ValheimModding-JsonDotNET-13.0.4`.
+- **Trimmed Obsolete Assets & Docs**:
+  - Removed legacy `docs/` folder and disabled custom sail texture directories (`Assets/Logos`, `Assets/Patterns`, `Assets/Sails`).
+- **Cleaned Issue Templates**:
+  - Removed obsolete references to `YggdrasilTerrain` from GitHub issue templates.
+
+---
+
+## 🚀 Changelog (v4.3.3)
 
 ### Portal & Fast Travel Overhaul
 - **Boat-to-Land Portal Routing Fixed**: Resolved a critical issue where walking through a portal on a boat would teleport the player to the center of the boat instead of the connected land portal.
@@ -112,7 +145,7 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
-## 🛠️ Changelog (v4.3.2)
+## 🚀 Changelog (v4.3.2)
 
 ### Stability & Multi-Zone Loading
 - **Fast Travel / Portal Desync & Separated Parts Fixed**: Fixed a critical issue where portaling away from or loading near a ship caused pieces to detach, separate, or throw null references. Added safety timeouts and zone load checks to `Teleport_Patch`, protected vehicle pieces in `WearNTear_Patch` and `VehiclePiecesController` during sector initialization, and disabled violent origin recentering on teleport transitions.
@@ -138,7 +171,7 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
-## 🛠️ Changelog (v4.3.1 Summary)
+## 🚀 Changelog (v4.3.1 Summary)
 - **Valheim 1.0.12 & Unity 6 Runtime**: Fully recompiled and updated for Unity `v6000.0.75` and Jotunn `2.30.0`.
 - **Save & Logout Freeze Fixed**: Fixed black screen hang when returning to main menu caused by `DontDestroyOnLoad` on `Game.instance`.
 - **Convex Hull & Collision Spam Silenced**: Suppressed 0-point boundary warnings and disabled per-frame collision contact debug logging.
@@ -148,7 +181,7 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
-## 🌐 Community & Source Code
+## 💬 Community & Source Code
 
 - **GitHub Repository**: [https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12](https://github.com/JNDEV0/ValheimRAFT-zolantrisFork-1.0.12)
 - **Upstream Repository**: [https://github.com/zolantris/ValheimMods](https://github.com/zolantris/ValheimMods)
