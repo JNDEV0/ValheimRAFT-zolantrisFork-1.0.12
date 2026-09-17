@@ -79,6 +79,8 @@ public class PhysicsConfig : BepInExBaseConfig<PhysicsConfig>
   public static ConfigEntry<float> waterRockForceUnanchored = null!;
   public static ConfigEntry<float> waterRockForceAnchored = null!;
   public static ConfigEntry<float> waterRockForceSubmarine = null!;
+  public static ConfigEntry<float> waterSurfaceTiltFactor = null!;
+  public static ConfigEntry<float> waterSurfaceMaxTiltAngle = null!;
 
   // Camera (does not belong here)
   public static ConfigEntry<bool>
@@ -240,6 +242,14 @@ public class PhysicsConfig : BepInExBaseConfig<PhysicsConfig>
     waterRockForceUnanchored = config.BindUnique(SectionKey,
       $"waterRockForce_unanchored_{versionResetKey}", 0.075f,
       ConfigHelpers.CreateConfigDescription("Configure the rocking/sway force while at sea. At 0, the vehicle will still attempt to right itself, and will no longer sway. Higher values will make the vehicle much less stable and cause sea sickness. Recommended to stay within 0.075f and 0.10f but allows up to 0.15f.", true, false, new AcceptableValueRange<float>(0f, 0.15f)));
+
+    waterSurfaceTiltFactor = config.BindUnique(SectionKey,
+      "waterSurfaceTiltFactor", 0f,
+      ConfigHelpers.CreateConfigDescription("How much the hull aligns to the actual wave surface (pitch and roll) instead of always righting to level. 0 keeps the legacy behavior where the vehicle mostly only moves up and down with the water. 1 follows the wave slope sampled at the forward/back/left/right force points. Has no effect when ocean sway is disabled, while beached, or while submerged.", true, false, new AcceptableValueRange<float>(0f, 1f)));
+
+    waterSurfaceMaxTiltAngle = config.BindUnique(SectionKey,
+      "waterSurfaceMaxTiltAngle", 20f,
+      ConfigHelpers.CreateConfigDescription("Maximum pitch/roll in degrees the hull will align to when following the wave surface via waterSurfaceTiltFactor.", true, false, new AcceptableValueRange<float>(0f, 45f)));
 
     force = config.BindUnique(SectionKey,
       $"force_{versionResetKey}", 0.5f,
