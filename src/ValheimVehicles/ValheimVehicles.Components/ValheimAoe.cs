@@ -697,8 +697,9 @@ public class ValheimAoe : MonoBehaviour, IProjectile, IMonoUpdater
         : HitData.HitType.EnemyHit;
       hit.m_radius = m_radius;
 
-      if (hitObject.name.Contains("MineRock5"))
+      if (hitObject.name.Contains("MineRock5") || hitObject.GetComponent<MineRock5>() != null)
       {
+        hit.m_radius = 0f;
         var minerock5 = hitObject.GetComponent<MineRock5>();
         if (minerock5 != null) minerock5.Damage(hit);
       }

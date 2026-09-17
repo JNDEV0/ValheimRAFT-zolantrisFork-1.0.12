@@ -163,7 +163,7 @@ public class RamConfig : BepInExBaseConfig<RamConfig>
       ConfigHelpers.CreateConfigDescription(
         $"chopDamage for Ram Blades excludes Ram Stakes. {damageDescription}. Will damage trees depending on tool tier settings",
         true, false));
-    VehicleRamBasePickAxeDamage = config.BindUnique(VehicleRamSectionName, "pickaxeDamage", 100f,
+    VehicleRamBasePickAxeDamage = config.BindUnique(VehicleRamSectionName, "pickaxeDamage", 15f,
       ConfigHelpers.CreateConfigDescription(
         $"pickDamage {damageDescription} Will damage rocks as well as other entities",
         true, false));
@@ -246,10 +246,10 @@ public class RamConfig : BepInExBaseConfig<RamConfig>
         "allows vehicle rams to hit friendlies",
         true, true));
 
-    VehicleRamHitRadius = config.BindUnique(VehicleRamSectionName, "HitRadius", 5f,
+    VehicleRamHitRadius = config.BindUnique(VehicleRamSectionName, "HitRadius", 1f,
       ConfigHelpers.CreateConfigDescription(
         "The base hit radius of vehicle bodies. This will also effect self-damage to vehicle based on the radius.",
-        true, true, new AcceptableValueRange<float>(5f, 50f)));
+        true, true, new AcceptableValueRange<float>(0.1f, 50f)));
     RamHitInterval = config.BindUnique(RamSectionName, "RamHitInterval", 1f,
       ConfigHelpers.CreateConfigDescription(
         "Every X seconds, the ram will apply this damage",

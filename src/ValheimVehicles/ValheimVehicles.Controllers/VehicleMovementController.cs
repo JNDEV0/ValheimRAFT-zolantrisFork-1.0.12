@@ -966,32 +966,79 @@
 
 
 
-    private void OnCollisionEnter(Collision collision)
+    private float _impactBounceTimer = 0f;
 
+    public void HandleObstacleCollisionImpact(Collision collision)
     {
+      if (m_body == null || ShipDirection == null) return;
 
-      if (PiecesController == null || vehicleRam == null) return;
+      var forward = ShipDirection.forward;
+      var currentVel = m_body.linearVelocity;
+      var forwardSpeed = Vector3.Dot(currentVel, forward);
 
-      if (collision.collider.gameObject.layer == LayerHelpers.TerrainLayer) return;
+      if (forwardSpeed <= 0.3f) return;
 
-
-
-      if (TryAddVehicleWithinBoat(collision)) return;
-
-      if (IsSwivelCollision(collision)) return;
-
-      if (TryBailOnCollisionOfDifferentVehicleType(collision)) return;
-
-
-
-      if (LayerHelpers.IsContainedWithinLayerMask(collision.collider.gameObject.layer, LayerHelpers.PhysicalLayerMask))
-
+      Vector3 impactNormal = -forward;
+      if (collision.contactCount > 0)
       {
-
-        vehicleRam.OnCollisionEnterHandler(collision);
-
+        impactNormal = collision.contacts[0].normal;
       }
 
+      var impactDot = Vector3.Dot(impactNormal, -forward);
+      if (impactDot < 0.1f) return;
+
+      // Exponential reduction of forward speed
+      var reductionFactor = Mathf.Exp(-forwardSpeed * 0.25f);
+      var reducedSpeed = forwardSpeed * reductionFactor;
+
+      float bounceSpeed;
+      if (forwardSpeed < 6f)
+      {
+        // Low/medium speed impact: bounce back
+        bounceSpeed = Mathf.Clamp(forwardSpeed * 0.6f, 1.2f, 2.5f);
+      }
+      else
+      {
+        // High speed impact: absorb momentum, slow down drastically, slight rebound
+        bounceSpeed = Mathf.Clamp(reducedSpeed + 0.8f, 0.8f, 1.8f);
+      }
+
+      var bounceDir = Vector3.ProjectOnPlane(impactNormal, Vector3.up).normalized;
+      if (bounceDir.sqrMagnitude < 0.01f)
+      {
+        bounceDir = -forward;
+      }
+
+      var lateral = Vector3.ProjectOnPlane(currentVel, forward);
+      lateral = Vector3.ProjectOnPlane(lateral, Vector3.up) * 0.5f;
+
+      var newVelocity = (bounceDir * bounceSpeed) + lateral;
+      newVelocity.y = currentVel.y * 0.5f;
+
+      m_body.linearVelocity = newVelocity;
+      m_sailForce = Vector3.zero;
+      _impactBounceTimer = 0.6f;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+      if (PiecesController == null || vehicleRam == null) return;
+
+      if (TryAddVehicleWithinBoat(collision)) return;
+      if (IsSwivelCollision(collision)) return;
+      if (TryBailOnCollisionOfDifferentVehicleType(collision)) return;
+
+      if (collision.collider.gameObject.layer == LayerHelpers.TerrainLayer)
+      {
+        HandleObstacleCollisionImpact(collision);
+        return;
+      }
+
+      if (LayerHelpers.IsContainedWithinLayerMask(collision.collider.gameObject.layer, LayerHelpers.PhysicalLayerMask))
+      {
+        HandleObstacleCollisionImpact(collision);
+        vehicleRam.OnCollisionEnterHandler(collision);
+      }
     }
 
 
@@ -2007,6 +2054,11 @@
     public void CustomFixedUpdate(float deltaTime)
 
     {
+      if (_impactBounceTimer > 0f)
+      {
+        _impactBounceTimer -= deltaTime;
+      }
+
 
             if (_flightTakeoffImmunityTimer > 0f)
       {
@@ -7422,6 +7474,9 @@
 
         return;
 
+      if (_impactBounceTimer > 0f)
+        return;
+
 
 
       var flying = IsFlying();
@@ -7502,6 +7557,8 @@
       bool isFlying = false)
     {
       if (instance == null || instance.isAnchored || instance.m_body == null || instance.ShipDirection == null) return;
+
+      if (instance._impactBounceTimer > 0f) return;
 
       var sailPropulsion = 0f;
 

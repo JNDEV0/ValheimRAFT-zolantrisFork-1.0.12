@@ -801,6 +801,7 @@ public class VehicleRamAoe : ValheimAoe, IDeferredTrigger
 
   public override void OnCollisionStayHandler(Collision collision)
   {
+    if (IsVehicleRamType) return;
     if (!IsReady()) return;
     if (ShouldIgnore(collision.collider)) return;
     if (!UpdateDamageFromVelocity(
