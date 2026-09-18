@@ -1,4 +1,4 @@
-﻿#region
+#region
 
   using System;
   using ValheimVehicles.SharedScripts.Enums;
@@ -328,6 +328,7 @@
 
       // hammers must contain "hammer" in the string to match.
       public static readonly string VehicleHammer = $"{ValheimVehiclesPrefix}_vehicle_hammer";
+      public static readonly string VesselHorn = $"{ValheimVehiclesPrefix}_vessel_horn";
 
       public static readonly string RamBladePrefix = $"{ValheimVehiclesPrefix}_ram_blade";
       public static readonly string RamStakePrefix = $"{ValheimVehiclesPrefix}_ram_stake";

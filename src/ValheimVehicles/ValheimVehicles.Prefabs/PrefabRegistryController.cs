@@ -1,4 +1,4 @@
-// ReSharper disable ArrangeNamespaceBody
+﻿// ReSharper disable ArrangeNamespaceBody
 // ReSharper disable NamespaceStyle
 
 #region Usings
@@ -803,6 +803,7 @@ namespace ValheimVehicles.Prefabs
     {
       // main hammer for opening the custom vehicle build menu.
       VehicleHammerItemRegistry.Register();
+      VehicleRecallHornItemRegistry.Register();
     }
 
     public static void RegisterAllPiecePrefabs()

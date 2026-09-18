@@ -164,6 +164,8 @@
   "valheim_vehicles_haul_vehicle_stop": "To stop hauling vehicle.",
   "valheim_vehicles_hammer_name": "Vehicle Hammer",
   "valheim_vehicles_hammer_description": "Hammer to build and modify valheim-vehicles items (AKA ValheimRAFT).",
+  "item_vessel_horn": "Horn of the Sea",
+  "item_vessel_horn_desc": "A mystical horn bound to the spirits of the ocean.\n[Hold Left Click (3s)] Teleport to your vessel\n[Hold Right Click (3s)] Recall your vessel to crosshair\n[Hold Middle Click (3s)] Attune horn to current vessel",
   "valheim_vehicles_toggle_on": "on",
   "valheim_vehicles_toggle_off": "off",
   "valheim_vehicles_creative_toggle_desc": "Toggle the vehicle command on/off.",
