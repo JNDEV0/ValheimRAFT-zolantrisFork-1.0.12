@@ -107,6 +107,21 @@ public static class VesselHornChanneler
     return null;
   }
 
+    public static bool HasVesselHornInInventory(Player? player)
+  {
+    if (player == null || player.m_inventory == null) return false;
+    foreach (var item in player.m_inventory.GetAllItems())
+    {
+      if (item != null && item.m_shared != null)
+      {
+        var name = item.m_shared.m_name;
+        if (name == "$item_vessel_horn" || name == "Horn of Loki" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
+          return true;
+      }
+    }
+    return false;
+  }
+
   public static void UpdateLocalPlayer(Player player)
   {
     if (player == null || player.IsDead())
@@ -240,18 +255,11 @@ public static class VesselHornChanneler
 
     try
     {
-      if (player.m_zanim != null)
-      {
-        player.m_zanim.SetTrigger("consume");
-      }
-      else
-      {
-        player.StartEmote("cheer", false);
-      }
+      player.StartEmote("blowhorn", false);
     }
     catch (Exception)
     {
-      // ignored
+      try { player.StartEmote("cheer", false); } catch { }
     }
   }
 

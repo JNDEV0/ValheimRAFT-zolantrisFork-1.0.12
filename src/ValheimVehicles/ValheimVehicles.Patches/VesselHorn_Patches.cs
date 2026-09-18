@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using ValheimVehicles.Helpers;
+using ValheimVehicles.SharedScripts;
 using HarmonyLib;
 using UnityEngine;
 using ValheimVehicles.Components;
@@ -90,5 +93,80 @@ public static class VesselHorn_Patches
       return false; // Skip vanilla logic while channeling
     }
     return true;
+  }
+  private static bool _retainedHornOnDeath = false;
+  private static ItemDrop.ItemData? _retainedHornData = null;
+
+  [HarmonyPatch(typeof(Player), nameof(Player.CreateTombStone))]
+  [HarmonyPrefix]
+  public static void Player_CreateTombStone_Prefix(Player __instance)
+  {
+    _retainedHornOnDeath = false;
+    _retainedHornData = null;
+    if (__instance == null || __instance.m_inventory == null) return;
+
+    var items = __instance.m_inventory.GetAllItems();
+    for (int i = items.Count - 1; i >= 0; i--)
+    {
+      var item = items[i];
+      if (item != null && item.m_shared != null)
+      {
+        var name = item.m_shared.m_name;
+        if (name == "$item_vessel_horn" || name == "Horn of Loki" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
+        {
+          _retainedHornOnDeath = true;
+          _retainedHornData = item;
+          __instance.m_inventory.RemoveItem(item);
+          if (LoopTracker.Enabled)
+          {
+            LoggerProvider.LogInfo("[VesselHorn] Preserved Horn of Loki from tombstone drop.");
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  [HarmonyPatch(typeof(Player), nameof(Player.CreateTombStone))]
+  [HarmonyPostfix]
+  public static void Player_CreateTombStone_Postfix(Player __instance)
+  {
+    if (__instance == null || __instance.m_inventory == null || _retainedHornData == null) return;
+    __instance.m_inventory.AddItem(_retainedHornData);
+    if (LoopTracker.Enabled)
+    {
+      LoggerProvider.LogInfo("[VesselHorn] Restored Horn of Loki to player inventory after tombstone creation.");
+    }
+  }
+
+  [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
+  [HarmonyPostfix]
+  public static void Player_OnSpawned_Postfix(Player __instance)
+  {
+    if (__instance == Player.m_localPlayer && _retainedHornOnDeath)
+    {
+      if (!VesselHornChanneler.HasVesselHornInInventory(__instance))
+      {
+        if (_retainedHornData != null)
+      {
+        __instance.m_inventory.AddItem(_retainedHornData);
+      }
+      else if (ObjectDB.instance != null)
+      {
+        var prefab = ObjectDB.instance.GetItemPrefab(PrefabNames.VesselHorn);
+        var drop = prefab ? prefab.GetComponent<ItemDrop>() : null;
+        if (drop != null)
+        {
+          __instance.m_inventory.AddItem(drop.m_itemData.Clone());
+        }
+      }
+        if (LoopTracker.Enabled)
+        {
+          LoggerProvider.LogInfo("[VesselHorn] Granted Horn of Loki to respawned player.");
+        }
+      }
+      _retainedHornOnDeath = false;
+      _retainedHornData = null;
+    }
   }
 }

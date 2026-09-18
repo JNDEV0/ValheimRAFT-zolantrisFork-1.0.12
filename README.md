@@ -69,23 +69,69 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
-## 🚀 Changelog (v4.3.5)
+## 📜 Changelog (v4.3.5)
 
-### Horn of Loki (Boat Recall & Helm Attunement)
-- **Craftable Emergency Tool**: Added the **Horn of Loki** (`$item_vessel_horn`), hand-crafted for 2 Wood directly from inventory without requiring a workbench. (Named after Loki, the mythical Norse ship builder of Naglfar).
+### 📯 Horn of Loki (Boat Recall, Helm Attunement & Emergency Teleport)
+- **Craftable Emergency Tool**: Added the **Horn of Loki** (`$item_vessel_horn`), hand-crafted for 2 Wood directly from inventory without requiring a workbench (named after Loki, the mythical Norse ship builder of Naglfar).
+- **Kept on Death**: If you have the Horn of Loki in your inventory when you die, you will retain it upon respawn, allowing you to immediately channel and teleport back to your ship to recover or grab backup gear!
 - **Steering Wheel Attunement (`[Right-Click]`)**: Aim directly at your boat's Vehicle Wheel within interaction range (≤ 3.5 m) and hold right-click for 3 seconds to attune the horn to your vessel. Displays an on-screen alert (`"Must bind at Vehicle Wheel"`) if aiming anywhere else.
 - **Direct Deck Teleport (`[Left-Click]`)**: Hold left-click for 3 seconds to channel an emergency teleport directly to the steering wheel on deck from anywhere in the world (even while carrying metals and regardless of carry weight). Displays `"Bind to a boat first"` if no ship is owned or bound.
+- **Blowhorn Emote**: The character raises the horn and plays the `"blowhorn"` emote during the 3-second channel, cleanly and instantly cancelable if you move or release the mouse button.
 - **Silent Cancellation & Sprint Fix**: Channeling cancels cleanly and silently when releasing early or moving, without on-screen message spam. Resolved the sprinting input conflict (Shift+W) where `AltPlace` triggered the action bar while running.
 - **Diagnostic Logging Toggle**: Horn and teleport console messages are now routed through the mechanism's **"Enable Loop Logging"** toggle, keeping the console completely clean by default.
 
-### Terrain Sync & Piece Validation (Save File Repair)
-- **Terrain Structure Leak Prevention**: Fixed an issue on older save loads where nearby land terrain pieces (dungeon structures, rocks, spawner stones) could be erroneously indexed as vehicle pieces (`MBParentId`), inflating boat part counts and dragging terrain across the world.
-- **Automated Piece Validation & Purge**: Added strict validation during vehicle piece registration and world save loading. Non-vehicle terrain structures mistakenly parented to a boat are automatically pruned and restored to normal world objects.
+### ⚓ Physics & Flight Stability
+- **Anchored Kinematic Lock**:
+  - When a vehicle is anchored (or auto-anchored when left unattended with no players aboard), the vehicle Rigidbody is now locked to kinematic (`m_body.isKinematic = true`) and all velocities are zeroed.
+  - Completely prevents airborne vehicles from drifting, sinking, or plummeting into the void (`y < -5000m`) when players step off or travel beyond render distance.
+  - Dynamically restores full physics simulation seamlessly upon raising anchor.
+- **Relaxed Flight Water-Exit Threshold**:
+  - Relaxed the automatic flight-to-water transition trigger from `waterLvl + 0.1f` to `waterLvl - 0.5f` (requiring ~0.5m hull penetration into water).
+  - Prevents ocean wave crests and swells from prematurely kicking airborne vehicles out of flight mode while skimming low over the ocean.
+- **Fixed Flight Hold Force**:
+  - Fixed an issue where stepping off an airborne vehicle erroneously bypassed the vertical altitude-holding force.
 
-### Loop Optimization & Stutter Elimination
-- **Segmented Frame Slice Budget (≤ 2 ms)**: Reduced piece synchronization slice times from 10ms down to 2ms per frame, ensuring the background sync yields before it can ever cause a visible frame drop or micro-stutter.
-- **Movement Threshold Guard**: Throttled piece ZDO updates when the vessel is anchored, docked, or moving less than 2.5 meters. Idle and stationary vessels consume near-zero background CPU.
-- **Coroutine Active-Time Profiling**: Corrected `LoopTracker` profiling to measure active CPU processing rather than multi-frame coroutine wait intervals.
+### ☸️ Controls & Steering Wheel
+- **Steering Wheel Auto-Binding**:
+  - Added self-healing vehicle resolution to `SteeringWheelComponent`: automatically detects and links to the vehicle manager through hierarchy, root objects, ZDO parent IDs, or proximity (<15m), binds `InitializeControls()`, and registers the wheel with the vehicle.
+- **NullReferenceException & Interaction Fix**:
+  - Resolved the `NullReferenceException` spam in `SteeringWheelComponent.GetHoverText()` and `Hud.UpdateCrosshair`.
+  - Fixed an issue where newly placed or loaded steering wheels had no hover text and could not be grabbed or steered.
+
+### ⛵ Sails & Construction
+- **Contracted Sail Scale 0 Fix (Infinite Material Duplication Bug)**:
+  - Fixed an issue where contracted sails at speed 0 / Stop / Slow / Back scaled to `0f`, collapsing `BoxCollider` to zero volume and triggering `BoxCollider does not support negative scale or size` warnings, `Missing prefab hash: -1` errors, and failed deconstruction.
+  - Enforced a minimum Y-scale of `0.01f` across all sail prefabs at rest.
+  - Deconstructing sails at speed 0 now drops materials once and cleanly destroys the piece without errors or item duplication.
+- **Configurable Sail Propulsion Multiplier**:
+  - Added `PropulsionConfig.SailPropulsionMultiplier` (default `1.0f`, range `0.05` to `2.0`) to allow server admins or players to scale sailing speed without affecting rowing or reverse.
+
+### 🌊 Immersion & Flight/Ballast Tuning
+- **Wave Surface Hull Tilt (Opt-In)**:
+  - Added natural wave tilting (`PhysicsConfig.waterSurfaceTiltFactor`, default `0.0f` = disabled, range `0.0`–`1.0`, max tilt up to `45°`).
+  - When enabled, smoothly aligns the hull's pitch and roll to the ocean wave surface sampled during buoyancy, eliminating the rigid "tabletop" look at sea.
+  - Zero additional raycasts (uses existing floatation points) and automatically disabled during flight mode.
+- **Ballast / Submarine Ascent & Descent Speed**:
+  - Tuned default `BallastClimbingOffset` to `0.4f` for smooth, realistic underwater diving and surfacing.
+  - Maintained `FlightClimbingOffset` at `2.0f` for responsive air maneuvering.
+
+### 🚀 Performance, Sync & Multiplayer
+- **Boat Loop Rate-Limiting**:
+  - Client-side piece sync (`AllClientsSync()`) is now throttled to run at most once every 2.0 seconds rather than running continuously every tick.
+  - Isolated vehicle pieces from unrelated land base structures: `EnsurePiecesForVehicle()` strictly targets pieces with valid boat offsets (`MBPositionHash`) or active raft pieces, preventing massive lag spikes near large coastal settlements.
+- **Server Piece-Sync Wait**:
+  - Tuned default `ServerRaftUpdateZoneInterval` to `3.0s` (down from `5.0s`), providing a balanced default for multiplayer servers without a hardcoded floor.
+- **Segmented Frame Slice Budget (≤ 2 ms)**:
+  - Reduced piece synchronization slice times from 10ms down to 2ms per frame in `Server_SyncAllVehiclePiecesToVehiclePosition`, ensuring the background sync yields before it can ever cause a visible frame drop or micro-stutter.
+- **Movement Threshold Guard**:
+  - Throttled piece ZDO updates when the vessel is anchored, docked, or moving less than 2.5 meters. Idle and stationary vessels consume near-zero background CPU.
+- **Diagnostic Loop Logging & Mechanism Switch Panel**:
+  - Added lightweight `LoopTracker` performance telemetry.
+  - Added a **"Diagnostics & Sync"** section to the Mechanism Switch UI:
+    * **"Loop Log" toggle**: Toggles `[LoopPerf]` diagnostic reporting in the console on/off.
+    * **"Fast MP Sync" toggle**: Allows server admins and ship owners to toggle tight 1.0s multiplayer piece syncing on the fly (off by default).
+- **Teleport Clean-Up**:
+  - Removed top-left HUD message popups during portal teleportation to vehicle, keeping piece breakdown details in the BepInEx log.
 
 ---
 
