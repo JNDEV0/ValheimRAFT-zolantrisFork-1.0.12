@@ -1,4 +1,4 @@
-#region
+﻿#region
 
 
 
@@ -7871,7 +7871,7 @@
 
 
 
-    private void SetTargetHeight(float val)
+    public void SetTargetHeight(float val)
 
     {
 
