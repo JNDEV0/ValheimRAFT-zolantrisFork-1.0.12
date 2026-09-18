@@ -17,6 +17,10 @@ public class VehicleGlobalConfig : BepInExBaseConfig<VehicleGlobalConfig>
     public static ConfigEntry<bool> FastMultiplayerSync = null!;
   public static ConfigEntry<bool> ForceShipOwnerUpdatePerFrame { get; set; }
 
+  // localization
+  public static ConfigEntry<string> ModLanguage = null!;
+  private const string VehicleLocalizationKey = $"{VehicleGlobalBaseKey}:Localization";
+
   // section keys
   private const string VehicleGlobalBaseKey = "VehicleGlobal";
   private const string VehicleSoundKey = $"{VehicleGlobalBaseKey}:Sound";
@@ -26,6 +30,17 @@ public class VehicleGlobalConfig : BepInExBaseConfig<VehicleGlobalConfig>
   {
     CreateSoundConfig(config);
     CreateVehicleUpdaterConfig(config);
+    CreateLocalizationConfig(config);
+  }
+
+  private static void CreateLocalizationConfig(ConfigFile config)
+  {
+    ModLanguage = config.BindUnique(VehicleLocalizationKey,
+      "Language",
+      "Auto",
+      ConfigHelpers.CreateConfigDescription(
+        "Language used by ValheimRAFT. 'Auto' follows the game's selected language if an optional translation is installed, else defaults to English.",
+        false, false));
   }
 
   private static void CreateVehicleUpdaterConfig(ConfigFile config)

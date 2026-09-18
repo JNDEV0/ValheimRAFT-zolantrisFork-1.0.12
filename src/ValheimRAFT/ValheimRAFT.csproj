@@ -41,6 +41,9 @@
     <ItemGroup>
         <Content Include=".gitignore"/>
         <Content Include="Assets\Translations\English\valheimraft.json"/>
+        <EmbeddedResource Include="Assets\Translations\English\valheimraft.json">
+            <LogicalName>English.valheimraft.json</LogicalName>
+        </EmbeddedResource>
         <Content Include="README.md"/>
         <Content Include="Thunderstore\icon.png"/>
         <Content Include="Thunderstore\manifest.json"/>

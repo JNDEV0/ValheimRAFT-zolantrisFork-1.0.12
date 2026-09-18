@@ -217,7 +217,7 @@
     {
       if (!__instance.isActiveAndEnabled) return false;
       var zdo = __instance.m_nview != null ? __instance.m_nview.GetZDO() : null;
-      var parentVehicleId = zdo != null ? zdo.GetInt(VehicleZdoVars.MBParentId, 0) : 0;
+      var parentVehicleId = zdo != null ? VehiclePiecesController.GetParentID(zdo) : 0;
       var baseVehicle =
         __instance.GetComponentInParent<IPieceActivatorHost>();
       if (baseVehicle == null && parentVehicleId == 0) return true;

@@ -1941,11 +1941,11 @@
 
         {
 
-          m_body.isKinematic = true;
-
           m_body.linearVelocity = Vector3.zero;
 
           m_body.angularVelocity = Vector3.zero;
+
+          m_body.isKinematic = true;
 
         }
 
@@ -5117,6 +5117,8 @@
     private bool UpdateAnchorVelocity()
     {
       if (!isAnchored) return false;
+
+      if (m_body.isKinematic) return true;
 
 
 

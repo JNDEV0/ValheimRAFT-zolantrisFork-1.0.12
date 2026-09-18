@@ -121,6 +121,7 @@ public class ValheimRaftPlugin : BaseUnityPlugin
     ValheimVehicles.Compat.ValheimRAFT_API.RegisterHost(Instance);
     PrefabRegistryController.InitValheimVehiclesAssetBundle();
     ValheimVehiclesPlugin.CreateConfigFromValheimRAFTPluginConfig(ModConfigSync, Config);
+    ValheimVehicles.Integrations.ValheimRaftLocalization.Initialize();
 
     // @warning patch controller must be called after CreateConfig.
     PatchController.Apply(HarmonyGuid);

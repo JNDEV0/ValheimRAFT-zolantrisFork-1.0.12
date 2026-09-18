@@ -1,3 +1,4 @@
+using System.Reflection;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -61,6 +62,8 @@ public class VehicleCommands : ConsoleCommand
     public const string recenter = "recenter";
     public const string fixAllVehiclePositions = "fixAllVehiclePositions";
     public const string fixNearbyVehiclePositions = "fixNearbyVehiclePositions";
+    public const string resetterrain = "resetterrain";
+    public const string fixterrain = "fixterrain";
   }
 
   private struct CommandInfo
@@ -166,6 +169,14 @@ public class VehicleCommands : ConsoleCommand
       new CommandInfo(
         VehicleCommandArgs.fixNearbyVehiclePositions,
         "Fixes the position of vehicle and all prefabs that are part of the vehicle. Applies only to vehicles in a radius around the player.\nOptional args: radiusX radiusZ minHeight maxHeight. Defaults to 250 250 for the radius. Example: vehicle fixNearbyVehiclePositions 250 250 -100 500"),
+
+      new CommandInfo(
+        VehicleCommandArgs.resetterrain,
+        "Resets glitched terrain spires under the boat and destroys rogue trees/rocks. Adaptively flattens to seabed in ocean or to surrounding ground level on land.\nOptional args: [radius]. Defaults to vessel bounds + 6m.\nExample: vehicle resetterrain 25"),
+
+      new CommandInfo(
+        VehicleCommandArgs.fixterrain,
+        "Alias for resetterrain.\nUsage: vehicle fixterrain [radius]"),
 
       new CommandInfo(
         VehicleCommandArgs.help,
@@ -281,6 +292,10 @@ public class VehicleCommands : ConsoleCommand
         break;
       case VehicleCommandArgs.fixNearbyVehiclePositions:
         FixNearbyVehiclePositions(nextArgs);
+        break;
+      case VehicleCommandArgs.resetterrain:
+      case VehicleCommandArgs.fixterrain:
+        ResetTerrainUnderVehicle(nextArgs);
         break;
     }
   }
@@ -1699,6 +1714,291 @@ public class VehicleCommands : ConsoleCommand
 
     piecesController.ManualRecenterVehicleOrigin();
     Logger.LogMessage("Vehicle recenter initiated. Check logs for details.");
+  }
+
+  private static readonly System.Reflection.MethodInfo? TCSaveMethod =
+    AccessTools.Method(typeof(TerrainComp), "Save", new[] { typeof(bool) });
+
+  private static readonly AccessTools.FieldRef<TerrainComp, bool[]>? TCModifiedHeightRef =
+    AccessTools.FieldRefAccess<TerrainComp, bool[]>("m_modifiedHeight");
+
+  private static readonly AccessTools.FieldRef<TerrainComp, float[]>? TCLevelDeltaRef =
+    AccessTools.FieldRefAccess<TerrainComp, float[]>("m_levelDelta");
+
+  private static readonly AccessTools.FieldRef<TerrainComp, float[]>? TCSmoothDeltaRef =
+    AccessTools.FieldRefAccess<TerrainComp, float[]>("m_smoothDelta");
+
+  private static readonly AccessTools.FieldRef<TerrainComp, bool[]>? TCModifiedPaintRef =
+    AccessTools.FieldRefAccess<TerrainComp, bool[]>("m_modifiedPaint");
+
+  private static readonly AccessTools.FieldRef<TerrainComp, int>? TCWidthRef =
+    AccessTools.FieldRefAccess<TerrainComp, int>("m_width");
+
+  private static readonly AccessTools.FieldRef<TerrainComp, int>? TCOperationsRef =
+    AccessTools.FieldRefAccess<TerrainComp, int>("m_operations");
+
+  /// <summary>
+  /// Resets glitched terrain spires under a vehicle or player and cleans up rogue wild trees/rocks.
+  /// Uses perimeter sampling to adaptively level the target area:
+  /// - If surrounded by ocean, resets vertices to natural procedural seed seabed.
+  /// - If surrounded by land, flattens vertices to the ambient surrounding ground height.
+  /// </summary>
+  public static void ResetTerrainUnderVehicle(string[]? args)
+  {
+    if (!Player.m_localPlayer)
+    {
+      Logger.LogWarning("No local player found. Cannot run resetterrain command.");
+      return;
+    }
+
+    var vehicleManager = GetNearestVehicleManager();
+    if (vehicleManager == null)
+    {
+      var pPos = Player.m_localPlayer.transform.position;
+      vehicleManager = GetNearestVehicleManagerInSphere(pPos, 35f, null);
+    }
+
+    var center = vehicleManager != null ? vehicleManager.transform.position : Player.m_localPlayer.transform.position;
+
+    var defaultRadius = 25f;
+    if (vehicleManager != null)
+    {
+      var cols = vehicleManager.GetComponentsInChildren<Collider>();
+      if (cols != null && cols.Length > 0)
+      {
+        var b = new Bounds(vehicleManager.transform.position, Vector3.zero);
+        foreach (var c in cols)
+        {
+          if (c && c.enabled && !c.isTrigger)
+          {
+            b.Encapsulate(c.bounds);
+          }
+        }
+        if (b.size.sqrMagnitude > 1f)
+        {
+          defaultRadius = Mathf.Max(b.extents.x, b.extents.z) + 6f;
+        }
+      }
+    }
+    defaultRadius = Mathf.Clamp(defaultRadius, 15f, 45f);
+
+    var radius = defaultRadius;
+    if (args != null && args.Length > 0 && float.TryParse(args[0], out var parsedRadius))
+    {
+      radius = Mathf.Clamp(parsedRadius, 5f, 80f);
+    }
+
+    // 1. Perimeter sampling for adaptive leveling
+    const int sampleCount = 16;
+    var sampleRadius = radius + 4f;
+    var perimeterHeights = new List<float>();
+
+    for (var i = 0; i < sampleCount; i++)
+    {
+      var angle = i * (Mathf.PI * 2f / sampleCount);
+      var samplePos = new Vector3(
+        center.x + Mathf.Cos(angle) * sampleRadius,
+        0f,
+        center.z + Mathf.Sin(angle) * sampleRadius);
+
+      if (ZoneSystem.instance && ZoneSystem.instance.GetGroundHeight(samplePos, out var gh))
+      {
+        perimeterHeights.Add(gh);
+      }
+    }
+
+    if (perimeterHeights.Count == 0)
+    {
+      perimeterHeights.Add(center.y);
+    }
+
+    perimeterHeights.Sort();
+    var medianHeight = perimeterHeights[perimeterHeights.Count / 2];
+    var waterLevel = ZoneSystem.instance ? ZoneSystem.instance.m_waterLevel : 30f;
+    var isOcean = medianHeight < (waterLevel - 1.0f);
+
+    // 2. TerrainComp & Heightmap leveling / resetting
+    var heightmaps = new List<Heightmap>();
+    Heightmap.FindHeightmap(center, radius + 4f, heightmaps);
+
+    var modifiedVertexCount = 0;
+    var modifiedTcCount = 0;
+
+    foreach (var hmap in heightmaps)
+    {
+      if (!hmap) continue;
+      var tc = TerrainComp.FindTerrainCompiler(hmap.transform.position);
+      if (!tc)
+      {
+        tc = hmap.GetAndCreateTerrainCompiler();
+      }
+      if (!tc || !tc.m_initialized) continue;
+
+      var tcNv = tc.GetComponent<ZNetView>();
+      if (tcNv && tcNv.IsValid())
+      {
+        tcNv.ClaimOwnership();
+      }
+
+      if (TCModifiedHeightRef == null || TCLevelDeltaRef == null || TCSmoothDeltaRef == null ||
+          TCModifiedPaintRef == null || TCWidthRef == null)
+      {
+        Logger.LogError("TerrainComp field references are not bound.");
+        continue;
+      }
+
+      var modHeight = TCModifiedHeightRef(tc);
+      var levelDelta = TCLevelDeltaRef(tc);
+      var smoothDelta = TCSmoothDeltaRef(tc);
+      var modPaint = TCModifiedPaintRef(tc);
+      var width = TCWidthRef(tc);
+
+      hmap.WorldToVertex(center, out var cx, out var cy);
+      var scale = hmap.m_scale > 0.01f ? hmap.m_scale : 1f;
+      var num = radius / scale;
+      var num2 = Mathf.CeilToInt(num);
+      var num3 = width + 1;
+      var centerV = new Vector2(cx, cy);
+
+      var tcDirty = false;
+
+      for (var i = cy - num2; i <= cy + num2; i++)
+      {
+        for (var j = cx - num2; j <= cx + num2; j++)
+        {
+          if (j < 0 || i < 0 || j >= num3 || i >= num3) continue;
+          if (Vector2.Distance(centerV, new Vector2(j, i)) > num) continue;
+
+          var idx = i * num3 + j;
+          if (idx >= modHeight.Length) continue;
+
+          if (isOcean)
+          {
+            // In ocean: restore natural seed seabed (eliminates dirt spire)
+            if (modHeight[idx] || levelDelta[idx] != 0f || smoothDelta[idx] != 0f)
+            {
+              modHeight[idx] = false;
+              levelDelta[idx] = 0f;
+              smoothDelta[idx] = 0f;
+              tcDirty = true;
+              modifiedVertexCount++;
+            }
+            if (modPaint[idx])
+            {
+              modPaint[idx] = false;
+              tcDirty = true;
+            }
+          }
+          else
+          {
+            // On land: adaptively level to ambient ground height
+            var currentVertexH = hmap.GetHeight(j, i);
+            var tcWorldY = tc.transform.position.y;
+            var heightDiff = (medianHeight - tcWorldY) - currentVertexH;
+            var targetDelta = Mathf.Clamp(levelDelta[idx] + smoothDelta[idx] + heightDiff, -8f, 8f);
+
+            if (!modHeight[idx] || !Mathf.Approximately(levelDelta[idx], targetDelta) || smoothDelta[idx] != 0f)
+            {
+              levelDelta[idx] = targetDelta;
+              smoothDelta[idx] = 0f;
+              modHeight[idx] = true;
+              modPaint[idx] = false;
+              tcDirty = true;
+              modifiedVertexCount++;
+            }
+          }
+        }
+      }
+
+      if (tcDirty)
+      {
+        if (TCOperationsRef != null)
+        {
+          TCOperationsRef(tc)++;
+        }
+        TCSaveMethod?.Invoke(tc, new object[] { false });
+        hmap.Poke(0, false);
+        modifiedTcCount++;
+      }
+    }
+
+    if (ClutterSystem.instance)
+    {
+      ClutterSystem.instance.ResetGrass(center, radius + 4f);
+    }
+
+    // 3. Clear overlapping rogue wild foliage/trees/rocks
+    var colliders = Physics.OverlapSphere(center, radius + 2f);
+    var objectsToDestroy = new HashSet<ZNetView>();
+
+    foreach (var col in colliders)
+    {
+      if (!col) continue;
+      var nv = col.GetComponentInParent<ZNetView>();
+      if (!nv || !nv.IsValid()) continue;
+
+      // Never destroy the vehicle, players, characters, or registered pieces
+      if (vehicleManager && (nv.gameObject == vehicleManager.gameObject || nv.transform.IsChildOf(vehicleManager.transform)))
+        continue;
+
+      if (nv.GetComponent<Player>() || nv.GetComponent<Character>())
+        continue;
+
+      if (nv.GetComponent<Piece>() || nv.GetComponent<WearNTear>())
+        continue;
+
+      if (nv.GetComponent<Ship>() || nv.GetComponent<Bed>() || nv.GetComponent<Container>() || nv.GetComponent<CraftingStation>())
+        continue;
+
+      var zdo = nv.GetZDO();
+      if (zdo != null && VehiclePiecesController.GetParentID(zdo) != 0)
+        continue;
+
+      // Identify rogue wild objects
+      var isRogueWildObject = false;
+      if (nv.GetComponent<TreeBase>() || nv.GetComponent<TreeLog>())
+      {
+        isRogueWildObject = true;
+      }
+      else if (nv.GetComponent<MineRock>() || nv.GetComponent<MineRock5>())
+      {
+        isRogueWildObject = true;
+      }
+      else if (nv.GetComponent<Destructible>() && !nv.GetComponent<Piece>())
+      {
+        isRogueWildObject = true;
+      }
+      else if (nv.GetComponent<Pickable>() && !nv.GetComponent<Piece>())
+      {
+        isRogueWildObject = true;
+      }
+      else if (nv.GetComponent<TerrainModifier>())
+      {
+        isRogueWildObject = true;
+      }
+
+      if (isRogueWildObject)
+      {
+        objectsToDestroy.Add(nv);
+      }
+    }
+
+    var destroyedCount = 0;
+    foreach (var nv in objectsToDestroy)
+    {
+      if (nv && nv.IsValid())
+      {
+        nv.ClaimOwnership();
+        ZNetScene.instance.Destroy(nv.gameObject);
+        destroyedCount++;
+      }
+    }
+
+    var envType = isOcean ? $"seabed (depth Y={medianHeight:F1})" : $"ground level (Y={medianHeight:F1})";
+    Logger.LogMessage(
+      $"[Vehicle] Terrain reset complete. Target: {envType} (radius {radius:F1}m). " +
+      $"Adjusted {modifiedVertexCount} terrain vertices across {modifiedTcCount} chunk compiler(s). " +
+      $"Destroyed {destroyedCount} rogue wild trees/rocks.");
   }
 
   public override List<string> CommandOptionList()

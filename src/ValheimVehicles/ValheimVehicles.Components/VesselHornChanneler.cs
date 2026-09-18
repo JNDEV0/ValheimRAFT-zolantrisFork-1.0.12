@@ -255,7 +255,7 @@ public static class VesselHornChanneler
 
     try
     {
-      player.StartEmote("blowhorn", false);
+      player.StartEmote("toast", true);
     }
     catch (Exception)
     {
