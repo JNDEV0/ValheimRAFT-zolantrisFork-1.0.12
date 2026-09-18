@@ -395,16 +395,18 @@
     ///
     /// This does not update vehicle position. This should be handled by the owner of the vehicle.
     /// 
+    private static readonly Dictionary<int, Vector3> _lastSyncedVehiclePositions = new();
+
     public static IEnumerator Server_SyncAllVehiclePiecesToVehiclePosition()
     {
-      using var loopScope = LoopTracker.Scope("VPC.Server_SyncAllVehiclePiecesToVehiclePosition", () => m_allPieces?.Values.Sum(v => v.Count) ?? 0);
       var stopWatchRuntime = Stopwatch.StartNew();
-      var totalTime = Stopwatch.StartNew();
+      var activeSyncWatch = Stopwatch.StartNew();
+      int syncedPieceCount = 0;
 
       foreach (var kvp in m_allPieces)
       {
-        // ensure we never run for too long in one frame to avoid holding FPS. This can happen if there are a lot of pieces to update and the position updates are heavy.
-        if (stopWatchRuntime.ElapsedMilliseconds > 10)
+        // Segmented frame budget: yield if we spend >= 2ms in this frame to guarantee 60+ FPS without micro-stutter
+        if (stopWatchRuntime.ElapsedMilliseconds >= 2)
         {
           yield return null;
           stopWatchRuntime.Restart();
@@ -421,17 +423,18 @@
         if (!RPCUtils.HasNearbyPlayersOrPeers([vehicleZdo], VehicleActiveAreaSyncRadius)) continue;
 
         yield return SyncAllPrefabsToVehiclePosition_Routine(vehicleZdo, kvp.Value, stopWatchRuntime);
+        syncedPieceCount += kvp.Value != null ? kvp.Value.Count : 0;
         yield return null;
       }
 
-      totalTime.Stop();
-      LoggerProvider.LogDebugDebounced($"<sync_all_pieces_runtime> Total runtime for syncing all pieces: {totalTime.ElapsedMilliseconds}ms");
-
-      if (totalTime.ElapsedMilliseconds < 500)
+      activeSyncWatch.Stop();
+      if (LoopTracker.Enabled)
       {
-        yield return new WaitForSeconds(Mathf.Clamp((1000f - totalTime.ElapsedMilliseconds) / 1000f, 0.1f, 1f));
+        LoopTracker.Record("VPC.Server_SyncAllVehiclePiecesToVehiclePosition", syncedPieceCount, activeSyncWatch.Elapsed.TotalMilliseconds);
       }
 
+      // Idle cooldown between sync waves
+      yield return new WaitForSeconds(1.0f);
       yield return null;
     }
 
@@ -439,11 +442,24 @@
     {
       var vehiclePosition = GetVehiclePosition(vehicleZdo);
       if (!vehiclePosition.HasValue) yield break;
+
+      // MOVEMENT THRESHOLD GUARD:
+      // If the vehicle hasn't moved at least 2.5 meters since the last sync, skip this routine completely!
+      // This prevents running piece sync loops when anchored, docked, drifting slightly, or when players are walking on deck.
+      var vehicleUid = vehicleZdo.GetInt(ZdoVarController.PersistentUidHash, 0);
+      if (vehicleUid != 0 && _lastSyncedVehiclePositions.TryGetValue(vehicleUid, out var lastPos))
+      {
+        if (Vector3.Distance(vehiclePosition.Value, lastPos) < 2.5f)
+        {
+          yield break;
+        }
+      }
+
       var invalidZdos = new List<ZDO>();
       foreach (var zdo in zdoPieces)
       {
-        // ensure we never run for too long in one frame to avoid holding FPS. This can happen if there are a lot of pieces to update and the position updates are heavy.
-        if (stopWatchRuntime.ElapsedMilliseconds > 10)
+        // Segmented 2ms frame slice budget to completely eliminate FPS micro-stutters
+        if (stopWatchRuntime.ElapsedMilliseconds >= 2)
         {
           yield return null;
           stopWatchRuntime.Restart();
@@ -455,6 +471,11 @@
           continue;
         }
         SetPrefabWorldPosition(zdo, vehiclePosition.Value);
+      }
+
+      if (vehicleUid != 0)
+      {
+        _lastSyncedVehiclePositions[vehicleUid] = vehiclePosition.Value;
       }
 
       if (invalidZdos.Count > 0)

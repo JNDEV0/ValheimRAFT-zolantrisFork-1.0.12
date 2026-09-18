@@ -1,3 +1,4 @@
+using ValheimVehicles.Helpers;
 using System;
 using UnityEngine;
 using ValheimVehicles.Controllers;
@@ -32,7 +33,7 @@ public static class VesselHornChanneler
       if (right.m_shared != null)
       {
         var name = right.m_shared.m_name;
-        if (name == "$item_vessel_horn" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
+        if (name == "$item_vessel_horn" || name == "Horn of Loki" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
           return true;
       }
       if (right.m_dropPrefab != null && right.m_dropPrefab.name.Contains("vessel_horn"))
@@ -45,7 +46,7 @@ public static class VesselHornChanneler
       if (weapon.m_shared != null)
       {
         var name = weapon.m_shared.m_name;
-        if (name == "$item_vessel_horn" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
+        if (name == "$item_vessel_horn" || name == "Horn of Loki" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
           return true;
       }
       if (weapon.m_dropPrefab != null && weapon.m_dropPrefab.name.Contains("vessel_horn"))
@@ -157,7 +158,7 @@ public static class VesselHornChanneler
           return;
         }
 
-        LoggerProvider.LogInfo($"[VesselHorn] Left click detected -> starting Teleport to Boat #{targetId} channel");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselHorn] Left click detected -> starting Teleport to Boat #{targetId} channel");
         StartAction(HornAction.Teleport, "Teleporting to Boat...", player, targetId);
       }
       else if (rightHeld)
@@ -186,7 +187,7 @@ public static class VesselHornChanneler
           return;
         }
 
-        LoggerProvider.LogInfo($"[VesselHorn] Right click at wheel detected -> starting Bind Boat #{vehicleId} channel");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselHorn] Right click at wheel detected -> starting Bind Boat #{vehicleId} channel");
         StartAction(HornAction.Attune, "Binding to Boat...", player, vehicleId);
       }
     }
@@ -235,7 +236,7 @@ public static class VesselHornChanneler
     _startHealth = player.GetHealth();
     _targetVehicleId = targetVehicleId;
 
-    LoggerProvider.LogInfo($"[VesselHorn] Channeling {action} ({actionName}) started for vessel #{targetVehicleId} at {_startPosition}");
+    if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselHorn] Channeling {action} ({actionName}) started for vessel #{targetVehicleId} at {_startPosition}");
 
     try
     {
@@ -258,7 +259,7 @@ public static class VesselHornChanneler
   {
     if (IsChanneling)
     {
-      LoggerProvider.LogInfo($"[VesselHorn] Channel {CurrentAction} cancelled silently ({message ?? "released"}).");
+      if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselHorn] Channel {CurrentAction} cancelled silently ({message ?? "released"}).");
 
       IsChanneling = false;
       CurrentAction = HornAction.None;
@@ -282,7 +283,7 @@ public static class VesselHornChanneler
     var action = CurrentAction;
     var targetVehicleId = _targetVehicleId;
 
-    LoggerProvider.LogInfo($"[VesselHorn] Channel 3.0s complete for {action} (Target: #{targetVehicleId})! Executing action now.");
+    if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselHorn] Channel 3.0s complete for {action} (Target: #{targetVehicleId})! Executing action now.");
 
     IsChanneling = false;
     CurrentAction = HornAction.None;

@@ -29,7 +29,7 @@ public static class VehicleRecallController
       var attunedId = playerZdo.GetInt(AttunedVesselZdoKey, 0);
       if (attunedId != 0 && DoesVehicleExist(attunedId))
       {
-        LoggerProvider.LogInfo($"[VesselRecall] Found explicitly attuned vessel ID: {attunedId}");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Found explicitly attuned vessel ID: {attunedId}");
         return attunedId;
       }
     }
@@ -39,7 +39,7 @@ public static class VehicleRecallController
                       player.transform.root.GetComponentInChildren<VehiclePiecesController>();
     if (vpcOnPlayer != null && vpcOnPlayer.PersistentZdoId != 0)
     {
-      LoggerProvider.LogInfo($"[VesselRecall] Player is standing on vessel ID: {vpcOnPlayer.PersistentZdoId}");
+      if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Player is standing on vessel ID: {vpcOnPlayer.PersistentZdoId}");
       return vpcOnPlayer.PersistentZdoId;
     }
 
@@ -54,7 +54,7 @@ public static class VehicleRecallController
         var zdo = vm.m_nview.GetZDO();
         if (zdo.GetLong(ZDOVars.s_creator, 0) == playerId)
         {
-          LoggerProvider.LogInfo($"[VesselRecall] Found loaded vessel ID {kvp.Key} created by player ({playerId})");
+          if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Found loaded vessel ID {kvp.Key} created by player ({playerId})");
           return kvp.Key;
         }
       }
@@ -78,7 +78,7 @@ public static class VehicleRecallController
             var pId = zdo.GetInt(ZdoVarController.PersistentUidHash, 0);
             if (pId != 0)
             {
-              LoggerProvider.LogInfo($"[VesselRecall] Found distant ZDO vessel ID {pId} created by player ({playerId})");
+              if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Found distant ZDO vessel ID {pId} created by player ({playerId})");
               return pId;
             }
           }
@@ -86,7 +86,7 @@ public static class VehicleRecallController
       }
     }
 
-    LoggerProvider.LogInfo("[VesselRecall] No attuned or created vessel found for player.");
+    if (LoopTracker.Enabled) LoggerProvider.LogInfo("[VesselRecall] No attuned or created vessel found for player.");
     return 0;
   }
 
@@ -159,7 +159,7 @@ public static class VehicleRecallController
       position = vehicleManager.transform.position;
       rotation = vehicleManager.transform.rotation;
       isLoaded = true;
-      LoggerProvider.LogInfo($"[VesselRecall] Vehicle #{vehicleId} is loaded at position {position}");
+      if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Vehicle #{vehicleId} is loaded at position {position}");
       return true;
     }
 
@@ -186,7 +186,7 @@ public static class VehicleRecallController
       position = zdo.GetPosition();
       rotation = zdo.GetRotation();
       isLoaded = false;
-      LoggerProvider.LogInfo($"[VesselRecall] Vehicle #{vehicleId} is unloaded (ZDO sector: {zdo.GetSectorIndex()}) at position {position}");
+      if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Vehicle #{vehicleId} is unloaded (ZDO sector: {zdo.GetSectorIndex()}) at position {position}");
       return true;
     }
 
@@ -215,18 +215,18 @@ public static class VehicleRecallController
       {
         landingPos = wheel.transform.position - wheel.transform.forward * 0.8f + Vector3.up * 0.1f;
         landingRot = wheel.transform.rotation;
-        LoggerProvider.LogInfo($"[VesselRecall] Target wheel found at {wheel.transform.position}, landing player at {landingPos}");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Target wheel found at {wheel.transform.position}, landing player at {landingPos}");
       }
       else if (vm.RudderObject != null)
       {
         landingPos = vm.RudderObject.transform.position + Vector3.up * 0.5f;
         landingRot = vm.RudderObject.transform.rotation;
-        LoggerProvider.LogInfo($"[VesselRecall] Rudder found, landing player at {landingPos}");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Rudder found, landing player at {landingPos}");
       }
       else
       {
         landingPos = targetPos + targetRot * Vector3.up * 1.5f;
-        LoggerProvider.LogInfo($"[VesselRecall] No wheel found, landing player at vehicle origin {landingPos}");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] No wheel found, landing player at vehicle origin {landingPos}");
       }
     }
     else
@@ -265,18 +265,18 @@ public static class VehicleRecallController
         var wheelWorldRot = targetRot * wheelRotOffset;
         landingPos = targetPos + targetRot * wheelOffset - wheelWorldRot * Vector3.forward * 0.8f + Vector3.up * 0.1f;
         landingRot = wheelWorldRot;
-        LoggerProvider.LogInfo($"[VesselRecall] Unloaded wheel ZDO found, landing player at offset {landingPos}");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Unloaded wheel ZDO found, landing player at offset {landingPos}");
       }
       else
       {
         landingPos = targetPos + Vector3.up * 2.0f;
-        LoggerProvider.LogInfo($"[VesselRecall] Unloaded vehicle origin landing at {landingPos}");
+        if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Unloaded vehicle origin landing at {landingPos}");
       }
     }
 
     PlaySfxAt("sfx_portal_activate", player.transform.position);
 
-    LoggerProvider.LogInfo($"[VesselRecall] Teleporting player {player.GetPlayerName()} to {landingPos} (Distant: {!isLoaded})");
+    if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Teleporting player {player.GetPlayerName()} to {landingPos} (Distant: {!isLoaded})");
     player.TeleportTo(landingPos, landingRot, distantTeleport: !isLoaded);
     player.Message(MessageHud.MessageType.Center, "Teleported to boat!");
   }
@@ -292,7 +292,7 @@ public static class VehicleRecallController
     }
 
     PlaySfxAt("sfx_cheers", player.transform.position);
-    LoggerProvider.LogInfo($"[VesselRecall] Successfully bound player {player.GetPlayerName()} to vessel #{vehicleId}");
+    if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Successfully bound player {player.GetPlayerName()} to vessel #{vehicleId}");
     player.Message(MessageHud.MessageType.Center, "Horn bound to boat!");
   }
 

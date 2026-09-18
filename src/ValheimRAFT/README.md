@@ -69,6 +69,26 @@ To use this mod, ensure you have the following required dependencies installed:
 
 ---
 
+## 🚀 Changelog (v4.3.5)
+
+### Horn of Loki (Boat Recall & Helm Attunement)
+- **Craftable Emergency Tool**: Added the **Horn of Loki** (`$item_vessel_horn`), hand-crafted for 2 Wood directly from inventory without requiring a workbench. (Named after Loki, the mythical Norse ship builder of Naglfar).
+- **Steering Wheel Attunement (`[Right-Click]`)**: Aim directly at your boat's Vehicle Wheel within interaction range (≤ 3.5 m) and hold right-click for 3 seconds to attune the horn to your vessel. Displays an on-screen alert (`"Must bind at Vehicle Wheel"`) if aiming anywhere else.
+- **Direct Deck Teleport (`[Left-Click]`)**: Hold left-click for 3 seconds to channel an emergency teleport directly to the steering wheel on deck from anywhere in the world (even while carrying metals and regardless of carry weight). Displays `"Bind to a boat first"` if no ship is owned or bound.
+- **Silent Cancellation & Sprint Fix**: Channeling cancels cleanly and silently when releasing early or moving, without on-screen message spam. Resolved the sprinting input conflict (Shift+W) where `AltPlace` triggered the action bar while running.
+- **Diagnostic Logging Toggle**: Horn and teleport console messages are now routed through the mechanism's **"Enable Loop Logging"** toggle, keeping the console completely clean by default.
+
+### Terrain Sync & Piece Validation (Save File Repair)
+- **Terrain Structure Leak Prevention**: Fixed an issue on older save loads where nearby land terrain pieces (dungeon structures, rocks, spawner stones) could be erroneously indexed as vehicle pieces (`MBParentId`), inflating boat part counts and dragging terrain across the world.
+- **Automated Piece Validation & Purge**: Added strict validation during vehicle piece registration and world save loading. Non-vehicle terrain structures mistakenly parented to a boat are automatically pruned and restored to normal world objects.
+
+### Loop Optimization & Stutter Elimination
+- **Segmented Frame Slice Budget (≤ 2 ms)**: Reduced piece synchronization slice times from 10ms down to 2ms per frame, ensuring the background sync yields before it can ever cause a visible frame drop or micro-stutter.
+- **Movement Threshold Guard**: Throttled piece ZDO updates when the vessel is anchored, docked, or moving less than 2.5 meters. Idle and stationary vessels consume near-zero background CPU.
+- **Coroutine Active-Time Profiling**: Corrected `LoopTracker` profiling to measure active CPU processing rather than multi-frame coroutine wait intervals.
+
+---
+
 ## 🚀 Changelog (v4.3.4)
 
 ### Steering Wheel & Helm Controls
