@@ -27,15 +27,27 @@ public static class VesselHornChanneler
     var right = player.GetRightItem();
     if (right != null)
     {
-      if (right.m_shared.m_name == "$item_vessel_horn") return true;
-      if (right.m_dropPrefab != null && right.m_dropPrefab.name.StartsWith(PrefabNames.VesselHorn)) return true;
+      if (right.m_shared != null)
+      {
+        var name = right.m_shared.m_name;
+        if (name == "$item_vessel_horn" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
+          return true;
+      }
+      if (right.m_dropPrefab != null && right.m_dropPrefab.name.Contains("vessel_horn"))
+        return true;
     }
 
     var weapon = player.GetCurrentWeapon();
     if (weapon != null)
     {
-      if (weapon.m_shared.m_name == "$item_vessel_horn") return true;
-      if (weapon.m_dropPrefab != null && weapon.m_dropPrefab.name.StartsWith(PrefabNames.VesselHorn)) return true;
+      if (weapon.m_shared != null)
+      {
+        var name = weapon.m_shared.m_name;
+        if (name == "$item_vessel_horn" || name == "Horn of the Sea" || name.Contains("vessel_horn"))
+          return true;
+      }
+      if (weapon.m_dropPrefab != null && weapon.m_dropPrefab.name.Contains("vessel_horn"))
+        return true;
     }
 
     return false;
@@ -63,9 +75,9 @@ public static class VesselHornChanneler
       return;
     }
 
-    var leftHeld = ZInput.GetMouseButton(0) || ZInput.GetButton("Attack");
-    var rightHeld = ZInput.GetMouseButton(1) || ZInput.GetButton("Block") || ZInput.GetButton("AltPlace");
-    var middleHeld = ZInput.GetMouseButton(2);
+    var leftHeld = ZInput.GetMouseButton(0) || ZInput.GetButton("Attack") || Input.GetMouseButton(0);
+    var rightHeld = ZInput.GetMouseButton(1) || ZInput.GetButton("Block") || ZInput.GetButton("AltPlace") || Input.GetMouseButton(1);
+    var middleHeld = ZInput.GetMouseButton(2) || Input.GetMouseButton(2);
 
     if (!IsChanneling)
     {
@@ -129,7 +141,14 @@ public static class VesselHornChanneler
 
     try
     {
-      player.StartEmote("cheer", false);
+      if (player.m_zanim != null)
+      {
+        player.m_zanim.SetTrigger("consume");
+      }
+      else
+      {
+        player.StartEmote("cheer", false);
+      }
     }
     catch (Exception)
     {
@@ -145,6 +164,11 @@ public static class VesselHornChanneler
       CurrentAction = HornAction.None;
       ChannelProgress = 0f;
       _holdTimer = 0f;
+
+      if (Hud.instance != null && Hud.instance.m_actionBarRoot != null)
+      {
+        Hud.instance.m_actionBarRoot.SetActive(false);
+      }
 
       if (player != null)
       {
@@ -164,6 +188,11 @@ public static class VesselHornChanneler
     CurrentAction = HornAction.None;
     ChannelProgress = 0f;
     _holdTimer = 0f;
+
+    if (Hud.instance != null && Hud.instance.m_actionBarRoot != null)
+    {
+      Hud.instance.m_actionBarRoot.SetActive(false);
+    }
 
     try { player.StopEmote(); } catch { }
 

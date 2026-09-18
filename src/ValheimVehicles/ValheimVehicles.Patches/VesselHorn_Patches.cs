@@ -19,10 +19,11 @@ public static class VesselHorn_Patches
 
   [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.StartAttack))]
   [HarmonyPrefix]
-  public static bool Humanoid_StartAttack_Prefix(Humanoid __instance)
+  public static bool Humanoid_StartAttack_Prefix(Humanoid __instance, ref bool __result)
   {
     if (__instance is Player player && VesselHornChanneler.IsHoldingVesselHorn(player))
     {
+      __result = false;
       return false; // Prevent weapon swing / punch while holding horn
     }
     return true;
@@ -30,10 +31,11 @@ public static class VesselHorn_Patches
 
   [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.BlockAttack))]
   [HarmonyPrefix]
-  public static bool Humanoid_BlockAttack_Prefix(Humanoid __instance)
+  public static bool Humanoid_BlockAttack_Prefix(Humanoid __instance, ref bool __result)
   {
     if (__instance is Player player && VesselHornChanneler.IsHoldingVesselHorn(player))
     {
+      __result = false;
       return false; // Prevent block while holding horn
     }
     return true;
@@ -47,6 +49,17 @@ public static class VesselHorn_Patches
     {
       __result = false;
       return false;
+    }
+    return true;
+  }
+
+  [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UpdateBlock))]
+  [HarmonyPrefix]
+  public static bool Humanoid_UpdateBlock_Prefix(Humanoid __instance)
+  {
+    if (__instance is Player player && VesselHornChanneler.IsHoldingVesselHorn(player))
+    {
+      return false; // Suppress block animation while holding horn
     }
     return true;
   }

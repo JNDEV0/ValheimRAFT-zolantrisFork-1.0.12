@@ -53,7 +53,8 @@ public static class PatchController
       typeof(Humanoid_EquipPatch),
       typeof(Container_Patches),
       typeof(VehicleOwnership_Patches),
-      typeof(ZNet_WorldSession_Patches)
+      typeof(ZNet_WorldSession_Patches),
+      typeof(VesselHorn_Patches)
     );
 
     if (PatchConfig.MineRockPatch.Value)
