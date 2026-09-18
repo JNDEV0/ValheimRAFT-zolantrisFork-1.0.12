@@ -84,36 +84,45 @@ public static class VehicleRecallController
           }
         }
       }
-
-      // 5. Fallback: If no vehicle created by this player, pick the first ship in the world
-      foreach (var kvp in ZDOMan.instance.m_objectsByID)
-      {
-        var zdo = kvp.Value;
-        if (zdo == null || !zdo.IsValid()) continue;
-        var prefab = zdo.GetPrefab();
-        if (prefab == waterShipPrefab || prefab == landShipPrefab)
-        {
-          var pId = zdo.GetInt(ZdoVarController.PersistentUidHash, 0);
-          if (pId != 0)
-          {
-            LoggerProvider.LogInfo($"[VesselRecall] Fallback: picked first world vessel ID {pId}");
-            return pId;
-          }
-        }
-      }
     }
 
-    // 6. Fallback: Check tracked piece buckets in VehiclePiecesController
-    foreach (var key in VehiclePiecesController.m_allPieces.Keys)
+    LoggerProvider.LogInfo("[VesselRecall] No attuned or created vessel found for player.");
+    return 0;
+  }
+
+  public static int GetVehicleIdFromWheel(SteeringWheelComponent wheel)
+  {
+    if (wheel == null) return 0;
+
+    if (wheel.ControllersInstance?.Manager != null && wheel.ControllersInstance.Manager.PersistentZdoId != 0)
     {
-      if (key != 0)
-      {
-        LoggerProvider.LogInfo($"[VesselRecall] Fallback: picked vessel ID {key} from m_allPieces");
-        return key;
-      }
+      return wheel.ControllersInstance.Manager.PersistentZdoId;
     }
 
-    LoggerProvider.LogWarning("[VesselRecall] Could not resolve any target vessel in the world.");
+    var vpc = wheel.GetComponentInParent<VehiclePiecesController>() ??
+              wheel.transform.root.GetComponentInChildren<VehiclePiecesController>();
+    if (vpc != null && vpc.PersistentZdoId != 0)
+    {
+      return vpc.PersistentZdoId;
+    }
+
+    var vm = wheel.GetComponentInParent<VehicleManager>() ??
+             wheel.transform.root.GetComponentInChildren<VehicleManager>();
+    if (vm != null && vm.PersistentZdoId != 0)
+    {
+      return vm.PersistentZdoId;
+    }
+
+    var nv = wheel.GetComponentInParent<ZNetView>();
+    if (nv != null && nv.GetZDO() != null)
+    {
+      var parentId = nv.GetZDO().GetInt(VehicleZdoVars.MBParentId, 0);
+      if (parentId != 0) return parentId;
+
+      var pId = nv.GetZDO().GetInt(ZdoVarController.PersistentUidHash, 0);
+      if (pId != 0) return pId;
+    }
+
     return 0;
   }
 
@@ -192,7 +201,7 @@ public static class VehicleRecallController
     if (!GetVehicleLocation(vehicleId, out var targetPos, out var targetRot, out var isLoaded, out var vm))
     {
       LoggerProvider.LogWarning($"[VesselRecall] Teleport failed: could not locate vessel #{vehicleId}");
-      player.Message(MessageHud.MessageType.Center, "Could not locate vessel position!");
+      player.Message(MessageHud.MessageType.Center, "Could not locate boat position!");
       return;
     }
 
@@ -211,6 +220,7 @@ public static class VehicleRecallController
       else if (vm.RudderObject != null)
       {
         landingPos = vm.RudderObject.transform.position + Vector3.up * 0.5f;
+        landingRot = vm.RudderObject.transform.rotation;
         LoggerProvider.LogInfo($"[VesselRecall] Rudder found, landing player at {landingPos}");
       }
       else
@@ -222,9 +232,10 @@ public static class VehicleRecallController
     else
     {
       // Unloaded vessel: try to find steering wheel ZDO offset
-      var pieces = VehiclePiecesController.EnsurePiecesForVehicle(vehicleId);
       var wheelHash = PrefabNames.ShipSteeringWheel.GetStableHashCode();
       ZDO? wheelZdo = null;
+
+      var pieces = VehiclePiecesController.EnsurePiecesForVehicle(vehicleId);
       foreach (var pz in pieces)
       {
         if (pz != null && pz.IsValid() && pz.GetPrefab() == wheelHash)
@@ -234,10 +245,26 @@ public static class VehicleRecallController
         }
       }
 
+      if (wheelZdo == null && ZDOMan.instance != null && ZDOMan.instance.m_objectsByID != null)
+      {
+        foreach (var kvp in ZDOMan.instance.m_objectsByID)
+        {
+          var z = kvp.Value;
+          if (z != null && z.IsValid() && z.GetInt(VehicleZdoVars.MBParentId, 0) == vehicleId && z.GetPrefab() == wheelHash)
+          {
+            wheelZdo = z;
+            break;
+          }
+        }
+      }
+
       if (wheelZdo != null)
       {
         var wheelOffset = wheelZdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-        landingPos = targetPos + targetRot * wheelOffset + Vector3.up * 0.5f;
+        var wheelRotOffset = wheelZdo.GetQuaternion(VehicleZdoVars.MBRotationHash, Quaternion.identity);
+        var wheelWorldRot = targetRot * wheelRotOffset;
+        landingPos = targetPos + targetRot * wheelOffset - wheelWorldRot * Vector3.forward * 0.8f + Vector3.up * 0.1f;
+        landingRot = wheelWorldRot;
         LoggerProvider.LogInfo($"[VesselRecall] Unloaded wheel ZDO found, landing player at offset {landingPos}");
       }
       else
@@ -251,171 +278,7 @@ public static class VehicleRecallController
 
     LoggerProvider.LogInfo($"[VesselRecall] Teleporting player {player.GetPlayerName()} to {landingPos} (Distant: {!isLoaded})");
     player.TeleportTo(landingPos, landingRot, distantTeleport: !isLoaded);
-    player.Message(MessageHud.MessageType.Center, $"Teleported to Vessel #{vehicleId} wheel!");
-  }
-
-  public static void RecallVehicleToCrosshair(Player player, int vehicleId)
-  {
-    if (player == null) return;
-
-    if (!GetVehicleLocation(vehicleId, out _, out _, out var isLoaded, out var vm))
-    {
-      LoggerProvider.LogWarning($"[VesselRecall] Recall failed: could not locate vessel #{vehicleId}");
-      player.Message(MessageHud.MessageType.Center, "Could not locate vessel to recall!");
-      return;
-    }
-
-    var cam = GameCamera.instance ? GameCamera.instance.transform : null;
-    var rayOrigin = cam != null ? cam.position : player.GetEyePoint();
-    var rayDir = cam != null ? cam.forward : player.GetLookDir();
-
-    Vector3 hitPoint;
-    var mask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "terrain", "water");
-    if (Physics.Raycast(rayOrigin, rayDir, out var hit, 120f, mask))
-    {
-      hitPoint = hit.point;
-    }
-    else
-    {
-      hitPoint = player.transform.position + rayDir * 25f;
-    }
-
-    var waterLevel = ZoneSystem.instance != null ? ZoneSystem.instance.m_waterLevel : 30f;
-    var isLand = hitPoint.y > waterLevel + 0.5f;
-
-    Vector3 targetPos;
-    float targetHeightAboveWater;
-
-    if (isLand)
-    {
-      // Land recall: flight mode safely 6 meters above the terrain
-      targetPos = new Vector3(hitPoint.x, hitPoint.y + 6.0f, hitPoint.z);
-      targetHeightAboveWater = targetPos.y - waterLevel;
-      LoggerProvider.LogInfo($"[VesselRecall] Recalling to LAND at {targetPos} (Ground: {hitPoint.y:F2}, FlightHeight: {targetHeightAboveWater:F2})");
-    }
-    else
-    {
-      // Water recall: float mode at water level
-      targetPos = new Vector3(hitPoint.x, waterLevel, hitPoint.z);
-      targetHeightAboveWater = 0f;
-      LoggerProvider.LogInfo($"[VesselRecall] Recalling to WATER at {targetPos} (WaterLevel: {waterLevel:F2})");
-    }
-
-    var flatForward = Vector3.ProjectOnPlane(rayDir, Vector3.up).normalized;
-    if (flatForward.sqrMagnitude < 0.01f) flatForward = player.transform.forward;
-    var targetRot = Quaternion.LookRotation(flatForward, Vector3.up);
-
-    ZDO? vehicleZdo = null;
-    if (isLoaded && vm != null)
-    {
-      vm.transform.position = targetPos;
-      vm.transform.rotation = targetRot;
-
-      var rb = vm.MovementControllerRigidbody ?? vm.GetComponentInChildren<Rigidbody>();
-      if (rb != null)
-      {
-        rb.position = targetPos;
-        rb.rotation = targetRot;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        rb.isKinematic = true;
-      }
-
-      if (vm.MovementController != null)
-      {
-        vm.MovementController.SetTargetHeight(targetHeightAboveWater);
-        vm.MovementController.SetAnchor(AnchorState.Anchored);
-      }
-
-      if (vm.m_nview != null && vm.m_nview.GetZDO() != null)
-      {
-        vehicleZdo = vm.m_nview.GetZDO();
-        vehicleZdo.Set(VehicleZdoVars.VehicleTargetHeight, targetHeightAboveWater);
-        var oldSec = vehicleZdo.GetSectorIndex();
-        vehicleZdo.SetPosition(targetPos);
-        vehicleZdo.SetRotation(targetRot);
-        var newSec = vehicleZdo.GetSectorIndex();
-        if (oldSec != newSec && ZDOMan.instance != null)
-        {
-          ZDOMan.instance.RemoveFromSector(vehicleZdo, oldSec);
-          ZDOMan.instance.AddToSector(vehicleZdo, newSec);
-        }
-      }
-
-      vm.PiecesController?.ForceUpdateAllPiecePositions();
-      VehiclePiecesController.SyncAllPrefabsToVehiclePosition(vehicleId);
-      LoggerProvider.LogInfo($"[VesselRecall] Repositioned loaded vessel #{vehicleId} to {targetPos}");
-    }
-    else
-    {
-      // Distant/unloaded vessel ZDO migration
-      if (ZdoWatchController.Instance != null)
-      {
-        vehicleZdo = ZdoWatchController.Instance.GetZdo(vehicleId);
-      }
-      if (vehicleZdo == null && ZDOMan.instance != null && ZDOMan.instance.m_objectsByID != null)
-      {
-        foreach (var kvp in ZDOMan.instance.m_objectsByID)
-        {
-          if (kvp.Value != null && kvp.Value.GetInt(ZdoVarController.PersistentUidHash, 0) == vehicleId)
-          {
-            vehicleZdo = kvp.Value;
-            break;
-          }
-        }
-      }
-
-      if (vehicleZdo != null && vehicleZdo.IsValid())
-      {
-        vehicleZdo.Set(VehicleZdoVars.VehicleTargetHeight, targetHeightAboveWater);
-        var oldSec = vehicleZdo.GetSectorIndex();
-        vehicleZdo.SetPosition(targetPos);
-        vehicleZdo.SetRotation(targetRot);
-        var newSec = vehicleZdo.GetSectorIndex();
-        if (oldSec != newSec && ZDOMan.instance != null)
-        {
-          ZDOMan.instance.RemoveFromSector(vehicleZdo, oldSec);
-          ZDOMan.instance.AddToSector(vehicleZdo, newSec);
-        }
-
-        var pieceZdos = VehiclePiecesController.EnsurePiecesForVehicle(vehicleId);
-        foreach (var pz in pieceZdos)
-        {
-          if (pz == null || !pz.IsValid()) continue;
-          var localOffset = pz.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-          var pieceWorldPos = targetPos + targetRot * localOffset;
-          var pOldSec = pz.GetSectorIndex();
-          pz.SetPosition(pieceWorldPos);
-          var pNewSec = pz.GetSectorIndex();
-          if (pOldSec != pNewSec && ZDOMan.instance != null)
-          {
-            ZDOMan.instance.RemoveFromSector(pz, pOldSec);
-            ZDOMan.instance.AddToSector(pz, pNewSec);
-          }
-        }
-
-        if (ZNetScene.instance != null)
-        {
-          ZNetScene.instance.CreateObject(vehicleZdo);
-          foreach (var pz in pieceZdos)
-          {
-            ZNetScene.instance.CreateObject(pz);
-          }
-        }
-        LoggerProvider.LogInfo($"[VesselRecall] Migrated {pieceZdos.Count} piece ZDOs for vessel #{vehicleId} to new sector {newSec}");
-      }
-    }
-
-    if (isLand)
-    {
-      PlaySfxAt("sfx_portal_activate", targetPos);
-      player.Message(MessageHud.MessageType.Center, $"Vessel #{vehicleId} recalled in Flight Mode!");
-    }
-    else
-    {
-      PlaySfxAt("sfx_water_splash", targetPos);
-      player.Message(MessageHud.MessageType.Center, $"Vessel #{vehicleId} recalled in Float Mode!");
-    }
+    player.Message(MessageHud.MessageType.Center, "Teleported to boat!");
   }
 
   public static void AttunePlayerToVehicle(Player player, int vehicleId)
@@ -430,54 +293,7 @@ public static class VehicleRecallController
 
     PlaySfxAt("sfx_cheers", player.transform.position);
     LoggerProvider.LogInfo($"[VesselRecall] Successfully bound player {player.GetPlayerName()} to vessel #{vehicleId}");
-    player.Message(MessageHud.MessageType.Center, $"Horn bound to Vessel #{vehicleId}!");
-  }
-
-  public static int DetectAimedOrCurrentVehicle(Player player)
-  {
-    if (player == null) return 0;
-
-    // Check if standing on vehicle
-    var vpc = player.GetComponentInParent<VehiclePiecesController>() ??
-              player.transform.root.GetComponentInChildren<VehiclePiecesController>();
-    if (vpc != null && vpc.PersistentZdoId != 0)
-    {
-      LoggerProvider.LogInfo($"[VesselRecall] Detect: player is standing on vehicle #{vpc.PersistentZdoId}");
-      return vpc.PersistentZdoId;
-    }
-
-    // Check if aiming directly at a vehicle piece
-    var cam = GameCamera.instance ? GameCamera.instance.transform : null;
-    var rayOrigin = cam != null ? cam.position : player.GetEyePoint();
-    var rayDir = cam != null ? cam.forward : player.GetLookDir();
-
-    if (Physics.Raycast(rayOrigin, rayDir, out var hit, 50f))
-    {
-      var hitVpc = hit.collider.GetComponentInParent<VehiclePiecesController>();
-      if (hitVpc != null && hitVpc.PersistentZdoId != 0)
-      {
-        LoggerProvider.LogInfo($"[VesselRecall] Detect: aiming at vehicle piece #{hitVpc.PersistentZdoId}");
-        return hitVpc.PersistentZdoId;
-      }
-      var nv = hit.collider.GetComponentInParent<ZNetView>();
-      if (nv != null && nv.GetZDO() != null)
-      {
-        var parentId = nv.GetZDO().GetInt(VehicleZdoVars.MBParentId, 0);
-        if (parentId != 0)
-        {
-          LoggerProvider.LogInfo($"[VesselRecall] Detect: aiming at piece with MBParentId #{parentId}");
-          return parentId;
-        }
-        var pId = nv.GetZDO().GetInt(ZdoVarController.PersistentUidHash, 0);
-        if (pId != 0 && DoesVehicleExist(pId))
-        {
-          LoggerProvider.LogInfo($"[VesselRecall] Detect: aiming at vehicle root #{pId}");
-          return pId;
-        }
-      }
-    }
-
-    return ResolveTargetVehicle(player);
+    player.Message(MessageHud.MessageType.Center, "Horn bound to boat!");
   }
 
   private static void PlaySfxAt(string prefabName, Vector3 position)

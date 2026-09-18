@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using ValheimVehicles.Controllers;
+using ValheimVehicles.Propulsion.Rudder;
 using ValheimVehicles.SharedScripts;
 using Zolantris.Shared;
 
@@ -8,7 +9,7 @@ namespace ValheimVehicles.Components;
 
 public static class VesselHornChanneler
 {
-  public enum HornAction { None, Teleport, Recall, Attune }
+  public enum HornAction { None, Teleport, Attune }
 
   public static bool IsChanneling { get; private set; }
   public static float ChannelProgress { get; private set; }
@@ -19,6 +20,7 @@ public static class VesselHornChanneler
   private const float RequiredHoldDuration = 3.0f;
   private static Vector3 _startPosition;
   private static float _startHealth;
+  private static int _targetVehicleId;
 
   public static bool IsHoldingVesselHorn(Player? player)
   {
@@ -53,6 +55,57 @@ public static class VesselHornChanneler
     return false;
   }
 
+  public static SteeringWheelComponent? GetTargetSteeringWheel(Player player, float maxDistance = 3.5f)
+  {
+    if (player == null) return null;
+
+    // 1. Check player's hover object
+    try
+    {
+      var hover = player.GetHoverObject();
+      if (hover != null)
+      {
+        var wheel = hover.GetComponentInParent<SteeringWheelComponent>() ??
+                    hover.GetComponentInChildren<SteeringWheelComponent>();
+        if (wheel != null && Vector3.Distance(player.transform.position, wheel.transform.position) <= maxDistance + 1.2f)
+        {
+          return wheel;
+        }
+      }
+    }
+    catch { }
+
+    // 2. Raycast from camera or eye point
+    var cam = GameCamera.instance ? GameCamera.instance.transform : null;
+    var rayOrigin = cam != null ? cam.position : player.GetEyePoint();
+    var rayDir = cam != null ? cam.forward : player.GetLookDir();
+
+    var hits = Physics.RaycastAll(rayOrigin, rayDir, maxDistance + 2.5f);
+    Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+    foreach (var hit in hits)
+    {
+      if (hit.collider == null || hit.collider.isTrigger) continue;
+      if (hit.collider.transform.root == player.transform.root) continue;
+
+      if (Vector3.Distance(player.transform.position, hit.point) > maxDistance + 0.8f) continue;
+
+      var wheel = hit.collider.GetComponentInParent<SteeringWheelComponent>() ??
+                  hit.collider.GetComponentInChildren<SteeringWheelComponent>();
+      if (wheel != null) return wheel;
+
+      var piece = hit.collider.GetComponentInParent<Piece>();
+      if (piece != null && (piece.name.Contains("ShipSteeringWheel") || piece.m_name == "$valheim_vehicles_wheel"))
+      {
+        var pieceWheel = piece.GetComponentInChildren<SteeringWheelComponent>() ??
+                         piece.GetComponentInParent<SteeringWheelComponent>();
+        if (pieceWheel != null) return pieceWheel;
+      }
+    }
+
+    return null;
+  }
+
   public static void UpdateLocalPlayer(Player player)
   {
     if (player == null || player.IsDead())
@@ -69,56 +122,95 @@ public static class VesselHornChanneler
 
     if ((Chat.instance != null && Chat.instance.HasFocus()) ||
         Console.IsVisible() ||
-        InventoryGui.IsVisible())
+        InventoryGui.IsVisible() ||
+        StoreGui.IsVisible() ||
+        Menu.IsVisible())
     {
       if (IsChanneling) CancelAction(player);
       return;
     }
 
-    var leftHeld = ZInput.GetMouseButton(0) || ZInput.GetButton("Attack") || Input.GetMouseButton(0);
-    var rightHeld = ZInput.GetMouseButton(1) || ZInput.GetButton("Block") || ZInput.GetButton("AltPlace") || Input.GetMouseButton(1);
-    var middleHeld = ZInput.GetMouseButton(2) || Input.GetMouseButton(2);
+    // Never channel or poll horn inputs while sprinting/running
+    if (player.m_run || player.IsRunning())
+    {
+      if (IsChanneling) CancelAction(player);
+      return;
+    }
+
+    // Strictly check mouse buttons to avoid conflicts with Shift / AltPlace
+    var leftHeld = Input.GetMouseButton(0) || ZInput.GetMouseButton(0);
+    var leftDown = Input.GetMouseButtonDown(0) || ZInput.GetMouseButtonDown(0);
+    var rightHeld = Input.GetMouseButton(1) || ZInput.GetMouseButton(1);
+    var rightDown = Input.GetMouseButtonDown(1) || ZInput.GetMouseButtonDown(1);
 
     if (!IsChanneling)
     {
       if (leftHeld)
       {
-        LoggerProvider.LogInfo("[VesselHorn] Left click detected -> starting Teleport to Boat channel");
-        StartAction(HornAction.Teleport, "Teleporting to Boat...", player);
+        var targetId = VehicleRecallController.ResolveTargetVehicle(player);
+        if (targetId == 0)
+        {
+          if (leftDown)
+          {
+            player.Message(MessageHud.MessageType.Center, "Bind to a boat first");
+          }
+          return;
+        }
+
+        LoggerProvider.LogInfo($"[VesselHorn] Left click detected -> starting Teleport to Boat #{targetId} channel");
+        StartAction(HornAction.Teleport, "Teleporting to Boat...", player, targetId);
       }
       else if (rightHeld)
       {
-        LoggerProvider.LogInfo("[VesselHorn] Right click detected -> starting Recall Boat channel");
-        StartAction(HornAction.Recall, "Recalling Boat...", player);
-      }
-      else if (middleHeld)
-      {
-        LoggerProvider.LogInfo("[VesselHorn] Middle click detected -> starting Bind Boat channel");
-        StartAction(HornAction.Attune, "Binding to Boat...", player);
+        var interactDist = player.m_maxInteractDistance > 0 ? player.m_maxInteractDistance : 3.5f;
+        var wheel = GetTargetSteeringWheel(player, interactDist);
+        if (wheel == null)
+        {
+          if (rightDown)
+          {
+            var wheelName = Localization.instance != null
+              ? Localization.instance.Localize("$valheim_vehicles_wheel")
+              : "Vehicle Wheel";
+            player.Message(MessageHud.MessageType.Center, $"Must bind at {wheelName}");
+          }
+          return;
+        }
+
+        var vehicleId = VehicleRecallController.GetVehicleIdFromWheel(wheel);
+        if (vehicleId == 0)
+        {
+          if (rightDown)
+          {
+            player.Message(MessageHud.MessageType.Center, "Wheel is not attached to a boat!");
+          }
+          return;
+        }
+
+        LoggerProvider.LogInfo($"[VesselHorn] Right click at wheel detected -> starting Bind Boat #{vehicleId} channel");
+        StartAction(HornAction.Attune, "Binding to Boat...", player, vehicleId);
       }
     }
     else
     {
       var stillHeld = (CurrentAction == HornAction.Teleport && leftHeld) ||
-                      (CurrentAction == HornAction.Recall && rightHeld) ||
-                      (CurrentAction == HornAction.Attune && middleHeld);
+                      (CurrentAction == HornAction.Attune && rightHeld);
 
       if (!stillHeld)
       {
-        CancelAction(player, "Button released early");
+        CancelAction(player);
         return;
       }
 
       // Check movement or damage
       if (Vector3.Distance(player.transform.position, _startPosition) > 0.4f)
       {
-        CancelAction(player, "Action cancelled by movement!");
+        CancelAction(player);
         return;
       }
 
       if (player.GetHealth() < _startHealth - 0.1f)
       {
-        CancelAction(player, "Action cancelled by damage!");
+        CancelAction(player);
         return;
       }
 
@@ -132,7 +224,7 @@ public static class VesselHornChanneler
     }
   }
 
-  private static void StartAction(HornAction action, string actionName, Player player)
+  private static void StartAction(HornAction action, string actionName, Player player, int targetVehicleId)
   {
     IsChanneling = true;
     CurrentAction = action;
@@ -141,8 +233,9 @@ public static class VesselHornChanneler
     _holdTimer = 0f;
     _startPosition = player.transform.position;
     _startHealth = player.GetHealth();
+    _targetVehicleId = targetVehicleId;
 
-    LoggerProvider.LogInfo($"[VesselHorn] Channeling {action} ({actionName}) started at {_startPosition}");
+    LoggerProvider.LogInfo($"[VesselHorn] Channeling {action} ({actionName}) started for vessel #{targetVehicleId} at {_startPosition}");
 
     try
     {
@@ -165,7 +258,7 @@ public static class VesselHornChanneler
   {
     if (IsChanneling)
     {
-      LoggerProvider.LogInfo($"[VesselHorn] Channel {CurrentAction} cancelled: {message ?? "released"}");
+      LoggerProvider.LogInfo($"[VesselHorn] Channel {CurrentAction} cancelled silently ({message ?? "released"}).");
 
       IsChanneling = false;
       CurrentAction = HornAction.None;
@@ -180,10 +273,6 @@ public static class VesselHornChanneler
       if (player != null)
       {
         try { player.StopEmote(); } catch { }
-        if (!string.IsNullOrEmpty(message))
-        {
-          player.Message(MessageHud.MessageType.Center, message);
-        }
       }
     }
   }
@@ -191,7 +280,9 @@ public static class VesselHornChanneler
   private static void CompleteAction(Player player)
   {
     var action = CurrentAction;
-    LoggerProvider.LogInfo($"[VesselHorn] Channel 3.0s complete for {action}! Executing action now.");
+    var targetVehicleId = _targetVehicleId;
+
+    LoggerProvider.LogInfo($"[VesselHorn] Channel 3.0s complete for {action} (Target: #{targetVehicleId})! Executing action now.");
 
     IsChanneling = false;
     CurrentAction = HornAction.None;
@@ -207,10 +298,9 @@ public static class VesselHornChanneler
 
     if (action == HornAction.Attune)
     {
-      var targetId = VehicleRecallController.DetectAimedOrCurrentVehicle(player);
-      if (targetId != 0)
+      if (targetVehicleId != 0)
       {
-        VehicleRecallController.AttunePlayerToVehicle(player, targetId);
+        VehicleRecallController.AttunePlayerToVehicle(player, targetVehicleId);
       }
       else
       {
@@ -220,22 +310,17 @@ public static class VesselHornChanneler
       return;
     }
 
-    var vehicleId = VehicleRecallController.ResolveTargetVehicle(player);
-    if (vehicleId == 0)
+    if (action == HornAction.Teleport)
     {
-      LoggerProvider.LogWarning("[VesselHorn] Summon action failed: No boat found in world!");
-      player.Message(MessageHud.MessageType.Center, "No boat found to summon!");
-      return;
-    }
-
-    switch (action)
-    {
-      case HornAction.Teleport:
-        VehicleRecallController.TeleportPlayerToVehicle(player, vehicleId);
-        break;
-      case HornAction.Recall:
-        VehicleRecallController.RecallVehicleToCrosshair(player, vehicleId);
-        break;
+      if (targetVehicleId != 0)
+      {
+        VehicleRecallController.TeleportPlayerToVehicle(player, targetVehicleId);
+      }
+      else
+      {
+        LoggerProvider.LogWarning("[VesselHorn] Teleport action failed: No boat found in world!");
+        player.Message(MessageHud.MessageType.Center, "Bind to a boat first");
+      }
     }
   }
 }

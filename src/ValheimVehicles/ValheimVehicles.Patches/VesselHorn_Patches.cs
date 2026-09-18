@@ -25,7 +25,7 @@ public static class VesselHorn_Patches
     if (__instance is Player player && VesselHornChanneler.IsHoldingVesselHorn(player))
     {
       __result = false;
-      LoggerProvider.LogInfo("[VesselHorn] Suppressed punch/attack while holding horn.");
+      // LoggerProvider.LogDebug("[VesselHorn] Suppressed punch/attack while holding horn.");
       return false; // Prevent weapon swing / punch while holding horn
     }
     return true;
@@ -38,7 +38,7 @@ public static class VesselHorn_Patches
     if (__instance is Player player && VesselHornChanneler.IsHoldingVesselHorn(player))
     {
       __result = false;
-      LoggerProvider.LogInfo("[VesselHorn] Suppressed block while holding horn.");
+      // LoggerProvider.LogDebug("[VesselHorn] Suppressed block while holding horn.");
       return false; // Prevent block while holding horn
     }
     return true;

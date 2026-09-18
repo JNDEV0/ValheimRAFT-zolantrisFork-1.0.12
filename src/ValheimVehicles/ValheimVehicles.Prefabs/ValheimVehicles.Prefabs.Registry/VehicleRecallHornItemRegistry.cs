@@ -56,7 +56,7 @@ public class VehicleRecallHornItemRegistry : RegisterPrefab<VehicleRecallHornIte
 
     // Register localization tokens directly with Jotunn so they never appear as [raw_token]
     LocalizationManager.Instance.AddToken("item_vessel_horn", "Horn of the Sea", false);
-    LocalizationManager.Instance.AddToken("item_vessel_horn_desc", "[Left-Click] Teleport to boat\n[Right-Click] Recall boat\n[Middle-Click] Bind boat", false);
+    LocalizationManager.Instance.AddToken("item_vessel_horn_desc", "[Left-Click] Teleport to boat\n[Right-Click] Bind to steering wheel", false);
 
     var nv = PrefabRegistryHelpers.AddNetViewWithPersistence(hornPrefab);
     var zSyncTransform = hornPrefab.GetComponent<ZSyncTransform>() ?? hornPrefab.AddComponent<ZSyncTransform>();
