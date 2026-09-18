@@ -1,4 +1,4 @@
-# ValheimRAFT v4.3.4 (Valheim 1.0.12 Compatibility & Polish Update)
+# ValheimRAFT v4.3.5 (Valheim 1.0.12 Compatibility & Polish Update)
 
 **ValheimRAFT** build custom movable rafts ships and movable bases in Valheim. Expand your vessels with standard building pieces, drop anchors, navigate the open seas, and take flight!
 
