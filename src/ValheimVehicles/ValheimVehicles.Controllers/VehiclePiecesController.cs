@@ -439,6 +439,7 @@
     {
       var vehiclePosition = GetVehiclePosition(vehicleZdo);
       if (!vehiclePosition.HasValue) yield break;
+      var invalidZdos = new List<ZDO>();
       foreach (var zdo in zdoPieces)
       {
         // ensure we never run for too long in one frame to avoid holding FPS. This can happen if there are a lot of pieces to update and the position updates are heavy.
@@ -448,10 +449,83 @@
           stopWatchRuntime.Restart();
         }
 
-        if (zdo == null) continue;
-        if (!zdo.IsValid()) continue;
+        if (zdo == null || !zdo.IsValid() || zdo.GetPrefab() <= 0)
+        {
+          if (zdo != null) invalidZdos.Add(zdo);
+          continue;
+        }
         SetPrefabWorldPosition(zdo, vehiclePosition.Value);
       }
+
+      if (invalidZdos.Count > 0)
+      {
+        foreach (var bad in invalidZdos)
+        {
+          zdoPieces.Remove(bad);
+        }
+      }
+    }
+
+    private static readonly HashSet<int> BlacklistedPrefabHashes = new()
+    {
+      "_TerrainCompiler".GetStableHashCode(),
+      "TerrainCompiler".GetStableHashCode(),
+      "LocationProxy".GetStableHashCode(),
+      PrefabNames.WaterVehicleShip.GetStableHashCode(),
+      PrefabNames.LandVehicle.GetStableHashCode(),
+    };
+
+    public static bool IsValidVehiclePieceZdo(ZDO? zdo, int expectedVehicleId = 0)
+    {
+      if (zdo == null || !zdo.IsValid()) return false;
+
+      var prefab = zdo.GetPrefab();
+      if (prefab == 0 || prefab == -1) return false;
+      if (BlacklistedPrefabHashes.Contains(prefab)) return false;
+
+      // 1. Validate MBParentId
+      var parentId = zdo.GetInt(VehicleZdoVars.MBParentId, 0);
+      if (parentId == 0) return false;
+      if (expectedVehicleId != 0 && parentId != expectedVehicleId) return false;
+
+      // 2. Validate MBPosition (local offset)
+      var localOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.negativeInfinity);
+      if (localOffset == Vector3.negativeInfinity) return false;
+      if (float.IsNaN(localOffset.x) || float.IsNaN(localOffset.y) || float.IsNaN(localOffset.z)) return false;
+      if (float.IsInfinity(localOffset.x) || float.IsInfinity(localOffset.y) || float.IsInfinity(localOffset.z)) return false;
+      // Realistic vehicle build radius limit (100m)
+      if (localOffset.sqrMagnitude > 10000f) return false;
+
+      // 3. Validate MBRotation (Vector3 or legacy Quaternion)
+      var localRot = zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.negativeInfinity);
+      if (localRot == Vector3.negativeInfinity)
+      {
+        var legacyRot = zdo.GetQuaternion(VehicleZdoVars.MBRotationHash, new Quaternion(999, 999, 999, 999));
+        if (legacyRot == new Quaternion(999, 999, 999, 999)) return false;
+      }
+      else
+      {
+        if (float.IsNaN(localRot.x) || float.IsNaN(localRot.y) || float.IsNaN(localRot.z)) return false;
+      }
+
+      // 4. If ZNetScene is available, perform component validation on the prefab
+      if (ZNetScene.instance != null)
+      {
+        var prefabGo = ZNetScene.instance.GetPrefab(prefab);
+        if (prefabGo != null)
+        {
+          if (prefabGo.GetComponent<Character>() != null ||
+              prefabGo.GetComponent<MonsterAI>() != null ||
+              prefabGo.GetComponent<Heightmap>() != null ||
+              prefabGo.GetComponent<TerrainComp>() != null || prefabGo.GetComponent<TerrainModifier>() != null ||
+              prefabGo.GetComponent<LocationProxy>() != null)
+          {
+            return false;
+          }
+        }
+      }
+
+      return true;
     }
 
     /// <summary>
@@ -463,7 +537,11 @@
     {
       if (ActiveInstances.TryGetValue(vehiclePersistentId, out var activeVpc) && activeVpc != null && activeVpc.m_pieces != null && activeVpc.m_pieces.Count > 0)
       {
-        var activeSet = activeVpc.m_pieces.Select(p => p != null ? p.GetZDO() : null).Where(z => z != null && z.IsValid()).ToHashSet();
+        var activeSet = activeVpc.m_pieces
+          .Where(p => p != null && p.IsValid())
+          .Select(p => p.GetZDO())
+          .Where(z => z != null && z.IsValid() && IsValidVehiclePieceZdo(z, vehiclePersistentId))
+          .ToHashSet();
         m_allPieces[vehiclePersistentId] = activeSet;
         return activeSet;
       }
@@ -475,15 +553,28 @@
 
         if (ZDOMan.instance != null && ZDOMan.instance.m_objectsByID != null)
         {
+          var invalidZdosToClean = new List<ZDO>();
           foreach (var kvp in ZDOMan.instance.m_objectsByID)
           {
             var zdo = kvp.Value;
             if (zdo == null || !zdo.IsValid()) continue;
             if (zdo.GetInt(VehicleZdoVars.MBParentId, 0) == vehiclePersistentId)
             {
-              var hasLocalOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.negativeInfinity) != Vector3.negativeInfinity;
-              if (!hasLocalOffset) continue;
+              if (!IsValidVehiclePieceZdo(zdo, vehiclePersistentId))
+              {
+                invalidZdosToClean.Add(zdo);
+                continue;
+              }
               pieceSet.Add(zdo);
+            }
+          }
+
+          if (invalidZdosToClean.Count > 0)
+          {
+            LoggerProvider.LogWarning($"[Auto-Purge] Cleaning {invalidZdosToClean.Count} invalid/foreign ZDOs mistakenly attached to vehicle {vehiclePersistentId}");
+            foreach (var badZdo in invalidZdosToClean)
+            {
+              RemoveVehicleDataFromZdo(badZdo);
             }
           }
         }
@@ -928,6 +1019,19 @@
           return;
 
         var netview = wnt.GetComponent<ZNetView>();
+        if (netview != null)
+        {
+          var zdo = netview.GetZDO();
+          if (zdo != null)
+          {
+            RemoveVehicleDataFromZdo(zdo);
+            VehicleParentIdCache.Remove(zdo);
+            if (PersistentZdoId != null && m_allPieces.TryGetValue(PersistentZdoId, out var pieceSet))
+            {
+              pieceSet.Remove(zdo);
+            }
+          }
+        }
         RemovePiece(netview);
         UpdatePieceCount();
         cachedTotalSailArea = 0f;
@@ -2198,7 +2302,8 @@
       else if (isBed && CanBedsUseActualWorldPosition || CanUseActualPiecePosition)
       {
         var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-        zdo.SetPosition(vehiclePosition + pieceOffset);
+        var rotatedOffset = transform.rotation * pieceOffset;
+        zdo.SetPosition(vehiclePosition + rotatedOffset);
       }
       else
       {
@@ -3155,20 +3260,25 @@
 
     public static void InitZdo(ZDO zdo)
     {
+      if (zdo == null || !zdo.IsValid()) return;
       if (zdo.m_prefab ==
           PrefabNames.WaterVehicleShip.GetStableHashCode()) return;
 
       var id = GetParentID(zdo);
       if (id != 0)
       {
-        var hasLocalOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.negativeInfinity) != Vector3.negativeInfinity;
-        if (!hasLocalOffset) return;
+        if (!IsValidVehiclePieceZdo(zdo, id))
+        {
+          return;
+        }
 
         if (!m_allPieces.TryGetValue(id, out var list))
         {
           list = [];
           m_allPieces.Add(id, list);
         }
+
+        VehicleParentIdCache[zdo] = id;
 
         // important for preventing a list error if the zdo has already been added
         if (list.Contains(zdo)) return;
@@ -3196,17 +3306,32 @@
 
       if (ZDOMan.instance != null && ZDOMan.instance.GetZDO(zdo.m_uid) != null)
       {
-        // Live ZDO is still active in ZDOMan — this is a temporary save-data clone or recycled instance, do NOT remove
+        // Live ZDO is still active in ZDOMan - this is a temporary save-data clone or recycled instance, do NOT remove
         return;
       }
 
       var id = GetParentID(zdo);
+      if (id == 0 && VehicleParentIdCache.TryGetValue(zdo, out var cachedId))
+      {
+        id = cachedId;
+      }
+      VehicleParentIdCache.Remove(zdo);
 
-      // TODO major performance issue when saving. This iterates through each zdo per removal.
       if (id != 0 && m_allPieces.TryGetValue(id, out var hashSet))
       {
         hashSet.Remove(zdo);
         itemsRemovedDuringWait = true;
+      }
+      else
+      {
+        foreach (var kvp in m_allPieces)
+        {
+          if (kvp.Value.Remove(zdo))
+          {
+            itemsRemovedDuringWait = true;
+            break;
+          }
+        }
       }
 
       var cid = zdo.GetInt(VehicleZdoVars.TempPieceParentId);
@@ -3486,6 +3611,21 @@
         return;
       }
 
+      // Reject non-piece objects (creatures, terrain compilers, location proxies, heightmaps)
+      if (netView.GetComponent<Character>() != null ||
+          netView.GetComponent<Heightmap>() != null ||
+          netView.GetComponent<TerrainComp>() != null || netView.GetComponent<TerrainModifier>() != null ||
+          netView.name.Contains("TerrainComp") ||
+          netView.name.StartsWith("LocationProxy") ||
+          netView.GetComponent<LocationProxy>() != null ||
+          !IsValidVehiclePieceZdo(zdo, PersistentZdoId))
+      {
+        LoggerProvider.LogWarning($"[Auto-Purge] Rejecting and unparenting invalid piece {netView.name} (ZDO: {zdo.m_uid}) from vehicle {PersistentZdoId}");
+        RemoveVehicleDataFromZdo(zdo);
+        netView.transform.SetParent(null);
+        return;
+      }
+
       // Check if this is an orphaned land portal mistakenly parented to this vehicle
       var portal = netView.GetComponent<TeleportWorld>();
       if (portal != null)
@@ -3514,6 +3654,25 @@
       }
 
       TrySetPieceToParent(netView);
+
+      // On-load local scale validation: clamp collapsed, zero, or negative scale
+      var ls = netView.transform.localScale;
+      if (ls.x <= 0.01f || ls.y <= 0.01f || ls.z <= 0.01f ||
+          float.IsNaN(ls.x) || float.IsNaN(ls.y) || float.IsNaN(ls.z))
+      {
+        netView.transform.localScale = Vector3.one;
+      }
+
+      // Ensure BoxColliders have valid positive dimensions
+      var boxColliders = netView.GetComponentsInChildren<BoxCollider>(true);
+      foreach (var bc in boxColliders)
+      {
+        var sz = bc.size;
+        if (sz.x <= 0.001f || sz.y <= 0.001f || sz.z <= 0.001f)
+        {
+          bc.size = new Vector3(Mathf.Max(0.05f, Mathf.Abs(sz.x)), Mathf.Max(0.05f, Mathf.Abs(sz.y)), Mathf.Max(0.05f, Mathf.Abs(sz.z)));
+        }
+      }
 
       netView.transform.localPosition =
         netView.m_zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);

@@ -167,6 +167,26 @@
       if (netView == null || netView.m_zdo == null) return;
 
       var t = netView.transform;
+
+      // On-load local scale validation: clamp collapsed, zero, or negative scale
+      var ls = t.localScale;
+      if (ls.x <= 0.01f || ls.y <= 0.01f || ls.z <= 0.01f ||
+          float.IsNaN(ls.x) || float.IsNaN(ls.y) || float.IsNaN(ls.z))
+      {
+        t.localScale = Vector3.one;
+      }
+
+      // Ensure BoxColliders have valid positive dimensions
+      var boxColliders = netView.GetComponentsInChildren<BoxCollider>(true);
+      foreach (var bc in boxColliders)
+      {
+        var sz = bc.size;
+        if (sz.x <= 0.001f || sz.y <= 0.001f || sz.z <= 0.001f)
+        {
+          bc.size = new Vector3(Mathf.Max(0.05f, Mathf.Abs(sz.x)), Mathf.Max(0.05f, Mathf.Abs(sz.y)), Mathf.Max(0.05f, Mathf.Abs(sz.z)));
+        }
+      }
+
       t.localPosition = netView.m_zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
       t.localRotation = Quaternion.Euler(netView.m_zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
 
@@ -256,6 +276,13 @@
       var id = VehiclePiecesController.GetParentID(zdo);
       if (id == 0) return false;
 
+      if (!VehiclePiecesController.IsValidVehiclePieceZdo(zdo, id))
+      {
+        VehiclePiecesController.RemoveVehicleDataFromZdo(zdo);
+        netView.transform.SetParent(null);
+        return false;
+      }
+
       // 1. Direct active instance lookup - if pieces controller is already active in memory, activate piece immediately
       if (VehiclePiecesController.ActiveInstances.TryGetValue(id, out var activeController) && activeController != null && activeController.isActiveAndEnabled && !activeController.IsInvalid())
       {
@@ -287,7 +314,13 @@
     public static bool IsExcludedPrefab(GameObject netView)
     {
       if (PrefabNames.IsVehicle(netView.name) ||
-          netView.name.StartsWith(PrefabNames.VehiclePiecesContainer))
+          netView.name.StartsWith(PrefabNames.VehiclePiecesContainer) ||
+          netView.GetComponent<Character>() != null ||
+          netView.GetComponent<Heightmap>() != null ||
+          netView.GetComponent<TerrainComp>() != null || netView.GetComponent<TerrainModifier>() != null ||
+          netView.name.Contains("TerrainComp") ||
+          netView.name.StartsWith("LocationProxy") ||
+          netView.GetComponent<LocationProxy>() != null)
         return true;
 
       return false;

@@ -137,6 +137,8 @@
         return false;
       }
 
+      if (zdo.GetPrefab() <= 0) return false;
+
       if (VehiclePiecesController.VehicleParentIdCache.TryGetValue(zdo, out var cachedParentPersistentId))
       {
         return IsVehicleParentActive(cachedParentPersistentId);
@@ -176,6 +178,11 @@
           VehiclePiecesController.VehicleParentIdCache[zdo] = swivelPersistentId;
           return IsSwivelParentActive(swivelPersistentId);
         }
+        return false;
+      }
+
+      if (!VehiclePiecesController.IsValidVehiclePieceZdo(zdo, parentPersistentId))
+      {
         return false;
       }
 

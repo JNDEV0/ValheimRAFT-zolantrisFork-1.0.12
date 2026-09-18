@@ -148,6 +148,17 @@
 
       if (PrefabNames.IsVehicle(gameObject.name)) return gameObject;
 
+      if (piece.GetComponent<TerrainModifier>() != null ||
+          piece.GetComponent<TerrainOp>() != null ||
+          gameObject.name.Contains("TerrainCompiler") ||
+          gameObject.name.Contains("raise") ||
+          gameObject.name.Contains("dig") ||
+          gameObject.name.Contains("cultivate"))
+      {
+        PatchSharedData.PlayerLastRayPiece = null;
+        return gameObject;
+      }
+
       var rb = piece.GetComponentInChildren<Rigidbody>();
       var netView = piece.GetComponent<ZNetView>();
 
