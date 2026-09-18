@@ -83,14 +83,17 @@ public static class VesselHornChanneler
     {
       if (leftHeld)
       {
+        LoggerProvider.LogInfo("[VesselHorn] Left click detected -> starting Teleport to Boat channel");
         StartAction(HornAction.Teleport, "Teleporting to Boat...", player);
       }
       else if (rightHeld)
       {
+        LoggerProvider.LogInfo("[VesselHorn] Right click detected -> starting Recall Boat channel");
         StartAction(HornAction.Recall, "Recalling Boat...", player);
       }
       else if (middleHeld)
       {
+        LoggerProvider.LogInfo("[VesselHorn] Middle click detected -> starting Bind Boat channel");
         StartAction(HornAction.Attune, "Binding to Boat...", player);
       }
     }
@@ -102,7 +105,7 @@ public static class VesselHornChanneler
 
       if (!stillHeld)
       {
-        CancelAction(player);
+        CancelAction(player, "Button released early");
         return;
       }
 
@@ -139,6 +142,8 @@ public static class VesselHornChanneler
     _startPosition = player.transform.position;
     _startHealth = player.GetHealth();
 
+    LoggerProvider.LogInfo($"[VesselHorn] Channeling {action} ({actionName}) started at {_startPosition}");
+
     try
     {
       if (player.m_zanim != null)
@@ -160,6 +165,8 @@ public static class VesselHornChanneler
   {
     if (IsChanneling)
     {
+      LoggerProvider.LogInfo($"[VesselHorn] Channel {CurrentAction} cancelled: {message ?? "released"}");
+
       IsChanneling = false;
       CurrentAction = HornAction.None;
       ChannelProgress = 0f;
@@ -184,6 +191,8 @@ public static class VesselHornChanneler
   private static void CompleteAction(Player player)
   {
     var action = CurrentAction;
+    LoggerProvider.LogInfo($"[VesselHorn] Channel 3.0s complete for {action}! Executing action now.");
+
     IsChanneling = false;
     CurrentAction = HornAction.None;
     ChannelProgress = 0f;
@@ -205,6 +214,7 @@ public static class VesselHornChanneler
       }
       else
       {
+        LoggerProvider.LogWarning("[VesselHorn] Bind action failed: No boat found to bind!");
         player.Message(MessageHud.MessageType.Center, "No boat found to bind!");
       }
       return;
@@ -213,6 +223,7 @@ public static class VesselHornChanneler
     var vehicleId = VehicleRecallController.ResolveTargetVehicle(player);
     if (vehicleId == 0)
     {
+      LoggerProvider.LogWarning("[VesselHorn] Summon action failed: No boat found in world!");
       player.Message(MessageHud.MessageType.Center, "No boat found to summon!");
       return;
     }

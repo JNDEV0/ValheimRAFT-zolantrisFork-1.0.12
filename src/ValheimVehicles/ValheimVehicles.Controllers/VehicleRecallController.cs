@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVehicles.Components;
@@ -29,6 +29,7 @@ public static class VehicleRecallController
       var attunedId = playerZdo.GetInt(AttunedVesselZdoKey, 0);
       if (attunedId != 0 && DoesVehicleExist(attunedId))
       {
+        LoggerProvider.LogInfo($"[VesselRecall] Found explicitly attuned vessel ID: {attunedId}");
         return attunedId;
       }
     }
@@ -38,6 +39,7 @@ public static class VehicleRecallController
                       player.transform.root.GetComponentInChildren<VehiclePiecesController>();
     if (vpcOnPlayer != null && vpcOnPlayer.PersistentZdoId != 0)
     {
+      LoggerProvider.LogInfo($"[VesselRecall] Player is standing on vessel ID: {vpcOnPlayer.PersistentZdoId}");
       return vpcOnPlayer.PersistentZdoId;
     }
 
@@ -52,6 +54,7 @@ public static class VehicleRecallController
         var zdo = vm.m_nview.GetZDO();
         if (zdo.GetLong(ZDOVars.s_creator, 0) == playerId)
         {
+          LoggerProvider.LogInfo($"[VesselRecall] Found loaded vessel ID {kvp.Key} created by player ({playerId})");
           return kvp.Key;
         }
       }
@@ -73,7 +76,11 @@ public static class VehicleRecallController
           if (zdo.GetLong(ZDOVars.s_creator, 0) == playerId)
           {
             var pId = zdo.GetInt(ZdoVarController.PersistentUidHash, 0);
-            if (pId != 0) return pId;
+            if (pId != 0)
+            {
+              LoggerProvider.LogInfo($"[VesselRecall] Found distant ZDO vessel ID {pId} created by player ({playerId})");
+              return pId;
+            }
           }
         }
       }
@@ -87,7 +94,11 @@ public static class VehicleRecallController
         if (prefab == waterShipPrefab || prefab == landShipPrefab)
         {
           var pId = zdo.GetInt(ZdoVarController.PersistentUidHash, 0);
-          if (pId != 0) return pId;
+          if (pId != 0)
+          {
+            LoggerProvider.LogInfo($"[VesselRecall] Fallback: picked first world vessel ID {pId}");
+            return pId;
+          }
         }
       }
     }
@@ -95,9 +106,14 @@ public static class VehicleRecallController
     // 6. Fallback: Check tracked piece buckets in VehiclePiecesController
     foreach (var key in VehiclePiecesController.m_allPieces.Keys)
     {
-      if (key != 0) return key;
+      if (key != 0)
+      {
+        LoggerProvider.LogInfo($"[VesselRecall] Fallback: picked vessel ID {key} from m_allPieces");
+        return key;
+      }
     }
 
+    LoggerProvider.LogWarning("[VesselRecall] Could not resolve any target vessel in the world.");
     return 0;
   }
 
@@ -134,6 +150,7 @@ public static class VehicleRecallController
       position = vehicleManager.transform.position;
       rotation = vehicleManager.transform.rotation;
       isLoaded = true;
+      LoggerProvider.LogInfo($"[VesselRecall] Vehicle #{vehicleId} is loaded at position {position}");
       return true;
     }
 
@@ -160,9 +177,11 @@ public static class VehicleRecallController
       position = zdo.GetPosition();
       rotation = zdo.GetRotation();
       isLoaded = false;
+      LoggerProvider.LogInfo($"[VesselRecall] Vehicle #{vehicleId} is unloaded (ZDO sector: {zdo.GetSectorIndex()}) at position {position}");
       return true;
     }
 
+    LoggerProvider.LogWarning($"[VesselRecall] Could not find location for vehicle #{vehicleId}");
     return false;
   }
 
@@ -172,6 +191,7 @@ public static class VehicleRecallController
 
     if (!GetVehicleLocation(vehicleId, out var targetPos, out var targetRot, out var isLoaded, out var vm))
     {
+      LoggerProvider.LogWarning($"[VesselRecall] Teleport failed: could not locate vessel #{vehicleId}");
       player.Message(MessageHud.MessageType.Center, "Could not locate vessel position!");
       return;
     }
@@ -186,14 +206,17 @@ public static class VehicleRecallController
       {
         landingPos = wheel.transform.position - wheel.transform.forward * 0.8f + Vector3.up * 0.1f;
         landingRot = wheel.transform.rotation;
+        LoggerProvider.LogInfo($"[VesselRecall] Target wheel found at {wheel.transform.position}, landing player at {landingPos}");
       }
       else if (vm.RudderObject != null)
       {
         landingPos = vm.RudderObject.transform.position + Vector3.up * 0.5f;
+        LoggerProvider.LogInfo($"[VesselRecall] Rudder found, landing player at {landingPos}");
       }
       else
       {
         landingPos = targetPos + targetRot * Vector3.up * 1.5f;
+        LoggerProvider.LogInfo($"[VesselRecall] No wheel found, landing player at vehicle origin {landingPos}");
       }
     }
     else
@@ -215,16 +238,18 @@ public static class VehicleRecallController
       {
         var wheelOffset = wheelZdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
         landingPos = targetPos + targetRot * wheelOffset + Vector3.up * 0.5f;
+        LoggerProvider.LogInfo($"[VesselRecall] Unloaded wheel ZDO found, landing player at offset {landingPos}");
       }
       else
       {
         landingPos = targetPos + Vector3.up * 2.0f;
+        LoggerProvider.LogInfo($"[VesselRecall] Unloaded vehicle origin landing at {landingPos}");
       }
     }
 
     PlaySfxAt("sfx_portal_activate", player.transform.position);
 
-    // Distant teleport handles sector streaming if far away
+    LoggerProvider.LogInfo($"[VesselRecall] Teleporting player {player.GetPlayerName()} to {landingPos} (Distant: {!isLoaded})");
     player.TeleportTo(landingPos, landingRot, distantTeleport: !isLoaded);
     player.Message(MessageHud.MessageType.Center, $"Teleported to Vessel #{vehicleId} wheel!");
   }
@@ -235,11 +260,11 @@ public static class VehicleRecallController
 
     if (!GetVehicleLocation(vehicleId, out _, out _, out var isLoaded, out var vm))
     {
+      LoggerProvider.LogWarning($"[VesselRecall] Recall failed: could not locate vessel #{vehicleId}");
       player.Message(MessageHud.MessageType.Center, "Could not locate vessel to recall!");
       return;
     }
 
-    // Determine target location via camera raycast
     var cam = GameCamera.instance ? GameCamera.instance.transform : null;
     var rayOrigin = cam != null ? cam.position : player.GetEyePoint();
     var rayDir = cam != null ? cam.forward : player.GetLookDir();
@@ -266,12 +291,14 @@ public static class VehicleRecallController
       // Land recall: flight mode safely 6 meters above the terrain
       targetPos = new Vector3(hitPoint.x, hitPoint.y + 6.0f, hitPoint.z);
       targetHeightAboveWater = targetPos.y - waterLevel;
+      LoggerProvider.LogInfo($"[VesselRecall] Recalling to LAND at {targetPos} (Ground: {hitPoint.y:F2}, FlightHeight: {targetHeightAboveWater:F2})");
     }
     else
     {
       // Water recall: float mode at water level
       targetPos = new Vector3(hitPoint.x, waterLevel, hitPoint.z);
       targetHeightAboveWater = 0f;
+      LoggerProvider.LogInfo($"[VesselRecall] Recalling to WATER at {targetPos} (WaterLevel: {waterLevel:F2})");
     }
 
     var flatForward = Vector3.ProjectOnPlane(rayDir, Vector3.up).normalized;
@@ -317,6 +344,7 @@ public static class VehicleRecallController
 
       vm.PiecesController?.ForceUpdateAllPiecePositions();
       VehiclePiecesController.SyncAllPrefabsToVehiclePosition(vehicleId);
+      LoggerProvider.LogInfo($"[VesselRecall] Repositioned loaded vessel #{vehicleId} to {targetPos}");
     }
     else
     {
@@ -374,6 +402,7 @@ public static class VehicleRecallController
             ZNetScene.instance.CreateObject(pz);
           }
         }
+        LoggerProvider.LogInfo($"[VesselRecall] Migrated {pieceZdos.Count} piece ZDOs for vessel #{vehicleId} to new sector {newSec}");
       }
     }
 
@@ -400,6 +429,7 @@ public static class VehicleRecallController
     }
 
     PlaySfxAt("sfx_cheers", player.transform.position);
+    LoggerProvider.LogInfo($"[VesselRecall] Successfully bound player {player.GetPlayerName()} to vessel #{vehicleId}");
     player.Message(MessageHud.MessageType.Center, $"Horn bound to Vessel #{vehicleId}!");
   }
 
@@ -412,6 +442,7 @@ public static class VehicleRecallController
               player.transform.root.GetComponentInChildren<VehiclePiecesController>();
     if (vpc != null && vpc.PersistentZdoId != 0)
     {
+      LoggerProvider.LogInfo($"[VesselRecall] Detect: player is standing on vehicle #{vpc.PersistentZdoId}");
       return vpc.PersistentZdoId;
     }
 
@@ -425,15 +456,24 @@ public static class VehicleRecallController
       var hitVpc = hit.collider.GetComponentInParent<VehiclePiecesController>();
       if (hitVpc != null && hitVpc.PersistentZdoId != 0)
       {
+        LoggerProvider.LogInfo($"[VesselRecall] Detect: aiming at vehicle piece #{hitVpc.PersistentZdoId}");
         return hitVpc.PersistentZdoId;
       }
       var nv = hit.collider.GetComponentInParent<ZNetView>();
       if (nv != null && nv.GetZDO() != null)
       {
         var parentId = nv.GetZDO().GetInt(VehicleZdoVars.MBParentId, 0);
-        if (parentId != 0) return parentId;
+        if (parentId != 0)
+        {
+          LoggerProvider.LogInfo($"[VesselRecall] Detect: aiming at piece with MBParentId #{parentId}");
+          return parentId;
+        }
         var pId = nv.GetZDO().GetInt(ZdoVarController.PersistentUidHash, 0);
-        if (pId != 0 && DoesVehicleExist(pId)) return pId;
+        if (pId != 0 && DoesVehicleExist(pId))
+        {
+          LoggerProvider.LogInfo($"[VesselRecall] Detect: aiming at vehicle root #{pId}");
+          return pId;
+        }
       }
     }
 
