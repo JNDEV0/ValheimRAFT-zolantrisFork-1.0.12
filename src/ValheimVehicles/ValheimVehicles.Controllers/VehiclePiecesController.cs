@@ -959,24 +959,49 @@
               break;
             }
 
+            // Enforce that rudder faces the same forward direction as the vehicle / steering wheel
+            var forwardDot = Vector3.Dot(rudder.transform.forward, transform.forward);
+            if (forwardDot < 0.2f)
+            {
+              var wnt = netView.GetComponent<WearNTear>();
+              if (wnt != null)
+              {
+                wnt.Destroy();
+              }
+              else if (netView.gameObject)
+              {
+                ZNetScene.instance.Destroy(netView.gameObject);
+              }
+              if (Player.m_localPlayer != null)
+              {
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_orientation_invalid"));
+              }
+              break;
+            }
+
             // Enforce matching rotation if a rudder already exists
             if (m_rudderPieces.Count == 1)
             {
               var existingRudder = m_rudderPieces[0];
               if (existingRudder != null)
               {
-                var existingY = existingRudder.transform.localEulerAngles.y;
-                var newY = rudder.transform.localEulerAngles.y;
-                var angleDiff = Mathf.Abs(Mathf.DeltaAngle(existingY, newY));
-                if (angleDiff > 5f) // tolerance
+                var existingDot = Vector3.Dot(rudder.transform.forward, existingRudder.transform.forward);
+                if (existingDot < 0.9f)
                 {
-                  var euler = rudder.transform.localEulerAngles;
-                  euler.y = existingY;
-                  rudder.transform.localEulerAngles = euler;
-                  if (netView != null && netView.GetZDO() != null)
+                  var wnt = netView.GetComponent<WearNTear>();
+                  if (wnt != null)
                   {
-                    netView.GetZDO().SetRotation(rudder.transform.rotation);
+                    wnt.Destroy();
                   }
+                  else if (netView.gameObject)
+                  {
+                    ZNetScene.instance.Destroy(netView.gameObject);
+                  }
+                  if (Player.m_localPlayer != null)
+                  {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_orientation_invalid"));
+                  }
+                  break;
                 }
               }
             }
@@ -1923,16 +1948,8 @@
       var isPortal = Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab());
       var oldSector = zdo.GetSectorIndex();
 
-      Vector3 targetPos;
-      if (CanUseActualPiecePosition || isPortal)
-      {
-        var zdoRelativePosition = vehiclePosition + zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-        targetPos = zdoRelativePosition;
-      }
-      else
-      {
-        targetPos = vehiclePosition;
-      }
+      var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+      var targetPos = vehiclePosition + pieceOffset;
 
       zdo.SetPosition(targetPos);
 
@@ -3028,6 +3045,7 @@
       var currentWheelStateText = VehicleAnchorMechanismController.GetCurrentStateTextStatic(anchorState, isLandVehicle);
       foreach (var anchorComponent in m_anchorMechanismComponents)
       {
+        if (!anchorComponent) continue;
         if (anchorState != anchorComponent.currentState)
           anchorComponent.UpdateAnchorState(anchorState, currentWheelStateText);
       }
@@ -3788,9 +3806,16 @@
 
       netView.transform.localPosition =
         netView.m_zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-      netView.transform.localRotation =
-        Quaternion.Euler(netView.m_zdo.GetVec3(VehicleZdoVars.MBRotationVecHash,
-          Vector3.zero));
+      var rotVec = netView.m_zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.negativeInfinity);
+      if (rotVec != Vector3.negativeInfinity)
+      {
+        netView.transform.localRotation = Quaternion.Euler(rotVec);
+      }
+      else
+      {
+        var legacyRot = netView.m_zdo.GetQuaternion(VehicleZdoVars.MBRotationHash, Quaternion.identity);
+        netView.transform.localRotation = legacyRot;
+      }
 
       var wnt = netView.GetComponent<WearNTear>();
       if ((bool)wnt) wnt.enabled = true;
@@ -4807,55 +4832,8 @@
     /// </summary>
     private IEnumerator RecenterVehicleOriginCoroutine()
     {
-      // Wait one fixed-update so we are between physics steps, not mid-integration.
-      yield return new WaitForFixedUpdate();
-
-      try
-      {
-        if (!Manager || !Manager.IsInitialized) yield break;
-        if (!m_nview || m_nview.GetZDO() == null) yield break;
-        if (!m_nview.IsOwner()) yield break;
-        if (MovementController == null || MovementController.m_body == null) yield break;
-
-        // Geometric center of all hull pieces in VehiclePiecesController local space.
-        var localCenter = convexHullComponent.GetConvexHullBounds(true).center;
-
-        // Only correct X/Z — Y is intentional (buoyancy / terrain height).
-        var xzShift = new Vector3(localCenter.x, 0f, localCenter.z);
-
-        const float recenterThreshold = 2f; // metres
-        if (xzShift.magnitude < recenterThreshold) yield break;
-
-        LoggerProvider.LogDebug(
-          $"RecenterVehicleOrigin: XZ drift {xzShift.magnitude:F1} m — recentering ZDO offsets (vehicle keeps moving).");
-
-        // Re-snapshot each piece's localPosition minus the XZ drift into MBPositionHash.
-        // localPosition is always accurate since pieces are parented to the body.
-        // The offset is now relative to the new geometric center.
-        foreach (var nv in m_pieces)
-        {
-          if (!nv) continue;
-          var zdo = nv.GetZDO();
-          if (zdo == null) continue;
-          zdo.Set(VehicleZdoVars.MBPositionHash, nv.transform.localPosition - xzShift);
-        }
-
-        // Shift the root ZDO's recorded world position to the new logical center.
-        // The body is NOT moved — only the ZDO's stored position changes.
-        // Next time ForceUpdateAllPiecePositions runs it will use this corrected origin.
-        var worldShift = transform.TransformDirection(xzShift);
-        var newWorldOrigin = MovementController.m_body.position + worldShift;
-        var rootZdo = m_nview.GetZDO();
-        rootZdo.SetPosition(newWorldOrigin);
-        rootZdo.SetSector(ZoneSystem.GetSectorIndex(newWorldOrigin));
-
-        LoggerProvider.LogDebug(
-          $"RecenterVehicleOrigin: done. New ZDO world origin: {newWorldOrigin}");
-      }
-      finally
-      {
-        _recenterCoroutineInstance = null;
-      }
+      // Disabled: shifting root ZDO and piece offsets on geometric drift causes pieces to collapse / clump on reload.
+      yield break;
     }
 
     private void RequestRecenterVehicleOrigin()

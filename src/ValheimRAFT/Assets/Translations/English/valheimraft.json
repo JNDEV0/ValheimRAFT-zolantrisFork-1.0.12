@@ -136,6 +136,8 @@
   "valheim_vehicles_rudder_advanced_desc": "Reinforced with iron, reduced drag and faster turns. +[15] row speed\nTurn angle: 89° | Turn speed: 1.0x",
   "valheim_vehicles_rudder_required": "Ship rudder required",
   "valheim_vehicles_rudder_max_reached": "Maximum rudders placed (2)",
+  "valheim_vehicles_rudder_must_attach_boat": "Rudder must be attached directly to the hull of the boat.",
+  "valheim_vehicles_rudder_orientation_invalid": "Rudder must face the same direction as the steering wheel.",
   "valheim_vehicles_ram_stake": "Ram Stake",
   "valheim_vehicles_ram_stake_desc": "Used to puncture hulls, enemies, and terrain. Less area damage, but can smash rocks harder within a small area. Cannot damage trees.",
   "valheim_vehicles_ram_blade": "Ram Blade",

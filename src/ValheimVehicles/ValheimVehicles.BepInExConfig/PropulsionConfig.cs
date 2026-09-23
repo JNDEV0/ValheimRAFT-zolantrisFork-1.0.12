@@ -229,15 +229,15 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
         "Sets the speed at which it becomes significantly harder to gain speed per sail area",
         true));
 
-    SailVerticalOffset = config.BindUnique(GenericSectionName, "SailVerticalOffset", 1.05f,
+    SailVerticalOffset = config.BindUnique(GenericSectionName, "SailVerticalOffset", 0f,
       ConfigHelpers.CreateConfigDescription(
-        "Vertical offset (in meters) to raise the sail canvas towards the yardarm crossbeam.",
-        true, false, new AcceptableValueRange<float>(0f, 3f)));
+        "Vertical offset (in meters) to adjust the sail canvas towards the yardarm crossbeam.",
+        true, false, new AcceptableValueRange<float>(-3f, 3f)));
 
-    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 2.15f,
+    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 0f,
       ConfigHelpers.CreateConfigDescription(
-        "Vertical offset (in meters) to raise the Karve sail canvas towards the yardarm crossbeam.",
-        true, false, new AcceptableValueRange<float>(0f, 5f)));
+        "Vertical offset (in meters) to adjust the Karve sail canvas towards the yardarm crossbeam.",
+        true, false, new AcceptableValueRange<float>(-3f, 3f)));
 
     // rudder
 

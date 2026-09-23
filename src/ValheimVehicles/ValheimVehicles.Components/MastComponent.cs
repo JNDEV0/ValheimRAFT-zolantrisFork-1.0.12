@@ -63,9 +63,9 @@ public class MastComponent : MonoBehaviour
     var name = gameObject.name;
     if (name.IndexOf("karve", StringComparison.OrdinalIgnoreCase) >= 0)
     {
-      return PropulsionConfig.KarveSailVerticalOffset?.Value ?? 2.15f;
+      return PropulsionConfig.KarveSailVerticalOffset?.Value ?? 0f;
     }
-    return PropulsionConfig.SailVerticalOffset?.Value ?? 1.05f;
+    return PropulsionConfig.SailVerticalOffset?.Value ?? 0f;
   }
 
   public void Start()

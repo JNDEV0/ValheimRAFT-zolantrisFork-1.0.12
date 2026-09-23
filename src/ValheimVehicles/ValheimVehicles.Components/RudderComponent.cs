@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using ValheimVehicles.Shared.Constants;
 
 namespace ValheimVehicles.Components;
 
@@ -41,4 +43,40 @@ public class RudderComponent : MonoBehaviour
     RudderTier.Advanced => 15f,
     _ => 5f
   };
+
+  private void Start()
+  {
+    StartCoroutine(ValidatePlacementRoutine());
+  }
+
+  private System.Collections.IEnumerator ValidatePlacementRoutine()
+  {
+    // Wait for placement and vehicle parenting to complete
+    yield return new WaitForSeconds(0.25f);
+
+    var nv = GetComponent<ZNetView>();
+    if (nv == null || !nv.IsValid()) yield break;
+
+    var piece = GetComponent<Piece>();
+    if (piece != null && piece.GetCreator() != 0 && nv.IsOwner())
+    {
+      var parentId = nv.GetZDO().GetInt(VehicleZdoVars.MBParentId, 0);
+      if (parentId == 0 && transform.parent == null)
+      {
+        if (Player.m_localPlayer != null)
+        {
+          Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_must_attach_boat"));
+        }
+        var wnt = GetComponent<WearNTear>();
+        if (wnt != null)
+        {
+          wnt.Destroy();
+        }
+        else
+        {
+          Destroy(gameObject);
+        }
+      }
+    }
+  }
 }

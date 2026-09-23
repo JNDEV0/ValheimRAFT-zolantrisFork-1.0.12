@@ -9098,11 +9098,22 @@
     public void ToggleAnchor()
     {
       if (Manager == null) return;
-      SendSetAnchor(!isAnchored ? AnchorState.Anchored : AnchorState.Recovered);
-      if (LandMovementController != null)
+      // Flying or land vehicle does not animate anchor.
+      if (IsFlying() || Manager.IsLandVehicle)
       {
-        LandMovementController.SetBrake(isAnchored);
+        SendSetAnchor(!isAnchored ? AnchorState.Anchored : AnchorState.Recovered);
+        if (LandMovementController != null)
+        {
+          LandMovementController.SetBrake(isAnchored);
+        }
+        return;
       }
+
+      var newState = isAnchored
+        ? AnchorState.Reeling
+        : AnchorState.Lowering;
+
+      SendSetAnchor(newState);
     }
 
 

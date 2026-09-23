@@ -343,7 +343,7 @@ namespace ValheimVehicles.SharedScripts
 
     public void UpdateRopeVisual()
     {
-      if (ropeLine == null) return;
+      if (ropeLine == null || rotationAnchorRopeAttachpoint == null || anchorRopeAttachStartPoint == null || anchorRopeAttachmentPoint == null) return;
 
       ropeLine.useWorldSpace = false; // Ensure the rope uses local space.
       ropeLine.startWidth = 0.2f;

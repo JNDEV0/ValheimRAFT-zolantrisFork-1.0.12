@@ -42,7 +42,8 @@
 
     public float GetDistanceToGround()
     {
-      var worldPos = anchorRopeAttachStartPoint != null
+      if (!this || !transform) return 0f;
+      var worldPos = (anchorRopeAttachStartPoint != null && anchorRopeAttachStartPoint)
         ? anchorRopeAttachStartPoint.position
         : transform.position;
 
@@ -88,11 +89,12 @@
     }
 
     /// <summary>
-    /// Instantly positions the anchor to seafloor ground height below the winch cradle.
+    /// Catch all if the anchor is not near the ground when it becomes anchored, move it down to the ground.
     /// </summary>
     public void UpdateAnchorPositionIfNotNearGround()
     {
       var deltaGround = GetDistanceToGround();
+      if (!(deltaGround > 2)) return;
       var clampedDepth = Mathf.Clamp(deltaGround, 1f, maxAnchorDistance);
       var newPos = GetAnchorStartLocalPosition();
       newPos.y -= clampedDepth;
@@ -116,10 +118,12 @@
         case AnchorState.Idle:
           break;
         case AnchorState.Lowering:
+          break;
         case AnchorState.Anchored:
           UpdateAnchorPositionIfNotNearGround();
           break;
         case AnchorState.Reeling:
+          break;
         case AnchorState.Recovered:
           if (anchorTransform != null)
           {
@@ -134,7 +138,10 @@
 
       if (MovementController != null && MovementController.m_nview != null && MovementController.m_nview.IsOwner())
       {
-        MovementController.SendSetAnchor(newState);
+        if (MovementController.vehicleAnchorState != newState)
+        {
+          MovementController.SendSetAnchor(newState);
+        }
       }
     }
   }
