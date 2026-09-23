@@ -23,7 +23,7 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
       PrefabManager.Instance.CreateClonedPrefab(
         PrefabNames.ShipRudderBasic, LoadValheimVehicleAssets.ShipRudderBasicAsset);
 
-    SharedSetup(prefab);
+    SharedSetup(prefab, RudderTier.Basic);
 
     PrefabRegistryController.AddPiece(new CustomPiece(prefab, false, new PieceConfig
     {
@@ -42,11 +42,12 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
     }));
   }
 
-  private static void SharedSetup(GameObject prefab)
+  private static void SharedSetup(GameObject prefab, RudderTier tier = RudderTier.Basic)
   {
     PrefabRegistryHelpers.AddNetViewWithPersistence(prefab);
     PrefabRegistryHelpers.AddPieceForPrefab(prefab.name, prefab);
     var rudderComponent = prefab.AddComponent<RudderComponent>();
+    rudderComponent.tier = tier;
     rudderComponent.PivotPoint = prefab.transform.FindDeepChild("rudder_rotation");
 
     PrefabRegistryHelpers.SetWearNTear(prefab);
@@ -55,12 +56,12 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
   }
 
 
-  private static void RegisterAdvancedRudderVariant(string variantName, GameObject prefabAsset, RequirementConfig[] requirements)
+  private static void RegisterAdvancedRudderVariant(string variantName, GameObject prefabAsset, RequirementConfig[] requirements, RudderTier tier = RudderTier.Standard)
   {
     var prefab =
       PrefabManager.Instance.CreateClonedPrefab(
         variantName, prefabAsset);
-    SharedSetup(prefab);
+    SharedSetup(prefab, tier);
 
     PrefabRegistryController.AddPiece(new CustomPiece(prefab, false, new PieceConfig
     {
@@ -93,7 +94,8 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
           Item = "Bronze",
           Recover = true
         }
-      ]);
+      ],
+      RudderTier.Standard);
 
     // Step 2: Ship Rudder (Advanced)
     RegisterAdvancedRudderVariant(PrefabNames.ShipRudderAdvancedDoubleWood,
@@ -111,7 +113,8 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
           Item = "Iron",
           Recover = true
         }
-      ]);
+      ],
+      RudderTier.Advanced);
 
     // Step 3: Removed ShipRudderAdvancedIron and ShipRudderAdvancedDoubleIron
   }

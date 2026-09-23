@@ -937,9 +937,54 @@
             break;
           }
           case RudderComponent rudder:
+          {
+            if (m_rudderPieces.Contains(rudder)) break;
+
+            // Enforce max 2 rudders
+            if (m_rudderPieces.Count >= 2)
+            {
+              var wnt = netView.GetComponent<WearNTear>();
+              if (wnt != null)
+              {
+                wnt.Destroy();
+              }
+              else if (netView.gameObject)
+              {
+                ZNetScene.instance.Destroy(netView.gameObject);
+              }
+              if (Player.m_localPlayer != null)
+              {
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_max_reached"));
+              }
+              break;
+            }
+
+            // Enforce matching rotation if a rudder already exists
+            if (m_rudderPieces.Count == 1)
+            {
+              var existingRudder = m_rudderPieces[0];
+              if (existingRudder != null)
+              {
+                var existingY = existingRudder.transform.localEulerAngles.y;
+                var newY = rudder.transform.localEulerAngles.y;
+                var angleDiff = Mathf.Abs(Mathf.DeltaAngle(existingY, newY));
+                if (angleDiff > 5f) // tolerance
+                {
+                  var euler = rudder.transform.localEulerAngles;
+                  euler.y = existingY;
+                  rudder.transform.localEulerAngles = euler;
+                  if (netView != null && netView.GetZDO() != null)
+                  {
+                    netView.GetZDO().SetRotation(rudder.transform.rotation);
+                  }
+                }
+              }
+            }
+
             m_rudderPieces.Add(rudder);
             SetShipWakeBounds();
             break;
+          }
           case RopeAnchorComponent ropeAnchor:
             if (ropeAnchor.IsDockAnchor())
             {
@@ -3237,8 +3282,21 @@
       return cachedTotalSailArea;
     }
 
+    public float GetRowingSpeed()
+    {
+      if (m_rudderPieces.Count == 0) return 0f;
+      var speed = 0f;
+      foreach (var rudder in m_rudderPieces)
+      {
+        if (rudder != null) speed += rudder.RowSpeed;
+      }
+      return speed;
+    }
+
     public float GetMinPropulsion()
     {
+      var rowSpeed = GetRowingSpeed();
+      if (rowSpeed > 0f) return rowSpeed;
       return PropulsionConfig.MinSailSpeed?.Value ?? 10f;
     }
 

@@ -165,8 +165,16 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
     if (ControllersInstance?.PiecesController == null) return false;
 
     var piecesController = ControllersInstance.PiecesController;
+
+    // Rowing speed: sum of rudder tier row speeds
+    var rowingSpeed = piecesController.GetRowingSpeed();
+
+    // Sailing speed: sum of sail propulsion
+    var sailingSpeed = piecesController.GetSumOfSailPropulsion();
+
     shipStatsText =
-      $"<color=white>current max propulsion: {piecesController.GetMaxPropulsion():F1}</color>";
+      $"<color=white>rowing speed: {rowingSpeed:F0}</color>\n" +
+      $"<color=white>sailing speed: {sailingSpeed:F1}</color>";
 
     return true;
   }

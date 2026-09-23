@@ -2528,41 +2528,59 @@
 
     /// </summary>
 
-    /// <param name="dir"></param>
-
-    public void ApplyControls(Vector3 dir)
-
+    public float GetMaxRudderAngle()
     {
+      if (PiecesController == null || PiecesController.m_rudderPieces.Count == 0)
+        return 0f;
+      var totalAngle = 0f;
+      foreach (var rudder in PiecesController.m_rudderPieces)
+      {
+        if (rudder != null) totalAngle += rudder.MaxTurnAngle;
+      }
+      return Mathf.Min(totalAngle, 89f);
+    }
 
+    public float GetRudderTurnSpeed()
+    {
+      if (PiecesController == null || PiecesController.m_rudderPieces.Count == 0)
+        return 0f;
+      var maxSpeed = 0f;
+      foreach (var rudder in PiecesController.m_rudderPieces)
+      {
+        if (rudder != null) maxSpeed = Mathf.Max(maxSpeed, rudder.TurnSpeed);
+      }
+      return Mathf.Min(maxSpeed, 1.0f);
+    }
 
+    /// <param name="dir"></param>
+    public void ApplyControls(Vector3 dir)
+    {
+      if (PiecesController != null && PiecesController.m_rudderPieces.Count == 0)
+      {
+        if (dir.z > 0.5 || dir.z < -0.5)
+        {
+          ShowWheelHoverMessage("$valheim_vehicles_rudder_required");
+          return;
+        }
+      }
 
       var isForward = dir.z > 0.5;
-
       var isBackward = dir.z < -0.5;
 
-
-
       if (isForward && !m_forwardPressed)
-
         SendSpeedChange(DirectionChange.Forward);
 
-
-
       if (isBackward && !m_backwardPressed)
-
         SendSpeedChange(DirectionChange.Backward);
 
-
-
       var fixedDeltaTime = Time.fixedDeltaTime;
-
       var num = Mathf.Lerp(0.5f, 1f, Mathf.Abs(m_rudderValue));
-
-      m_rudder = dir.x * num;
-
+      var maxAngle = GetMaxRudderAngle();
+      var turnSpeedMultiplier = GetRudderTurnSpeed();
+      m_rudder = dir.x * num * turnSpeedMultiplier;
       m_rudderValue += m_rudder * m_rudderSpeed * fixedDeltaTime;
-
-      m_rudderValue = Mathf.Clamp(m_rudderValue, -1f, 1f);
+      var normalizedClamp = maxAngle > 0f ? (maxAngle / 89f) : 0f;
+      m_rudderValue = Mathf.Clamp(m_rudderValue, -normalizedClamp, normalizedClamp);
 
 
 
@@ -6928,37 +6946,32 @@
 
 
 
+        var maxAngle = rudder.MaxTurnAngle;
+        var maxTotalAngle = GetMaxRudderAngle();
+        var normalizedClamp = maxTotalAngle > 0f ? (maxTotalAngle / 89f) : 1f;
+        var turnFraction = normalizedClamp > 0f ? Mathf.Clamp(GetRudderValue() / normalizedClamp, -1f, 1f) : 0f;
+
         var newRotation = Quaternion.Slerp(
-
           rudder.PivotPoint.localRotation,
-
-          Quaternion.Euler(0f, m_rudderRotationMax * (0f - GetRudderValue()) * 2,
-
-            0f), 0.5f);
+          Quaternion.Euler(0f, maxAngle * (0f - turnFraction), 0f), 0.5f);
 
         rudder.PivotPoint.localRotation = newRotation;
-
       }
 
-
-
       if (!PiecesController) return;
-
       var wheel = PiecesController._steeringWheelPiece;
-
       if (wheel == null) return;
-
       if (wheel.wheelTransform != null)
-
+      {
+        var maxTotalAngle = GetMaxRudderAngle();
+        var normalizedClamp = maxTotalAngle > 0f ? (maxTotalAngle / 89f) : 1f;
+        var turnFraction = normalizedClamp > 0f ? Mathf.Clamp(m_rudderValue / normalizedClamp, -1f, 1f) : 0f;
         wheel.wheelTransform.localRotation = Quaternion.Slerp(
-
           wheel.wheelTransform.localRotation,
-
           Quaternion.Euler(
-
-            m_rudderRotationMax * (0f - m_rudderValue) *
-
+            m_rudderRotationMax * (0f - turnFraction) *
             wheel.m_wheelRotationFactor, 0f, 0f), 0.5f);
+      }
 
     }
 
@@ -7215,14 +7228,15 @@
 
 
       // Adds additional speeds to turning
-
       if (PiecesController?.m_rudderPieces.Count > 0)
-
-        shipAdditiveSteerForce *= PropulsionConfig.TurnPowerWithRudder.Value;
-
+      {
+        var turnSpeed = GetRudderTurnSpeed();
+        shipAdditiveSteerForce *= PropulsionConfig.TurnPowerWithRudder.Value * Mathf.Max(0.1f, turnSpeed);
+      }
       else
-
+      {
         shipAdditiveSteerForce *= PropulsionConfig.TurnPowerNoRudder.Value;
+      }
 
 
 
@@ -10037,8 +10051,13 @@
 
 
     public void SendSpeedChange(DirectionChange directionChange)
-
     {
+      if (directionChange != DirectionChange.Stop &&
+          (PiecesController == null || PiecesController.m_rudderPieces.Count == 0))
+      {
+        ShowWheelHoverMessage("$valheim_vehicles_rudder_required");
+        return;
+      }
 
       if (isAnchored)
 
