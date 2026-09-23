@@ -48,7 +48,7 @@ public partial class ModTranslations
   /// </summary>
   /// <param name="key"></param>
   /// <returns></returns>
-  private static string SafeLocalize(string key)
+  public static string SafeLocalize(string key)
   {
     try
     {
@@ -338,6 +338,12 @@ public partial class ModTranslations
     VehicleCommand_PhysicsDebugger = SafeLocalize("$valheim_vehicles_commands_physics_debugger");
     VehicleCommand_DestroyVehicle = SafeLocalize("$valheim_vehicles_commands_destroy_vehicle");
     VehicleCommand_ConfigPanel = SafeLocalize("$valheim_vehicles_commands_config_panel");
+
+    VehicleCommand_WatermaskDebugger = SafeLocalize("$valheim_vehicles_commands_watermask_debugger") ?? "Watermask Debugger";
+    GuiCloseMenu = SafeLocalize("$valheim_vehicles_gui_close_menu") ?? "Close Menu";
+    TeleportDropsAnchor = SafeLocalize("$valheim_vehicles_teleport_drops_anchor") ?? "Teleport Drops Anchor";
+    ConsoleDebugLogs = SafeLocalize("$valheim_vehicles_console_debug_logs") ?? "Console Debug Logs";
+    AdjustMpSync = SafeLocalize("$valheim_vehicles_adjust_mp_sync") ?? "Adjust MP Sync";
 
     // messages to player/console.
     VehicleCommand_Message_VehicleNotFound = SafeLocalize("$valheim_vehicles_commands_message_vehicle_not_found");

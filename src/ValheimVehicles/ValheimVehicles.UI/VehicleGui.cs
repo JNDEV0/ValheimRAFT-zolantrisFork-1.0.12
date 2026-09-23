@@ -16,6 +16,7 @@
   using ValheimVehicles.ConsoleCommands;
   using ValheimVehicles.Constants;
   using ValheimVehicles.Controllers;
+  using ValheimVehicles.Shared.Constants;
   using ValheimVehicles.SharedScripts;
   using ValheimVehicles.SharedScripts.Helpers;
   using ValheimVehicles.SharedScripts.UI;
@@ -445,9 +446,8 @@
 
     private void OnWindowCommandsPanelToggle(Text buttonText)
     {
-      var nextState = !commandsWindow.activeSelf;
-      buttonText.text = nextState ? vehicleCommandsHide : vehicleCommandsShow;
-      HideOrShowCommandPanel(nextState, false);
+      hasCommandsWindowOpened = false;
+      HideOrShowCommandPanel(false, true);
     }
 
     private const string CommandsPanelWindowName = "ValheimVehicles_commandsWindow";
@@ -477,7 +477,8 @@
       var parentTransform = GuiObj != null ? GuiObj.transform : (GUIManager.CustomGUIFront != null ? GUIManager.CustomGUIFront.transform : null);
       if (parentTransform == null) return null!;
 
-      var panel = PanelUtil.CreateDraggableHideShowPanel(CommandsPanelWindowName, parentTransform, panelStyles, buttonStyles, vehicleCommandsHide, vehicleCommandsShow, GuiConfig.VehicleCommandsPanelLocation, OnWindowCommandsPanelToggle);
+      var closeText = ModTranslations.GuiCloseMenu ?? "Close Menu";
+      var panel = PanelUtil.CreateDraggableHideShowPanel(CommandsPanelWindowName, parentTransform, panelStyles, buttonStyles, closeText, closeText, GuiConfig.VehicleCommandsPanelLocation, OnWindowCommandsPanelToggle);
 
       return panel;
     }
@@ -497,6 +498,7 @@
     public static TMP_InputField? WaterFloatation_Input;
 
     public static VehicleManager? CurrentSelectedVehicle;
+    public static MechanismSwitch? CurrentSwitch;
 
 
     public static bool IsEditing = false;
@@ -757,45 +759,141 @@
 
       commandsToggleButtonWindow = CreateCommandsTogglePanel();
 
-      var dynamicPanelHeight = VehicleGUIItems.commandButtonActions.Count * buttonHeight + VehicleGUIItems.commandButtonActions.Count * 5;
+      var viewStyles = new SwivelUISharedStyles();
+      var panelWidth = 420f;
+      var panelHeight = 440f;
+
       commandsWindow = GUIManager.Instance.CreateWoodpanel(
         commandsToggleButtonWindow.transform,
         new Vector2(0.5f, 0f),
         new Vector2(0.5f, 1f),
         new Vector2(0, 0f),
         panelWidth,
-        dynamicPanelHeight,
+        panelHeight,
         false);
       commandsWindow.SetActive(hasCommandsWindowOpened);
 
-      var startHeight = 0f;
+      var windowVerticalGroup = commandsWindow.AddComponent<VerticalLayoutGroup>();
+      windowVerticalGroup.padding = new RectOffset(16, 16, 16, 16);
+      windowVerticalGroup.spacing = 8f;
+      windowVerticalGroup.childForceExpandHeight = false;
+      windowVerticalGroup.childForceExpandWidth = true;
+      windowVerticalGroup.childControlWidth = true;
+      windowVerticalGroup.childControlHeight = false;
+
+      // 1. Action Buttons (Watermask Debugger, Water Mask On/Off, Hull Debugger, Physics Debugger)
       for (var index = 0; index < VehicleGUIItems.commandButtonActions.Count; index++)
       {
-        var genericActionElement = VehicleGUIItems.commandButtonActions[index];
-        GameObject obj;
-
-        // prevent non-admins from seeing debug/hack commands.
-        if (genericActionElement.IsAdminOnly && !CanAddAdminCommand()) continue;
-
-        switch (genericActionElement.inputType)
-        {
-          case InputType.Dropdown:
-            obj = AddDropdownWithAction(genericActionElement, index, startHeight, commandsWindow.transform);
-            break;
-          case InputType.Input:
-            obj = AddInputWithAction(genericActionElement, index, startHeight, commandsWindow.transform);
-            break;
-          case InputType.Button:
-            obj = AddButtonWithAction(genericActionElement, index, startHeight, commandsWindow.transform);
-            break;
-          default:
-            throw new ArgumentOutOfRangeException();
-        }
-        if (obj != null)
-        {
-          commandsPanelToggleObjects.Add(obj);
-        }
+        var action = VehicleGUIItems.commandButtonActions[index];
+        var btnObj = SwivelUIHelpers.AddButton(
+          commandsWindow.transform,
+          viewStyles,
+          action.title,
+          panelWidth - 32f,
+          40f,
+          out _,
+          out _,
+          () => action.OnButtonPress?.Invoke());
+        if (btnObj != null) commandsPanelToggleObjects.Add(btnObj);
       }
+
+      // 2. Teleport Drops Anchor (Portals, Beds)
+      var vehicle = CurrentSelectedVehicle ?? VehicleCommands.GetNearestVehicleManager();
+      var vZdo = vehicle?.m_nview?.GetZDO();
+      var initialPortal = vZdo?.GetBool(VehicleZdoVars.ForceAnchorOnPortalTeleport, false)
+                          ?? CurrentSwitch?.ForceAnchorOnPortalTeleport
+                          ?? false;
+      var initialBed = vZdo?.GetBool(VehicleZdoVars.ForceAnchorOnBedTeleport, false)
+                       ?? CurrentSwitch?.ForceAnchorOnBedTeleport
+                       ?? false;
+
+      var anchorRow = SwivelUIHelpers.AddMultiToggleRow(
+        commandsWindow.transform,
+        viewStyles,
+        ModTranslations.TeleportDropsAnchor ?? "Teleport Drops Anchor",
+        new[] { "Portals", "Beds" },
+        new[] { initialPortal, initialBed },
+        states =>
+        {
+          if (states == null || states.Length < 2) return;
+          var portalVal = states[0];
+          var bedVal = states[1];
+
+          // Auto-save to vehicle ZDO
+          var v = CurrentSelectedVehicle ?? VehicleCommands.GetNearestVehicleManager();
+          if (v?.m_nview?.GetZDO() != null)
+          {
+            v.m_nview.GetZDO().Set(VehicleZdoVars.ForceAnchorOnPortalTeleport, portalVal);
+            v.m_nview.GetZDO().Set(VehicleZdoVars.ForceAnchorOnBedTeleport, bedVal);
+          }
+
+          // Auto-save to calling switch
+          if (CurrentSwitch != null && CurrentSwitch.m_nview != null && CurrentSwitch.m_nview.GetZDO() != null)
+          {
+            CurrentSwitch.ForceAnchorOnPortalTeleport = portalVal;
+            CurrentSwitch.ForceAnchorOnBedTeleport = bedVal;
+            var cfg = new MechanismSwitchCustomConfig();
+            cfg.ApplyFrom(CurrentSwitch.Config);
+            cfg.ForceAnchorOnPortalTeleport = portalVal;
+            cfg.ForceAnchorOnBedTeleport = bedVal;
+            CurrentSwitch.prefabConfigSync.Request_CommitConfigChange(cfg);
+          }
+        });
+      if (anchorRow != null) commandsPanelToggleObjects.Add(anchorRow);
+
+      // 3. Console Debug Logs (Loop Log)
+      var logRow = SwivelUIHelpers.AddToggleRow(
+        commandsWindow.transform,
+        viewStyles,
+        ModTranslations.ConsoleDebugLogs ?? "Console Debug Logs",
+        VehicleGuiMenuConfig.EnableLoopLogging?.Value ?? false,
+        val =>
+        {
+          if (VehicleGuiMenuConfig.EnableLoopLogging != null)
+          {
+            VehicleGuiMenuConfig.EnableLoopLogging.Value = val;
+          }
+        });
+      if (logRow != null) commandsPanelToggleObjects.Add(logRow);
+
+      // 4. Adjust MP Sync (1s, 3s, 5s - 3s default)
+      var curInterval = VehicleGlobalConfig.ServerRaftUpdateZoneInterval?.Value ?? 3.0f;
+      var defaultSyncIndex = 1; // 3s
+      if (Mathf.Approximately(curInterval, 1.0f) || (VehicleGlobalConfig.FastMultiplayerSync?.Value ?? false))
+      {
+        defaultSyncIndex = 0; // 1s
+      }
+      else if (Mathf.Approximately(curInterval, 5.0f))
+      {
+        defaultSyncIndex = 2; // 5s
+      }
+
+      var syncRow = SwivelUIHelpers.AddRadioToggleRow(
+        commandsWindow.transform,
+        viewStyles,
+        ModTranslations.AdjustMpSync ?? "Adjust MP Sync",
+        new[] { "1s", "3s", "5s" },
+        defaultSyncIndex,
+        selectedIndex =>
+        {
+          var interval = selectedIndex switch
+          {
+            0 => 1.0f,
+            2 => 5.0f,
+            _ => 3.0f
+          };
+          var fastSync = (selectedIndex == 0);
+
+          if (VehicleGlobalConfig.ServerRaftUpdateZoneInterval != null)
+          {
+            VehicleGlobalConfig.ServerRaftUpdateZoneInterval.Value = interval;
+          }
+          if (VehicleGlobalConfig.FastMultiplayerSync != null)
+          {
+            VehicleGlobalConfig.FastMultiplayerSync.Value = fastSync;
+          }
+        });
+      if (syncRow != null) commandsPanelToggleObjects.Add(syncRow);
     }
 
     public static void ToggleConvexHullDebugger()

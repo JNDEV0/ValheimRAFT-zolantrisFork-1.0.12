@@ -370,5 +370,10 @@
   "valheim_vehicles_anchor_alert_teleport": "Anchored: Player Arriving",
   "valheim_vehicles_debug_force_anchor_title": "Debug: Force Anchor on Teleport",
   "valheim_vehicles_debug_force_anchor_portals": "Portals",
-  "valheim_vehicles_debug_force_anchor_beds": "Beds"
+  "valheim_vehicles_debug_force_anchor_beds": "Beds",
+  "valheim_vehicles_commands_watermask_debugger": "Watermask Debugger",
+  "valheim_vehicles_gui_close_menu": "Close Menu",
+  "valheim_vehicles_teleport_drops_anchor": "Teleport Drops Anchor",
+  "valheim_vehicles_console_debug_logs": "Console Debug Logs",
+  "valheim_vehicles_adjust_mp_sync": "Adjust MP Sync"
 }

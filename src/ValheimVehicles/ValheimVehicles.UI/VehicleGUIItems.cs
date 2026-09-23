@@ -33,43 +33,7 @@ public static class VehicleGUIItems
   [
     new()
     {
-      title = ModTranslations.VehicleCommand_RaftCreative ?? "Raft Creative",
-      OnButtonPress = VehicleCommands.ToggleCreativeMode
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_SaveVehicle ?? "Save Vehicle",
-      OnButtonPress = VehicleStorageController.SaveClosestVehicle
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_OpenSelector ?? "Open Save Vehicle Selector",
-      inputType = InputType.Dropdown,
-      OnCreateDropdown = (dropdown) =>
-      {
-        VehicleGui.VehicleSelectDropdown = dropdown;
-        VehicleStorageController.RefreshVehicleSelectionGui(dropdown);
-      },
-      OnDropdownChanged = VehicleGui.VehicleSelectOnDropdownChanged
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_SpawnSelected ?? "[Admin] Spawn Selected Vehicle",
-      OnButtonPress = VehicleStorageController.SpawnSelectedVehicle,
-      IsAdminOnly = true
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_ZeroRotation ?? "Zero Ship Rotation X/Z",
-      OnButtonPress = () =>
-      {
-        var onboardHelpers = VehicleDebugHelpers.GetOnboardVehicleDebugHelper();
-        if (onboardHelpers != null) onboardHelpers.FlipShip();
-      }
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_ToggleMaskEditor ?? "Toggle WaterMask Editor",
+      title = ModTranslations.VehicleCommand_WatermaskDebugger ?? "Watermask Debugger",
       OnButtonPress = VehicleCommands.ToggleColliderEditMode
     },
     new()
@@ -79,43 +43,13 @@ public static class VehicleGUIItems
     },
     new()
     {
-      title = ModTranslations.VehicleCommand_ToggleOceanSway ?? "Toggle Ocean Sway",
-      OnButtonPress = VehicleCommands.VehicleToggleOceanSway
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_RebuildBounds ?? "Rebuild Bounds",
-      IsAdminOnly = true,
-      OnButtonPress = () =>
-      {
-        var vehicleManager = VehicleCommands.GetNearestVehicleManager();
-        if (vehicleManager == null)
-          return;
-        vehicleManager.PiecesController?.ForceRebuildBounds();
-      }
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_HullDebugger ?? "Hull debugger",
+      title = ModTranslations.VehicleCommand_HullDebugger ?? "Hull Debugger",
       OnButtonPress = VehicleGui.ToggleConvexHullDebugger
     },
     new()
     {
       title = ModTranslations.VehicleCommand_PhysicsDebugger ?? "Physics Debugger",
       OnButtonPress = VehicleGui.ToggleColliderDebugger
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_ConfigPanel ?? "Config",
-      OnButtonPress = () =>
-      {
-        VehicleGui.ToggleConfigPanelState(true);
-      }
-    },
-    new()
-    {
-      title = ModTranslations.VehicleCommand_DestroyVehicle ?? "Destroy Current Vehicle",
-      OnButtonPress = VehicleCommands.DestroyCurrentVehicle
     }
   ];
 }

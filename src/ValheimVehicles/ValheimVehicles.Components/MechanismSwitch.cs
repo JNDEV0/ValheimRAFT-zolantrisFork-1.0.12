@@ -625,36 +625,26 @@ public class MechanismSwitch : AnimatedLeverMechanism, IAnimatorHandler, Interac
 
   public bool Interact(Humanoid character, bool hold, bool alt)
   {
-    if (holdTimer.ElapsedMilliseconds > 1000f)
+    if (hold)
     {
-      CancelInvoke(nameof(OnHoldActionHandler));
-      holdTimer.Reset();
+      return false;
     }
 
-    if (hold && !alt)
+    if (alt)
     {
-      if (SelectedAction == MechanismAction.FireCannonGroup)
+      VehicleGui.CurrentSwitch = this;
+      var vehicleManager = GetComponentInParent<VehiclePiecesController>()?.Manager ?? VehicleCommands.GetNearestVehicleManager();
+      if (vehicleManager != null)
       {
-        FireCannonGroup();
-        return true;
+        VehicleGui.CurrentSelectedVehicle = vehicleManager;
       }
-      return false;
+      VehicleCommands.ToggleVehicleCommandsHud();
+      return true;
     }
 
-    if (SelectedAction == MechanismAction.SwivelActivateMode && hold && alt)
-    {
-      if (holdTimer.IsRunning) return false;
-      Invoke(nameof(OnHoldActionHandler), 1f);
-      holdTimer.Restart();
-      return false;
-    }
-
-    if (!alt)
-    {
-      return OnPressHandler(character);
-    }
-
-    return OnAltPressHandler();
+    // [E] is intentionally left unbound for now, reserved for future mechanical linking
+    // to ship parts (anchors, drawbridges, cannons, etc.)
+    return false;
   }
 
   public string GetLocalizedActionText(MechanismAction action)
@@ -694,28 +684,6 @@ public class MechanismSwitch : AnimatedLeverMechanism, IAnimatorHandler, Interac
       prefabConfigSync.Load();
     }
 
-    var message = $"{ModTranslations.MechanismSwitch_CurrentActionString} {GetLocalizedActionText(SelectedAction)}\n{ModTranslations.MechanismSwitch_AltActionString}";
-
-    if (SelectedAction == MechanismAction.SwivelActivateMode)
-    {
-      message += $"\n{ModTranslations.MechanismSwitch_AltHoldActionString}";
-    }
-
-    if (TargetSwivel && TargetSwivel.swivelPowerConsumer)
-    {
-      var isPowerDenied = TargetSwivel.swivelPowerConsumer.IsPowerDenied;
-      message += $"\n[{PowerNetworkController.GetMechanismRequiredPowerStatus(!isPowerDenied)}]";
-    }
-
-    if ((SelectedAction == MechanismAction.SwivelActivateMode || SelectedAction == MechanismAction.SwivelEditMode) && !TargetSwivel)
-    {
-      message += $"\n{ModTranslations.NoMechanismNearby}";
-    }
-
-    if (SelectedAction == MechanismAction.SwivelActivateMode && TargetSwivel && TargetSwivel.swivelPowerConsumer)
-    {
-      message += PowerNetworkController.GetNetworkPowerStatusString(TargetSwivel.swivelPowerConsumer.NetworkId);
-    }
-    return message;
+    return $"[<color=yellow><b>{ModTranslations.ValheimInput_KeyAltPlace}+{ModTranslations.ValheimInput_KeyUse}</b></color>] {ModTranslations.SafeLocalize("$valheim_vehicles_mechanism_mode_configure")}";
   }
 }

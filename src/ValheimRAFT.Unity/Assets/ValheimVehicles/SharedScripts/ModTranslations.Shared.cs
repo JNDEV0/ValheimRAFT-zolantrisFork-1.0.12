@@ -188,6 +188,12 @@ namespace ValheimVehicles.SharedScripts
     public static string VehicleCommand_ConfigPanel;
     public static string VehicleCommand_Message_VehicleNotFound;
 
+    public static string VehicleCommand_WatermaskDebugger = "Watermask Debugger";
+    public static string GuiCloseMenu = "Close Menu";
+    public static string TeleportDropsAnchor = "Teleport Drops Anchor";
+    public static string ConsoleDebugLogs = "Console Debug Logs";
+    public static string AdjustMpSync = "Adjust MP Sync";
+
     public static string VehicleCannon_FireCannons;
     public static string VehicleCannon_FireCannonGroup;
     public static string VehicleCannon_ToggleAutoFire;
