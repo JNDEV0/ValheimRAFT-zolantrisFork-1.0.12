@@ -350,7 +350,7 @@
 
 
 
-    private bool HasPendingAnchor;
+    public bool HasPendingAnchor;
 
 
 
@@ -6812,7 +6812,7 @@
 
             mast.InitSailPositions();
 
-            var targetScale = new Vector3(1f, Mathf.Max(0.01f, sailScaleY), 1f);
+            var targetScale = new Vector3(mast.m_sailWidthScale, Mathf.Max(0.01f, sailScaleY), 1f);
 
             mast.m_sailObject.transform.localScale = targetScale;
 
@@ -6872,7 +6872,7 @@
 
           {
 
-            mast.m_sailObject.transform.localScale = Vector3.one;
+            mast.m_sailObject.transform.localScale = new Vector3(mast.m_sailWidthScale, 1f, 1f);
 
             if (mast.m_hasInitializedSailPositions)
 
@@ -7750,49 +7750,49 @@
     /// </summary>
 
     public void DelayedAnchor()
-
     {
-
-      if (OnboardController.m_localPlayers.Count > 0) return;
-
+      if (OnboardController != null && OnboardController.m_localPlayers.Count > 0) return;
       HasPendingAnchor = false;
-
-      SendSetAnchor(AnchorState.Anchored);
-
+      if (IsFlying() || (Manager != null && Manager.IsLandVehicle))
+      {
+        SendSetAnchor(AnchorState.Anchored);
+      }
+      else
+      {
+        SendSetAnchor(AnchorState.Lowering);
+      }
     }
 
-
+    public void CancelDelayedAnchor()
+    {
+      CancelInvoke(nameof(DelayedAnchor));
+      HasPendingAnchor = false;
+    }
 
     /// <summary>
-
-    ///   Will always send true for anchor state. Not meant to remove anchor on delay
-
+    ///   Will send anchor state after delay if nobody onboard.
     /// </summary>
-
     public void SendDelayedAnchor()
-
     {
+      if (isAnchored || vehicleAnchorState == AnchorState.Lowering) return;
 
       if (VehicleGuiMenuConfig.HasAutoAnchorDelay.Value)
-
       {
-
-        var autoDelayInMS = VehicleGuiMenuConfig.AutoAnchorDelayTime.Value * 1000f;
-
-        Invoke(nameof(DelayedAnchor),
-
-          autoDelayInMS);
-
+        var delaySeconds = Mathf.Max(0.5f, VehicleGuiMenuConfig.AutoAnchorDelayTime.Value);
+        CancelInvoke(nameof(DelayedAnchor));
+        Invoke(nameof(DelayedAnchor), delaySeconds);
         HasPendingAnchor = true;
-
         return;
-
       }
 
-
-
-      SendSetAnchor(AnchorState.Anchored);
-
+      if (IsFlying() || (Manager != null && Manager.IsLandVehicle))
+      {
+        SendSetAnchor(AnchorState.Anchored);
+      }
+      else
+      {
+        SendSetAnchor(AnchorState.Lowering);
+      }
     }
 
 
@@ -9597,21 +9597,27 @@
 
 
       var isNotAnchoredWithNobodyOnboard =
-
-        OnboardController.m_localPlayers.Count == 0 && !isAnchored;
-
-
+        OnboardController != null &&
+        OnboardController.m_localPlayers.Count == 0 &&
+        !isAnchored &&
+        vehicleAnchorState != AnchorState.Lowering;
 
       if (isNotAnchoredWithNobodyOnboard)
-
       {
+        if (VehicleGuiMenuConfig.HasAutoAnchorDelay.Value)
+        {
+          if (!HasPendingAnchor)
+          {
+            SendDelayedAnchor();
+          }
+          return;
+        }
 
-        if (VehicleGuiMenuConfig.HasAutoAnchorDelay.Value) return;
-
-        SendSetAnchor(AnchorState.Anchored);
-
+        if (IsFlying() || (Manager != null && Manager.IsLandVehicle))
+          SendSetAnchor(AnchorState.Anchored);
+        else
+          SendSetAnchor(AnchorState.Lowering);
         return;
-
       }
 
 

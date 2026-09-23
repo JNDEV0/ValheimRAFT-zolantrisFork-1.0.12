@@ -401,5 +401,11 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
         mastComponent.m_sailObject = prefab;
       }
     }
+
+    mastComponent.m_sailWidthScale = 1.4f;
+    if (mastComponent.m_sailObject != null && mastComponent.m_sailObject != prefab)
+    {
+      mastComponent.m_sailObject.transform.localScale = Vector3.zero;
+    }
   }
 }

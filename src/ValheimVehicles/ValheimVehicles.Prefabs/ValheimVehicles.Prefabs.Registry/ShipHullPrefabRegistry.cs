@@ -1731,7 +1731,11 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
     var hoistParents = new[] { "new", "snappoints" };
 
     if (prefabName.Contains(PrefabNames.ShipHullPrefabName))
+    {
       hoistParents.AddItem("hull_slab_new_shared");
+      PrefabRegistryHelpers.AddSnapPoint("$hud_snappoint_center", prefab, new Vector3(0f, 0f, 4f));
+      PrefabRegistryHelpers.AddSnapPoint("$hud_snappoint_center", prefab, new Vector3(0f, 0f, -4f));
+    }
 
     var wntNewParent = prefab.transform.Find("new");
 

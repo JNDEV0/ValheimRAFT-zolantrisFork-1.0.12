@@ -1,4 +1,4 @@
-﻿// ReSharper disable ArrangeNamespaceBody
+// ReSharper disable ArrangeNamespaceBody
 // ReSharper disable NamespaceStyle
 
 #region Usings
@@ -820,8 +820,6 @@ namespace ValheimVehicles.Prefabs
 
       ShipRudderPrefabs.Register();
 
-      // cannon prefabs
-      CannonPrefabs.Register();
 
       // Raft Structure
       ShipHullPrefabRegistry.Register();
@@ -852,6 +850,9 @@ namespace ValheimVehicles.Prefabs
       RampPrefabRegistry.Register();
       // Floors
       DirtFloorPrefabRegistry.Register();
+
+      // cannon prefabs
+      CannonPrefabs.Register();
     }
 
   #endregion

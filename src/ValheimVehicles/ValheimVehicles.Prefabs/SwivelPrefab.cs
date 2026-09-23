@@ -56,7 +56,8 @@ public class SwivelPrefab : RegisterPrefab<SwivelPrefab>
 
   public override void OnRegister()
   {
+    // Removed swivel piece from build menu
     RegisterSwivelPrefabPieceData();
-    RegisterSwivelComponent();
+    // RegisterSwivelComponent();
   }
 }

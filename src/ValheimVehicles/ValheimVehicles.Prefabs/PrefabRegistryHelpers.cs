@@ -802,6 +802,17 @@ public abstract class PrefabRegistryHelpers
     Object.Instantiate(snappointObj, parentObj.transform);
   }
 
+  public static GameObject AddSnapPoint(string name, GameObject parentObj, Vector3 localPosition)
+  {
+    var snappointObj = new GameObject(name)
+    {
+      tag = SnappointTag
+    };
+    snappointObj.transform.SetParent(parentObj.transform, false);
+    snappointObj.transform.localPosition = localPosition;
+    return snappointObj;
+  }
+
   public static void FixCollisionLayers(GameObject r)
   {
     var piece = r.layer = LayerMask.NameToLayer("piece");

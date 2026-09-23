@@ -640,6 +640,11 @@
 
       if (!isPlayerInList)
         m_localPlayers.Add(player);
+
+      if (MovementController != null && MovementController.HasPendingAnchor)
+      {
+        MovementController.CancelDelayedAnchor();
+      }
     }
 
     /// <summary>
@@ -719,6 +724,11 @@
         LoggerProvider.LogDebug(
           $"Player: {delayedExitSubscription.Value.GetPlayerName()} over-board, players remaining {remainingPlayers}");
         RemoveLogoutPoint(delayedExitSubscription);
+      }
+
+      if (m_localPlayers.Count == 0 && MovementController != null)
+      {
+        MovementController.SendDelayedAnchor();
       }
 
       _hasExitSubscriptionDelay = false;

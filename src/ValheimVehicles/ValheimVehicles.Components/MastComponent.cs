@@ -17,6 +17,8 @@ public class MastComponent : MonoBehaviour
 
   public bool m_disableCloth;
 
+  public float m_sailWidthScale = 1.4f;
+
   public Vector3 m_initialSailLocalPos = Vector3.zero;
   public float m_sailTopLocalY = 0f;
   public bool m_hasInitializedSailPositions = false;
@@ -63,7 +65,7 @@ public class MastComponent : MonoBehaviour
     var name = gameObject.name;
     if (name.IndexOf("karve", StringComparison.OrdinalIgnoreCase) >= 0)
     {
-      return PropulsionConfig.KarveSailVerticalOffset?.Value ?? 0f;
+      return PropulsionConfig.KarveSailVerticalOffset != null ? PropulsionConfig.KarveSailVerticalOffset.Value : 0.25f;
     }
     return PropulsionConfig.SailVerticalOffset?.Value ?? 0f;
   }

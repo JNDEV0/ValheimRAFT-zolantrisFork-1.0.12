@@ -117,6 +117,11 @@
       piece.m_noClipping = true;
       piece.m_canRotate = true;
 
+      // Add centerline snap points at ends of BoatBase
+      PrefabRegistryHelpers.AddSnapPoint("$hud_snappoint_center", prefab, new Vector3(0f, 0f, 4f));
+      PrefabRegistryHelpers.AddSnapPoint("$hud_snappoint_center", prefab, new Vector3(0f, 0f, -4f));
+      PrefabRegistryHelpers.HoistSnapPointsToPrefab(prefab);
+
       PrefabRegistryController.AddPiece(new CustomPiece(waterVehiclePrefab, true,
         new PieceConfig
         {

@@ -39,13 +39,13 @@ public class PrefabRecipeConfig : BepInExBaseConfig<PrefabRecipeConfig>
       PrefabNames.CannonFixedTier1, [
         new RequirementConfig
         {
-          Amount = 4,
-          Item = "Bronze",
+          Amount = 8,
+          Item = "Iron",
           Recover = true
         },
         new RequirementConfig
         {
-          Amount = 6,
+          Amount = 12,
           Item = "Wood",
           Recover = true
         }
@@ -77,8 +77,8 @@ public class PrefabRecipeConfig : BepInExBaseConfig<PrefabRecipeConfig>
       PrefabNames.CannonControlCenter, [
         new RequirementConfig
         {
-          Amount = 2,
-          Item = "Bronze",
+          Amount = 4,
+          Item = "Iron",
           Recover = true
         }
       ]

@@ -97,24 +97,7 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
       ],
       RudderTier.Standard);
 
-    // Step 2: Ship Rudder (Advanced)
-    RegisterAdvancedRudderVariant(PrefabNames.ShipRudderAdvancedDoubleWood,
-      LoadValheimVehicleAssets.ShipRudderAdvancedDoubleWoodAsset,
-      [
-        new RequirementConfig
-        {
-          Amount = 40,
-          Item = "FineWood",
-          Recover = true
-        },
-        new RequirementConfig
-        {
-          Amount = 10,
-          Item = "Iron",
-          Recover = true
-        }
-      ],
-      RudderTier.Advanced);
+    // Removed Ship Rudder (Advanced) from build menu (kept Basic and Standard)
 
     // Step 3: Removed ShipRudderAdvancedIron and ShipRudderAdvancedDoubleIron
   }

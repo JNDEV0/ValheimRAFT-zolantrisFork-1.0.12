@@ -234,7 +234,7 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
         "Vertical offset (in meters) to adjust the sail canvas towards the yardarm crossbeam.",
         true, false, new AcceptableValueRange<float>(-3f, 3f)));
 
-    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 0f,
+    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 0.25f,
       ConfigHelpers.CreateConfigDescription(
         "Vertical offset (in meters) to adjust the Karve sail canvas towards the yardarm crossbeam.",
         true, false, new AcceptableValueRange<float>(-3f, 3f)));

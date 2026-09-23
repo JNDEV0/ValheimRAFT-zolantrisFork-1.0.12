@@ -112,11 +112,14 @@ public class AnchorPrefabs : RegisterPrefab<AnchorPrefabs>
     var piece =
       PrefabRegistryHelpers.AddPieceForPrefab(PrefabNames.ShipAnchorWood,
         prefab);
+    piece.m_name = "$valheim_vehicles_ship_anchor";
+    piece.m_description = "$valheim_vehicles_ship_anchor_desc";
 
     PrefabRegistryController.AddPiece(new CustomPiece(prefab, false,
       new PieceConfig
       {
-        Name = piece.name,
+        Name = "$valheim_vehicles_ship_anchor",
+        Description = "$valheim_vehicles_ship_anchor_desc",
         PieceTable = PrefabRegistryController.GetPieceTableName(),
         Icon = piece.m_icon,
         Category = PrefabRegistryController.SetCategoryName(VehicleHammerTableCategories.Propulsion),

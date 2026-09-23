@@ -221,7 +221,8 @@ public class RamPrefabRegistry : RegisterPrefab<RamPrefabRegistry>
 
   public override void OnRegister()
   {
-    RegisterRamStake();
+    // Removed ram stake (I) and (III) from build menu
+    // RegisterRamStake();
     // Step 13: Removed RegisterRamBlade();
   }
 }

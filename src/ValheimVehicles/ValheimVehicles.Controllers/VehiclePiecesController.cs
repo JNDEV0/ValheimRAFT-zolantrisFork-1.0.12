@@ -938,6 +938,7 @@
           }
           case RudderComponent rudder:
           {
+            m_rudderPieces.RemoveAll(r => r == null || !r);
             if (m_rudderPieces.Contains(rudder)) break;
 
             // Enforce max 2 rudders
@@ -960,7 +961,8 @@
             }
 
             // Enforce that rudder faces the same forward direction as the vehicle / steering wheel
-            var forwardDot = Vector3.Dot(rudder.transform.forward, transform.forward);
+            // Note: Rudder model forward points aft/stern (-transform.forward) into the water
+            var forwardDot = Vector3.Dot(rudder.transform.forward, -transform.forward);
             if (forwardDot < 0.2f)
             {
               var wnt = netView.GetComponent<WearNTear>();
@@ -986,7 +988,7 @@
               if (existingRudder != null)
               {
                 var existingDot = Vector3.Dot(rudder.transform.forward, existingRudder.transform.forward);
-                if (existingDot < 0.9f)
+                if (existingDot < 0.8f)
                 {
                   var wnt = netView.GetComponent<WearNTear>();
                   if (wnt != null)
@@ -4227,8 +4229,9 @@
         return;
       }
 
-      // Safeguard 4: Ground contact check - if resting on terrain outside hull, reject
-      if (Physics.Raycast(pieceWorldPos + Vector3.up * 0.5f, Vector3.down, out var groundHit, 3f, LayerHelpers.GroundLayers))
+      // Safeguard 4: Ground contact check - if resting on terrain outside hull, reject (exempt rudders)
+      bool isRudderPiece = netView.GetComponent<RudderComponent>() != null;
+      if (!isRudderPiece && Physics.Raycast(pieceWorldPos + Vector3.up * 0.5f, Vector3.down, out var groundHit, 3f, LayerHelpers.GroundLayers))
       {
         if (groundHit.collider != null && groundHit.collider.GetComponent<Heightmap>() != null && groundHit.collider.GetComponentInParent<IPieceController>() == null)
         {
