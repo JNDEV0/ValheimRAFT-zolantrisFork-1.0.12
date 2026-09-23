@@ -1,6 +1,7 @@
 using ValheimVehicles.Helpers;
 using System;
 using UnityEngine;
+using ValheimVehicles.BepInExConfig;
 using ValheimVehicles.Controllers;
 using ValheimVehicles.Propulsion.Rudder;
 using ValheimVehicles.SharedScripts;
@@ -22,6 +23,9 @@ public static class VesselHornChanneler
   private static Vector3 _startPosition;
   private static float _startHealth;
   private static int _targetVehicleId;
+  private static float _teleportCooldownUntil = 0f;
+  private static float _attuneCooldownUntil = 0f;
+  private static bool _awaitingInputRelease = false;
 
   public static bool IsHoldingVesselHorn(Player? player)
   {
@@ -124,7 +128,7 @@ public static class VesselHornChanneler
 
   public static void UpdateLocalPlayer(Player player)
   {
-    if (player == null || player.IsDead())
+    if (player == null || player.IsDead() || player.IsTeleporting() || player.InIntro())
     {
       if (IsChanneling) CancelAction(player);
       return;
@@ -159,10 +163,34 @@ public static class VesselHornChanneler
     var rightHeld = Input.GetMouseButton(1) || ZInput.GetMouseButton(1);
     var rightDown = Input.GetMouseButtonDown(1) || ZInput.GetMouseButtonDown(1);
 
+    // Failsafe: Input release debouncing after an action completes
+    if (_awaitingInputRelease)
+    {
+      if (!leftHeld && !rightHeld)
+      {
+        _awaitingInputRelease = false;
+      }
+      else
+      {
+        return; // Ignore held button from previous channel
+      }
+    }
+
     if (!IsChanneling)
     {
       if (leftHeld)
       {
+        // Teleport cooldown check
+        if (Time.time < _teleportCooldownUntil)
+        {
+          if (leftDown)
+          {
+            var remaining = Mathf.CeilToInt(_teleportCooldownUntil - Time.time);
+            player.Message(MessageHud.MessageType.Center, $"Horn on cooldown ({remaining}s)");
+          }
+          return;
+        }
+
         var targetId = VehicleRecallController.ResolveTargetVehicle(player);
         if (targetId == 0)
         {
@@ -178,6 +206,11 @@ public static class VesselHornChanneler
       }
       else if (rightHeld)
       {
+        if (Time.time < _attuneCooldownUntil)
+        {
+          return;
+        }
+
         var interactDist = player.m_maxInteractDistance > 0 ? player.m_maxInteractDistance : 3.5f;
         var wheel = GetTargetSteeringWheel(player, interactDist);
         if (wheel == null)
@@ -230,10 +263,11 @@ public static class VesselHornChanneler
         return;
       }
 
+      var requiredDuration = VehicleGlobalConfig.HornChannelDurationSeconds?.Value ?? RequiredHoldDuration;
       _holdTimer += Time.deltaTime;
-      ChannelProgress = Mathf.Clamp01(_holdTimer / RequiredHoldDuration);
+      ChannelProgress = Mathf.Clamp01(_holdTimer / requiredDuration);
 
-      if (_holdTimer >= RequiredHoldDuration)
+      if (_holdTimer >= requiredDuration)
       {
         CompleteAction(player);
       }
@@ -305,8 +339,11 @@ public static class VesselHornChanneler
 
     try { player.StopEmote(); } catch { }
 
+    _awaitingInputRelease = true;
+
     if (action == HornAction.Attune)
     {
+      _attuneCooldownUntil = Time.time + 2.0f;
       if (targetVehicleId != 0)
       {
         VehicleRecallController.AttunePlayerToVehicle(player, targetVehicleId);
@@ -321,6 +358,8 @@ public static class VesselHornChanneler
 
     if (action == HornAction.Teleport)
     {
+      var cooldown = VehicleGlobalConfig.HornTeleportCooldownSeconds?.Value ?? 10.0f;
+      _teleportCooldownUntil = Time.time + cooldown;
       if (targetVehicleId != 0)
       {
         VehicleRecallController.TeleportPlayerToVehicle(player, targetVehicleId);

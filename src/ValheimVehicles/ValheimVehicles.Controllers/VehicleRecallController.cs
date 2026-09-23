@@ -194,15 +194,15 @@ public static class VehicleRecallController
     return false;
   }
 
-  public static void TeleportPlayerToVehicle(Player player, int vehicleId)
+  public static bool TeleportPlayerToVehicle(Player player, int vehicleId)
   {
-    if (player == null) return;
+    if (player == null || player.IsTeleporting()) return false;
 
     if (!GetVehicleLocation(vehicleId, out var targetPos, out var targetRot, out var isLoaded, out var vm))
     {
       LoggerProvider.LogWarning($"[VesselRecall] Teleport failed: could not locate vessel #{vehicleId}");
       player.Message(MessageHud.MessageType.Center, "Could not locate boat position!");
-      return;
+      return false;
     }
 
     Vector3 landingPos;
@@ -286,8 +286,12 @@ public static class VehicleRecallController
     PlaySfxAt("sfx_portal_activate", player.transform.position);
 
     if (LoopTracker.Enabled) LoggerProvider.LogInfo($"[VesselRecall] Teleporting player {player.GetPlayerName()} to {landingPos} (Distant: {!isLoaded})");
-    player.TeleportTo(landingPos, landingRot, distantTeleport: !isLoaded);
-    player.Message(MessageHud.MessageType.Center, "Teleported to boat!");
+    var accepted = player.TeleportTo(landingPos, landingRot, distantTeleport: !isLoaded);
+    if (accepted)
+    {
+      player.Message(MessageHud.MessageType.Center, "Teleported to boat!");
+    }
+    return accepted;
   }
 
   public static void AttunePlayerToVehicle(Player player, int vehicleId)

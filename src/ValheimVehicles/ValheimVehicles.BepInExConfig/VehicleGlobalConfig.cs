@@ -21,6 +21,11 @@ public class VehicleGlobalConfig : BepInExBaseConfig<VehicleGlobalConfig>
   public static ConfigEntry<string> ModLanguage = null!;
   private const string VehicleLocalizationKey = $"{VehicleGlobalBaseKey}:Localization";
 
+  // Horn of Loki
+  public static ConfigEntry<float> HornTeleportCooldownSeconds = null!;
+  public static ConfigEntry<float> HornChannelDurationSeconds = null!;
+  private const string VehicleHornKey = $"{VehicleGlobalBaseKey}:VesselHorn";
+
   // section keys
   private const string VehicleGlobalBaseKey = "VehicleGlobal";
   private const string VehicleSoundKey = $"{VehicleGlobalBaseKey}:Sound";
@@ -31,6 +36,22 @@ public class VehicleGlobalConfig : BepInExBaseConfig<VehicleGlobalConfig>
     CreateSoundConfig(config);
     CreateVehicleUpdaterConfig(config);
     CreateLocalizationConfig(config);
+    CreateHornConfig(config);
+  }
+
+  private static void CreateHornConfig(ConfigFile config)
+  {
+    HornTeleportCooldownSeconds = config.BindUnique(VehicleHornKey,
+      "HornTeleportCooldownSeconds", 10.0f,
+      ConfigHelpers.CreateConfigDescription(
+        "Cooldown in seconds applied after successfully teleporting to a vessel using the Horn of Loki.",
+        false, false, new AcceptableValueRange<float>(0f, 60f)));
+
+    HornChannelDurationSeconds = config.BindUnique(VehicleHornKey,
+      "HornChannelDurationSeconds", 3.0f,
+      ConfigHelpers.CreateConfigDescription(
+        "Channel duration in seconds required to activate the Horn of Loki.",
+        false, false, new AcceptableValueRange<float>(1.0f, 10f)));
   }
 
   private static void CreateLocalizationConfig(ConfigFile config)
