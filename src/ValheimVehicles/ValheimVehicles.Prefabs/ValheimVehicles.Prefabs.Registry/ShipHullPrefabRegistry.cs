@@ -778,7 +778,7 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
           Amount = 2 * materialCount, Item = "BronzeNails", Recover = true
         },
         new RequirementConfig
-          { Amount = 1 * materialCount, Item = "YggdrasilWood", Recover = true }
+          { Amount = 1 * materialCount, Item = "Wood", Recover = true }
       ],
       HullMaterial.Wood =>
       [

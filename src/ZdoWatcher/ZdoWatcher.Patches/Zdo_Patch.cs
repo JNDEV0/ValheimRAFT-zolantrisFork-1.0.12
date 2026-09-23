@@ -26,11 +26,10 @@ public class ZdoPatch
     if (ZDOMan.instance != null)
     {
       var liveZdo = ZDOMan.instance.GetZDO(__instance.m_uid);
-      if (liveZdo != null)
+      if (liveZdo != null && !ReferenceEquals(liveZdo, __instance))
       {
-        // Live ZDO is still active in ZDOMan.m_objectsByID!
-        // This is a temporary save-data clone recycled during SaveCleanup, or an active world object.
-        // DO NOT deregister or wipe from lookups.
+        // Live ZDO is still active in ZDOMan.m_objectsByID, and __instance is a separate clone!
+        // DO NOT deregister the live ZDO.
         return true;
       }
     }

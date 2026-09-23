@@ -313,13 +313,18 @@
 
     public static bool IsExcludedPrefab(GameObject netView)
     {
-      if (PrefabNames.IsVehicle(netView.name) ||
-          netView.name.StartsWith(PrefabNames.VehiclePiecesContainer) ||
+      var name = netView.name;
+      if (PrefabNames.IsVehicle(name) ||
+          name.StartsWith(PrefabNames.VehiclePiecesContainer) ||
+          name.StartsWith("sfx_") || name.StartsWith("vfx_") || name.StartsWith("fx_") ||
+          name.StartsWith("MineRock") || name.StartsWith("cliff_") || name.StartsWith("rock4_") ||
+          name.StartsWith("TreeBase") || name.StartsWith("TreeLog") || name.StartsWith("stubbe") ||
+          name.Contains("TerrainComp") || name.StartsWith("LocationProxy") ||
           netView.GetComponent<Character>() != null ||
+          netView.GetComponent<MonsterAI>() != null ||
+          netView.GetComponent<AnimalAI>() != null ||
           netView.GetComponent<Heightmap>() != null ||
           netView.GetComponent<TerrainComp>() != null || netView.GetComponent<TerrainModifier>() != null ||
-          netView.name.Contains("TerrainComp") ||
-          netView.name.StartsWith("LocationProxy") ||
           netView.GetComponent<LocationProxy>() != null)
         return true;
 

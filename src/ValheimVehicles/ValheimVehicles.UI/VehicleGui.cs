@@ -261,6 +261,11 @@
         return;
       }
 
+      if (GuiObj == null)
+      {
+        GuiObj = GetVehicleGui();
+      }
+
       CreateCommandsShortcutPanel();
       CreateVehicleConfigShortcutPanel();
 
@@ -425,7 +430,10 @@
         width = buttonWidth
       };
 
-      var panel = PanelUtil.CreateDraggableHideShowPanel(ConfigPanelWindowName, GuiObj.transform, panelStyles, buttonStyles, vehicleConfigHide, vehicleConfigShow, GuiConfig.VehicleCommandsPanelLocation, OnConfigCommandsPanelToggle);
+      var parentTransform = GuiObj != null ? GuiObj.transform : (GUIManager.CustomGUIFront != null ? GUIManager.CustomGUIFront.transform : null);
+      if (parentTransform == null) return null!;
+
+      var panel = PanelUtil.CreateDraggableHideShowPanel(ConfigPanelWindowName, parentTransform, panelStyles, buttonStyles, vehicleConfigHide, vehicleConfigShow, GuiConfig.VehicleCommandsPanelLocation, OnConfigCommandsPanelToggle);
       return panel;
     }
 
@@ -466,7 +474,10 @@
         width = buttonWidth
       };
 
-      var panel = PanelUtil.CreateDraggableHideShowPanel(CommandsPanelWindowName, GuiObj.transform, panelStyles, buttonStyles, vehicleCommandsHide, vehicleCommandsShow, GuiConfig.VehicleCommandsPanelLocation, OnWindowCommandsPanelToggle);
+      var parentTransform = GuiObj != null ? GuiObj.transform : (GUIManager.CustomGUIFront != null ? GUIManager.CustomGUIFront.transform : null);
+      if (parentTransform == null) return null!;
+
+      var panel = PanelUtil.CreateDraggableHideShowPanel(CommandsPanelWindowName, parentTransform, panelStyles, buttonStyles, vehicleCommandsHide, vehicleCommandsShow, GuiConfig.VehicleCommandsPanelLocation, OnWindowCommandsPanelToggle);
 
       return panel;
     }

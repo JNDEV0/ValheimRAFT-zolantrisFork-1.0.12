@@ -1,21 +1,15 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValheimRAFT", "src\ValheimRAFT\ValheimRAFT.csproj", "{6015B165-2627-40A7-8CA1-3E6B6CD7CB49}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValheimVehicles", "src\ValheimVehicles\ValheimVehicles.csproj", "{E9B48BE9-4D8E-44DB-961A-D7C279B2CA2B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModTesting", "src\ModTesting\ModTesting.csproj", "{675D2FE5-2041-4458-B4C0-B907447605D3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicLocations", "src\DynamicLocations\DynamicLocations.csproj", "{C7B295CE-763F-4085-8123-A21CDEE3DB72}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZdoWatcher", "src\ZdoWatcher\ZdoWatcher.csproj", "{C9A49715-36CD-49C0-AAE1-1E2C93F08647}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YggdrasilTerrain", "src\YggdrasilTerrain\YggdrasilTerrain.csproj", "{421BAEA4-F86F-408F-BE78-97DB762A121E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "src\Shared\Shared.csproj", "{312A7511-FB7C-4ACE-A46D-16E9CA56A076}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValheimVehiclesTests", "src\ValheimVehiclesTests\ValheimVehiclesTests.csproj", "{10B24D55-0341-4EAF-92D6-C14F121180F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync", "src\ModSync\ModSync.csproj", "{F7517F9F-2B2F-4DBD-ABDD-5FAEB8D8DF27}"
 EndProject
@@ -78,19 +72,6 @@ Global
 		{E9B48BE9-4D8E-44DB-961A-D7C279B2CA2B}.Release Run Client|Any CPU.ActiveCfg = Release|Any CPU
 		{E9B48BE9-4D8E-44DB-961A-D7C279B2CA2B}.Release Run Client|Any CPU.Build.0 = Release|Any CPU
 		{E9B48BE9-4D8E-44DB-961A-D7C279B2CA2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Test|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Test|Any CPU.Build.0 = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Debug|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Debug Run Client|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Debug Run ClientServer|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Debug Run Server|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Release|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Release Archive|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Release Run Client|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Release Run ClientServer|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.Release Run Server|Any CPU.ActiveCfg = Test|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.ReleaseBETA Archive|Any CPU.ActiveCfg = Release|Any CPU
-		{675D2FE5-2041-4458-B4C0-B907447605D3}.ModSyncOnly|Any CPU.ActiveCfg = ModSyncOnly|Any CPU
 		{C9A49715-36CD-49C0-AAE1-1E2C93F08647}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C9A49715-36CD-49C0-AAE1-1E2C93F08647}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9A49715-36CD-49C0-AAE1-1E2C93F08647}.Debug Run Client|Any CPU.ActiveCfg = Debug|Any CPU
@@ -103,19 +84,6 @@ Global
 		{C9A49715-36CD-49C0-AAE1-1E2C93F08647}.Release Archive|Any CPU.Build.0 = Release|Any CPU
 		{C9A49715-36CD-49C0-AAE1-1E2C93F08647}.Debug Run ClientServer|Any CPU.ActiveCfg = Debug|Any CPU
 		{C9A49715-36CD-49C0-AAE1-1E2C93F08647}.Debug Run ClientServer|Any CPU.Build.0 = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Test|Any CPU.ActiveCfg = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Test|Any CPU.Build.0 = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Debug Run Client|Any CPU.ActiveCfg = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Debug Run Server|Any CPU.ActiveCfg = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Release Run ClientServer|Any CPU.ActiveCfg = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Debug Run ClientServer|Any CPU.ActiveCfg = Debug|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.ReleaseBETA Archive|Any CPU.ActiveCfg = Release|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Release Run Client|Any CPU.ActiveCfg = Release|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Release Run Server|Any CPU.ActiveCfg = Release|Any CPU
-		{421BAEA4-F86F-408F-BE78-97DB762A121E}.Release Archive|Any CPU.ActiveCfg = Release|Any CPU
 		{312A7511-FB7C-4ACE-A46D-16E9CA56A076}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{312A7511-FB7C-4ACE-A46D-16E9CA56A076}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{312A7511-FB7C-4ACE-A46D-16E9CA56A076}.Release|Any CPU.Build.0 = Release|Any CPU
@@ -138,21 +106,6 @@ Global
 		{312A7511-FB7C-4ACE-A46D-16E9CA56A076}.Release Run Client|Any CPU.ActiveCfg = Release|Any CPU
 		{312A7511-FB7C-4ACE-A46D-16E9CA56A076}.Release Run Client|Any CPU.Build.0 = Release|Any CPU
 		{312A7511-FB7C-4ACE-A46D-16E9CA56A076}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Test|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Test|Any CPU.Build.0 = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Debug Run Client|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Debug Run Server|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Debug Run Server|Any CPU.Build.0 = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Release Run ClientServer|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Debug Run ClientServer|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.ReleaseBETA Archive|Any CPU.ActiveCfg = Debug|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Release Archive|Any CPU.ActiveCfg = Release|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Release Run Server|Any CPU.ActiveCfg = Release|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Release Run Server|Any CPU.Build.0 = Release|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.ModSyncOnly|Any CPU.ActiveCfg = ModSyncOnly|Any CPU
-		{10B24D55-0341-4EAF-92D6-C14F121180F1}.Release Run Client|Any CPU.ActiveCfg = Release|Any CPU
 		{F7517F9F-2B2F-4DBD-ABDD-5FAEB8D8DF27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F7517F9F-2B2F-4DBD-ABDD-5FAEB8D8DF27}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7517F9F-2B2F-4DBD-ABDD-5FAEB8D8DF27}.Release|Any CPU.Build.0 = Release|Any CPU

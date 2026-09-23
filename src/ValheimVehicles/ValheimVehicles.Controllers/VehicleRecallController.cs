@@ -261,7 +261,16 @@ public static class VehicleRecallController
       if (wheelZdo != null)
       {
         var wheelOffset = wheelZdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-        var wheelRotOffset = wheelZdo.GetQuaternion(VehicleZdoVars.MBRotationHash, Quaternion.identity);
+        Quaternion wheelRotOffset;
+        var eulerVec = wheelZdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.negativeInfinity);
+        if (eulerVec != Vector3.negativeInfinity)
+        {
+          wheelRotOffset = Quaternion.Euler(eulerVec);
+        }
+        else
+        {
+          wheelRotOffset = wheelZdo.GetQuaternion(VehicleZdoVars.MBRotationHash, Quaternion.identity);
+        }
         var wheelWorldRot = targetRot * wheelRotOffset;
         landingPos = targetPos + targetRot * wheelOffset - wheelWorldRot * Vector3.forward * 0.8f + Vector3.up * 0.1f;
         landingRot = wheelWorldRot;

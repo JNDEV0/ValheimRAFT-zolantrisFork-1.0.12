@@ -10,6 +10,6 @@
             <ModSyncConfig>$(SolutionDir)modSync.json5</ModSyncConfig>
         </PropertyGroup>
 
-        <Exec Condition="Exists('$(ModSyncExe)')" Command="&quot;$(ModSyncExe)&quot; syncJson --config=&quot;$(ModSyncConfig)&quot; --targets=$(SyncTargets) --syncJsonKey=version_number --syncJsonValue=$(Version)"/>
+        <Exec Condition="Exists('$(ModSyncExe)') and Exists('$(ModSyncConfig)')" Command="&quot;$(ModSyncExe)&quot; syncJson --config=&quot;$(ModSyncConfig)&quot; --targets=$(SyncTargets) --syncJsonKey=version_number --syncJsonValue=$(Version)"/>
     </Target>
 </Project>

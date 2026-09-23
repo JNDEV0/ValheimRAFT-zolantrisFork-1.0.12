@@ -126,7 +126,7 @@ public class PrefabRecipeConfig : BepInExBaseConfig<PrefabRecipeConfig>
           Amount = 2, Item = "BronzeNails", Recover = true
         },
         new RequirementConfig
-          { Amount = 1, Item = "YggdrasilWood", Recover = true }
+          { Amount = 1, Item = "Wood", Recover = true }
       ]
     },
     {
@@ -149,7 +149,6 @@ public class PrefabRecipeConfig : BepInExBaseConfig<PrefabRecipeConfig>
     {
       "Iron" => Mathf.RoundToInt(Mathf.Clamp(materialCount * HullMaterialIronRatio.Value, 0, 100)),
       "Bronze" => Mathf.RoundToInt(Mathf.Clamp(materialCount * HullMaterialBronzeRatio.Value, 0, 100)),
-      "YggdrasilWood" => Mathf.RoundToInt(Mathf.Clamp(materialCount * HullMaterialYggdrasilWoodRatio.Value, 0, 100)),
       "BronzeNails" => Mathf.RoundToInt(Mathf.Clamp(materialCount * HullMaterialNailsRatio.Value, 0, 100)),
       "Wood" => Mathf.RoundToInt(Mathf.Clamp(materialCount * HullMaterialWoodRatio.Value, 0, 100)),
       _ => 1

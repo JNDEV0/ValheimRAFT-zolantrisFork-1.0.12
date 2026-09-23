@@ -151,7 +151,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
         new RequirementConfig
         {
           Amount = 20,
-          Item = "YggdrasilWood",
+          Item = "Wood",
           Recover = true
         },
         new RequirementConfig

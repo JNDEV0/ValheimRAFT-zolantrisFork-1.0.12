@@ -294,6 +294,9 @@ public class Teleport_Patch
       {
         if (pZdo != null && pZdo.IsValid() && ZNetScene.instance.FindInstance(pZdo) == null)
         {
+          var pHash = pZdo.GetPrefab();
+          if (pHash <= 0 || ZNetScene.instance.GetPrefab(pHash) == null) continue;
+
           try
           {
             ZNetScene.instance.CreateObject(pZdo);

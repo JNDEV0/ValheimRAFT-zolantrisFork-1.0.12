@@ -112,22 +112,6 @@
 
     public bool HasRunCleanup;
 
-    // public ZNetView? LowestPiece = null;
-
-    // public Vector3? GetLowestPiecePoint()
-    // {
-    //   if (!isActiveAndEnabled) return null;
-    //   return transform.position;
-    //   // if (LowestPiece == null) return null;
-    //   // if (!LowestPiece.isActiveAndEnabled) return null;
-    // }
-    //
-    // /// <summary>
-    // /// May need to make this nullable and just exit.
-    // /// </summary>
-    // public Vector3 LowestPiecePoint =>
-    //   LowestPiece?.transform?.position ?? transform?.position ?? Vector3.zero;
-
     /// <summary>
     /// Persists the collider after it has been set to prevent auto-ballast feature from losing the origin point.
     /// todo might be optional.
@@ -501,7 +485,7 @@
       if (zdo == null || !zdo.IsValid()) return false;
 
       var prefab = zdo.GetPrefab();
-      if (prefab == 0 || prefab == -1) return false;
+      if (prefab <= 0) return false;
       if (BlacklistedPrefabHashes.Contains(prefab)) return false;
 
       // 1. Validate MBParentId
@@ -514,8 +498,9 @@
       if (localOffset == Vector3.negativeInfinity) return false;
       if (float.IsNaN(localOffset.x) || float.IsNaN(localOffset.y) || float.IsNaN(localOffset.z)) return false;
       if (float.IsInfinity(localOffset.x) || float.IsInfinity(localOffset.y) || float.IsInfinity(localOffset.z)) return false;
-      // Realistic vehicle build radius limit (100m)
-      if (localOffset.sqrMagnitude > 10000f) return false;
+      // Realistic vehicle build radius limit (60m horizontal radius, realistic keel-to-mast vertical envelope)
+      if (localOffset.x * localOffset.x + localOffset.z * localOffset.z > 3600f) return false;
+      if (localOffset.y < -15f || localOffset.y > 60f) return false;
 
       // 3. Validate MBRotation (Vector3 or legacy Quaternion)
       var localRot = zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.negativeInfinity);
@@ -529,20 +514,57 @@
         if (float.IsNaN(localRot.x) || float.IsNaN(localRot.y) || float.IsNaN(localRot.z)) return false;
       }
 
-      // 4. If ZNetScene is available, perform component validation on the prefab
+      // 4. Strict component and prefab validation via ZNetScene
       if (ZNetScene.instance != null)
       {
         var prefabGo = ZNetScene.instance.GetPrefab(prefab);
-        if (prefabGo != null)
+        if (prefabGo == null) return false;
+
+        var name = prefabGo.name;
+
+        // Reject natural terrain, boulders, trees, rocks, destruction effects
+        if (name.StartsWith("sfx_") || name.StartsWith("vfx_") || name.StartsWith("fx_") ||
+            name.Contains("TerrainComp") || name.StartsWith("LocationProxy") ||
+            name.StartsWith("MineRock") || name.StartsWith("cliff_") || name.StartsWith("rock4_") ||
+            name.StartsWith("TreeBase") || name.StartsWith("TreeLog") || name.StartsWith("stubbe"))
         {
-          if (prefabGo.GetComponent<Character>() != null ||
-              prefabGo.GetComponent<MonsterAI>() != null ||
-              prefabGo.GetComponent<Heightmap>() != null ||
-              prefabGo.GetComponent<TerrainComp>() != null || prefabGo.GetComponent<TerrainModifier>() != null ||
-              prefabGo.GetComponent<LocationProxy>() != null)
-          {
-            return false;
-          }
+          return false;
+        }
+
+        if (prefabGo.GetComponent<Character>() != null ||
+            prefabGo.GetComponent<MonsterAI>() != null ||
+            prefabGo.GetComponent<AnimalAI>() != null ||
+            prefabGo.GetComponent<Heightmap>() != null ||
+            prefabGo.GetComponent<TerrainComp>() != null ||
+            prefabGo.GetComponent<TerrainModifier>() != null ||
+            prefabGo.GetComponent<LocationProxy>() != null ||
+            prefabGo.GetComponent<MineRock>() != null ||
+            prefabGo.GetComponent<MineRock5>() != null ||
+            prefabGo.GetComponent<TreeBase>() != null ||
+            prefabGo.GetComponent<TreeLog>() != null)
+        {
+          return false;
+        }
+
+        // Positive check: Must be a player-buildable piece or recognized vehicle component
+        var hasPiece = prefabGo.GetComponent<Piece>() != null;
+        var hasVehicleComponent = prefabGo.GetComponent<SteeringWheelComponent>() != null ||
+                                  prefabGo.GetComponent<SailComponent>() != null ||
+                                  prefabGo.GetComponent<MastComponent>() != null ||
+                                  prefabGo.GetComponent<AnchorMechanismController>() != null ||
+                                  prefabGo.GetComponent<VehicleAnchorMechanismController>() != null ||
+                                  prefabGo.GetComponent<SwivelPieceActivator>() != null ||
+                                  prefabGo.GetComponent<VehicleRamAoe>() != null;
+        var hasVehiclePrefix = name.StartsWith("MB_") || name.StartsWith("MBRaft") ||
+                               name.StartsWith("ShipHull") || name.StartsWith("Sail") ||
+                               name.StartsWith("Mast") || name.StartsWith("Rudder") ||
+                               name.StartsWith("Rope") || name.StartsWith("Swivel") ||
+                               name.StartsWith("VehiclePiece") || name.StartsWith("WaterVehicle") ||
+                               name.StartsWith("ValheimVehicles");
+
+        if (!hasPiece && !hasVehicleComponent && !hasVehiclePrefix)
+        {
+          return false;
         }
       }
 
@@ -1078,7 +1100,7 @@
       if (IsInvalid()) return;
       if (!(bool)netView)
       {
-        LoggerProvider.LogError("netView does not exist but somehow called AddPiece()");
+        LoggerProvider.LogError("netView does not exist");
         return;
       }
 
@@ -3325,10 +3347,14 @@
       if (zdo.m_prefab ==
           PrefabNames.WaterVehicleShip.GetStableHashCode() || zdo.m_prefab == PrefabNames.LandVehicle.GetStableHashCode()) return;
 
-      if (ZDOMan.instance != null && ZDOMan.instance.GetZDO(zdo.m_uid) != null)
+      if (ZDOMan.instance != null)
       {
-        // Live ZDO is still active in ZDOMan - this is a temporary save-data clone or recycled instance, do NOT remove
-        return;
+        var liveZdo = ZDOMan.instance.GetZDO(zdo.m_uid);
+        if (liveZdo != null && !ReferenceEquals(liveZdo, zdo))
+        {
+          // Live ZDO is still active in ZDOMan and is a different object instance - this is a temporary save-data clone, do NOT remove
+          return;
+        }
       }
 
       var id = GetParentID(zdo);
@@ -3447,6 +3473,7 @@
     {
       // main parenting logic.
       zdo.RemoveInt(VehicleZdoVars.MBParentId);
+      zdo.RemoveInt(VehicleZdoVars.IsVehiclePieceHash);
 
       // this is likely not being used
       zdo.RemoveQuaternion(VehicleZdoVars.MBRotationHash);
@@ -4074,6 +4101,57 @@
 #endif
       }
 
+      // Safeguard 1: Validate GameObject is actually a player-buildable Piece or recognized vehicle component
+      var piece = netView.GetComponent<Piece>();
+      var isVehicleComponent = netView.GetComponent<SteeringWheelComponent>() != null ||
+                               netView.GetComponent<SailComponent>() != null ||
+                               netView.GetComponent<MastComponent>() != null ||
+                               netView.GetComponent<AnchorMechanismController>() != null ||
+                               netView.GetComponent<VehicleAnchorMechanismController>() != null ||
+                               netView.GetComponent<SwivelPieceActivator>() != null ||
+                               netView.GetComponent<VehicleRamAoe>() != null;
+
+      if (piece == null && !isVehicleComponent && !prefabName.StartsWith("MB_") && !prefabName.StartsWith("ShipHull") && !prefabName.StartsWith("Sail") && !prefabName.StartsWith("Mast") && !prefabName.StartsWith("Rudder") && !prefabName.StartsWith("Rope") && !prefabName.StartsWith("Swivel") && !prefabName.StartsWith("VehiclePiece") && !prefabName.StartsWith("WaterVehicle") && !prefabName.StartsWith("ValheimVehicles"))
+      {
+        LoggerProvider.LogWarning($"[AddNewPiece] Rejected non-piece/non-vehicle NetView <{prefabName}>");
+        return;
+      }
+
+      // Safeguard 2: Reject terrain, boulders, trees, and destruction effects
+      if (prefabName.StartsWith("sfx_") || prefabName.StartsWith("vfx_") || prefabName.StartsWith("fx_") ||
+          prefabName.StartsWith("MineRock") || prefabName.StartsWith("cliff_") || prefabName.StartsWith("rock4_") ||
+          prefabName.StartsWith("TreeBase") || prefabName.StartsWith("TreeLog") || prefabName.StartsWith("stubbe") ||
+          netView.GetComponent<Character>() != null || netView.GetComponent<MonsterAI>() != null ||
+          netView.GetComponent<Heightmap>() != null || netView.GetComponent<TerrainComp>() != null ||
+          netView.GetComponent<TerrainModifier>() != null || netView.GetComponent<LocationProxy>() != null)
+      {
+        LoggerProvider.LogWarning($"[AddNewPiece] Rejected terrain/effect NetView <{prefabName}>");
+        return;
+      }
+
+      // Safeguard 3: Distance and bounds check (within 60m radius)
+      var pieceWorldPos = netView.transform.position;
+      var distToCenter = Vector3.Distance(pieceWorldPos, transform.position);
+      if (distToCenter > 60f)
+      {
+        LoggerProvider.LogWarning($"[AddNewPiece] Rejected NetView <{prefabName}> at distance {distToCenter:F1}m (exceeds 60m vehicle radius)");
+        return;
+      }
+
+      // Safeguard 4: Ground contact check - if resting on terrain outside hull, reject
+      if (Physics.Raycast(pieceWorldPos + Vector3.up * 0.5f, Vector3.down, out var groundHit, 3f, LayerHelpers.GroundLayers))
+      {
+        if (groundHit.collider != null && groundHit.collider.GetComponent<Heightmap>() != null && groundHit.collider.GetComponentInParent<IPieceController>() == null)
+        {
+          bool insideHull = OnboardCollider != null && OnboardCollider.bounds.Contains(pieceWorldPos);
+          if (!insideHull)
+          {
+            LoggerProvider.LogWarning($"[AddNewPiece] Rejected NetView <{prefabName}> resting on world terrain outside hull");
+            return;
+          }
+        }
+      }
+
       var previousCount = GetPieceCount();
 
       if (m_pieces.Contains(netView))
@@ -4088,8 +4166,11 @@
       if (netView.m_zdo != null && netView.m_persistent)
       {
         if (PersistentZdoId != null)
+        {
           netView.m_zdo.Set(VehicleZdoVars.MBParentId,
             Manager.PersistentZdoId);
+          netView.m_zdo.Set(VehicleZdoVars.IsVehiclePieceHash, 1);
+        }
         else
           // We should not reach this, but this would be a critical issue and should be tracked.
           LoggerProvider.LogError(
@@ -4854,8 +4935,6 @@
         return;
       }
 
-
-
       /*
        * @description float collider logic
        * - should match all ship colliders at surface level
@@ -5093,45 +5172,13 @@
 
   #region IVehicleSharedProperties
 
-    public VehiclePiecesController? PiecesController
-    {
-      get => this;
-      set
-      {
-        // do nothing.
-      }
-    }
-
-    public VehicleMovementController? MovementController
-    {
-      get;
-      set;
-    }
-    public VehicleConfigSyncComponent? VehicleConfigSync
-    {
-      get;
-      set;
-    }
-    public VehicleOnboardController? OnboardController
-    {
-      get;
-      set;
-    }
-    public VehicleManager Manager
-    {
-      get;
-      set;
-    } = null!;
-    public ZNetView? m_nview
-    {
-      get;
-      set;
-    }
-    public ZDO? m_zdo
-    {
-      get;
-      set;
-    }
+    public VehiclePiecesController? PiecesController { get => this; set { } }
+    public VehicleMovementController? MovementController { get; set; }
+    public VehicleConfigSyncComponent? VehicleConfigSync { get; set; }
+    public VehicleOnboardController? OnboardController { get; set; }
+    public VehicleManager Manager { get; set; } = null!;
+    public ZNetView? m_nview { get; set; }
+    public ZDO? m_zdo { get; set; }
 
     public bool IsControllerValid => Manager.IsControllerValid;
     public bool IsInitialized => Manager.IsInitialized;

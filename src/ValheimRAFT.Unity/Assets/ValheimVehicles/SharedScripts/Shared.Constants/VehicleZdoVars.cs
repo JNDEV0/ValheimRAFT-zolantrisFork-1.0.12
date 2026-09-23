@@ -101,6 +101,7 @@ namespace ValheimVehicles.Shared.Constants
       "VehicleOceanSway".GetStableHashCode();
 
     public static readonly int MBParentId = "MBParentId".GetStableHashCode();
+    public static readonly int IsVehiclePieceHash = "ValheimVehicles_IsVehiclePiece".GetStableHashCode();
 
     /// <summary>
     /// This is the main positional hash for an object within the vehicle. This position is relative to the vehicle and coordinates are in local position after parented within the vehicle.
