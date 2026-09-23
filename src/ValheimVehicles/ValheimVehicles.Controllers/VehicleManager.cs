@@ -243,6 +243,28 @@
 
     public VehiclePiecesController? PiecesController { get; set; }
 
+    public AutomatedWaterMaskController? AutomatedWaterMask { get; private set; }
+
+    public bool HasAutomatedWaterMask
+    {
+      get
+      {
+        if (m_nview != null && m_nview.GetZDO() != null)
+        {
+          return m_nview.GetZDO().GetBool(VehicleZdoVars.AutomatedWaterMaskActive, false);
+        }
+        return false;
+      }
+      set
+      {
+        if (m_nview != null && m_nview.GetZDO() != null)
+        {
+          m_nview.GetZDO().Set(VehicleZdoVars.AutomatedWaterMaskActive, value);
+          ApplyAutomatedWaterMaskState(value);
+        }
+      }
+    }
+
     public ZNetView m_nview { get; set; }
     public ZDO? m_zdo
     {
@@ -571,6 +593,7 @@
         InitializeShipEffects();
         InitializeLandMovementController();
         InitializePowerConsumerData();
+        InitAutomatedWaterMask();
 
         if (PiecesController != null && MovementController != null)
         {
@@ -660,6 +683,33 @@
       {
         ShipEffects = GetComponent<VehicleShipEffects>();
         if (ShipEffects != null) ShipEffectsObj = ShipEffects.gameObject;
+      }
+    }
+
+    public void InitAutomatedWaterMask()
+    {
+      if (AutomatedWaterMask == null)
+      {
+        AutomatedWaterMask = GetComponent<AutomatedWaterMaskController>();
+        if (AutomatedWaterMask == null)
+        {
+          AutomatedWaterMask = gameObject.AddComponent<AutomatedWaterMaskController>();
+        }
+      }
+
+      ApplyAutomatedWaterMaskState(HasAutomatedWaterMask);
+    }
+
+    public void ApplyAutomatedWaterMaskState(bool active)
+    {
+      if (AutomatedWaterMask == null) return;
+      if (active)
+      {
+        AutomatedWaterMask.BuildWaterMask();
+      }
+      else
+      {
+        AutomatedWaterMask.DestroyWaterMask();
       }
     }
 

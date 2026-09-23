@@ -74,6 +74,11 @@ public static class VehicleGUIItems
     },
     new()
     {
+      title = ModTranslations.WaterMaskOnOff ?? "Water Mask On/Off",
+      OnButtonPress = VehicleCommands.ToggleAutomatedWaterMask
+    },
+    new()
+    {
       title = ModTranslations.VehicleCommand_ToggleOceanSway ?? "Toggle Ocean Sway",
       OnButtonPress = VehicleCommands.VehicleToggleOceanSway
     },

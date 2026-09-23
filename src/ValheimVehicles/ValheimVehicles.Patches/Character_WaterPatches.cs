@@ -18,8 +18,13 @@ public class Character_WaterPatches
 {
   [HarmonyPatch(typeof(Character), nameof(Character.InWater))]
   [HarmonyPostfix]
-  public static void InWater(Character __instance, bool __result)
+  public static void InWater(Character __instance, ref bool __result)
   {
+    if (AutomatedWaterMaskController.IsCharacterInAnyWaterMask(__instance))
+    {
+      __result = false;
+      return;
+    }
     if (WaterConfig.UnderwaterAccessMode.Value ==
         WaterConfig.UnderwaterAccessModeType.Disabled) return;
     WaterZoneUtils.SetIsUnderWaterInVehicle(__instance, ref __result);
@@ -49,6 +54,13 @@ public class Character_WaterPatches
   [HarmonyPrefix]
   public static bool Character_CalculateLiquidDepth(Character __instance)
   {
+    if (AutomatedWaterMaskController.IsCharacterInAnyWaterMask(__instance))
+    {
+      __instance.m_waterLevel = -10000f;
+      __instance.m_liquidLevel = -10000f;
+      __instance.m_cashedInLiquidDepth = 0f;
+      return false;
+    }
     if (WaterConfig.UnderwaterAccessMode.Value ==
         WaterConfig.UnderwaterAccessModeType.Disabled) return true;
     if (!WaterZoneUtils.IsAllowedUnderwater(__instance)) return true;
@@ -57,10 +69,15 @@ public class Character_WaterPatches
   }
 
   [HarmonyPatch(typeof(Character), nameof(Character.InLiquid))]
-  [HarmonyPrefix]
+  [HarmonyPostfix]
   public static void Character_InLiquid(Character __instance,
     ref bool __result)
   {
+    if (AutomatedWaterMaskController.IsCharacterInAnyWaterMask(__instance))
+    {
+      __result = false;
+      return;
+    }
     if (WaterConfig.UnderwaterAccessMode.Value ==
         WaterConfig.UnderwaterAccessModeType.Disabled) return;
     WaterZoneUtils.SetIsUnderWaterInVehicle(__instance, ref __result);
@@ -85,6 +102,12 @@ public class Character_WaterPatches
   public static void Character_InLiquidSwimDepth1(Character __instance,
     ref bool __result)
   {
+    if (AutomatedWaterMaskController.IsCharacterInAnyWaterMask(__instance))
+    {
+      __result = false;
+      __instance.m_swimTimer = 999f;
+      return;
+    }
     if (WaterConfig.UnderwaterAccessMode.Value ==
         WaterConfig.UnderwaterAccessModeType.Disabled) return;
     WaterZoneUtils.IsInLiquidSwimDepth(__instance, ref __result);
@@ -96,6 +119,12 @@ public class Character_WaterPatches
   public static void Character_InLiquidSwimDepth2(Character __instance,
     ref bool __result)
   {
+    if (AutomatedWaterMaskController.IsCharacterInAnyWaterMask(__instance))
+    {
+      __result = false;
+      __instance.m_swimTimer = 999f;
+      return;
+    }
     if (WaterConfig.UnderwaterAccessMode.Value ==
         WaterConfig.UnderwaterAccessModeType.Disabled) return;
     WaterZoneUtils.IsInLiquidSwimDepth(__instance, ref __result);
@@ -111,6 +140,12 @@ public class Character_WaterPatches
   public static bool Character_SetLiquidLevel(Character __instance, float level,
     LiquidType type, Component liquidObj)
   {
+    if (__instance != null && AutomatedWaterMaskController.IsCharacterInAnyWaterMask(__instance))
+    {
+      __instance.m_waterLevel = -10000f;
+      __instance.m_liquidLevel = -10000f;
+      return false;
+    }
     if (WaterConfig.UnderwaterAccessMode.Value ==
         WaterConfig.UnderwaterAccessModeType.Disabled) return true;
     if (type == LiquidType.Tar) return true;

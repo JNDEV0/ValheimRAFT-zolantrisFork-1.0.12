@@ -870,6 +870,9 @@
       if (GUILayout.Button("Toggle Ocean Sway"))
         VehicleCommands.VehicleToggleOceanSway();
 
+      if (GUILayout.Button(ModTranslations.WaterMaskOnOff ?? "Water Mask On/Off"))
+        VehicleCommands.ToggleAutomatedWaterMask();
+
       GUILayout.EndArea();
     }
 

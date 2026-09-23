@@ -126,6 +126,7 @@ public partial class ModTranslations
     EditMenu = SafeLocalize("$valheim_vehicles_commands_edit_menu");
     CreativeMode = SafeLocalize("$valheim_vehicles_commands_creative_mode");
     EditMode = SafeLocalize("$valheim_vehicles_commands_mask_edit_mode");
+    WaterMaskOnOff = SafeLocalize("$valheim_vehicles_water_mask_toggle") ?? "Water Mask On/Off";
     GuiShow = SafeLocalize("$valheim_vehicles_gui_show");
     GuiHide = SafeLocalize("$valheim_vehicles_gui_hide");
     GuiCommandsMenuTitle = SafeLocalize("$valheim_vehicles_gui_commands_menu_title");

@@ -4769,6 +4769,11 @@
       {
         LoggerProvider.LogError($"{e}");
       }
+
+      if (Manager != null && Manager.HasAutomatedWaterMask && Manager.AutomatedWaterMask != null)
+      {
+        Manager.AutomatedWaterMask.BuildWaterMask();
+      }
     }
 
 

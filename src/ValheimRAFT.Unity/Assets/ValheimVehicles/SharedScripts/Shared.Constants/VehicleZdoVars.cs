@@ -93,6 +93,7 @@ namespace ValheimVehicles.Shared.Constants
 
     public const string VehicleChunkBounds = "VehicleChunkBounds";
     public const string VehicleFlightMode = "ValheimVehicles_VehicleFlightMode";
+    public const string AutomatedWaterMaskActive = "ValheimVehicles_AutomatedWaterMaskActive";
 
     public static readonly int VehicleTargetHeight =
       "VehicleTargetHeight".GetStableHashCode();

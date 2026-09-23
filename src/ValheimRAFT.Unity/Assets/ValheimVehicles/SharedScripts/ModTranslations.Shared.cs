@@ -19,6 +19,7 @@ namespace ValheimVehicles.SharedScripts
     public static string EditMenu = null!;
     public static string CreativeMode = null!;
     public static string EditMode = null!;
+    public static string WaterMaskOnOff = null!;
 
     public static string EnabledText = null!;
     public static string DisabledText = null!;

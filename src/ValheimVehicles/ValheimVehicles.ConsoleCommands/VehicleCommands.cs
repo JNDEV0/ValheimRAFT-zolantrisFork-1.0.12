@@ -64,6 +64,7 @@ public class VehicleCommands : ConsoleCommand
     public const string fixNearbyVehiclePositions = "fixNearbyVehiclePositions";
     public const string resetterrain = "resetterrain";
     public const string fixterrain = "fixterrain";
+    public const string watermask = "watermask";
   }
 
   private struct CommandInfo
@@ -177,6 +178,10 @@ public class VehicleCommands : ConsoleCommand
       new CommandInfo(
         VehicleCommandArgs.fixterrain,
         "Alias for resetterrain.\nUsage: vehicle fixterrain [radius]"),
+
+      new CommandInfo(
+        VehicleCommandArgs.watermask,
+        "Toggles automated convex water mask generation for the closest vehicle"),
 
       new CommandInfo(
         VehicleCommandArgs.help,
@@ -296,6 +301,9 @@ public class VehicleCommands : ConsoleCommand
       case VehicleCommandArgs.resetterrain:
       case VehicleCommandArgs.fixterrain:
         ResetTerrainUnderVehicle(nextArgs);
+        break;
+      case VehicleCommandArgs.watermask:
+        ToggleAutomatedWaterMask();
         break;
     }
   }
@@ -1446,6 +1454,16 @@ public class VehicleCommands : ConsoleCommand
     CreativeModeColliderComponent.ToggleEditMode();
     WaterZoneController.OnToggleEditMode(CreativeModeColliderComponent
       .IsEditMode);
+  }
+
+  public static void ToggleAutomatedWaterMask()
+  {
+    var vehicle = GetNearestVehicleManager();
+    if (vehicle == null) return;
+    vehicle.HasAutomatedWaterMask = !vehicle.HasAutomatedWaterMask;
+    MessageHud.instance?.ShowMessage(
+      MessageHud.MessageType.Center,
+      $"Automated Water Mask: {(vehicle.HasAutomatedWaterMask ? "ON" : "OFF")}");
   }
 
   public static void DestroyCurrentVehicle()
