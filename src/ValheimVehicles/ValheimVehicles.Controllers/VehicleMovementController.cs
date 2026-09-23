@@ -1,4 +1,4 @@
-﻿#region
+#region
 
 
 
@@ -2709,53 +2709,24 @@
 
 
     public void SendSetAnchor(AnchorState state)
-
     {
-
-      if (_isHoldingAnchor)
-
-      {
-
-        Logger.LogDebug(
-
-          $"skipped due to IsUpdatingAnchorState: {_isHoldingAnchor}");
-
-        return;
-
-      }
-
-
+      if (m_nview == null || !m_nview.IsValid()) return;
 
       if (m_nview.GetZDO().GetInt(VehicleZdoVars.VehicleAnchorState) ==
-
           (int)state)
-
         return;
 
-
-
       if (HasPendingAnchor)
-
       {
-
-        // Might need to rethink this if it's heavy performance hit. Maybe a coroutine if calling cancel invoke is constant.
-
         CancelInvoke(nameof(DelayedAnchor));
-
         HasPendingAnchor = false;
-
       }
-
-
 
       SetAnchor(state);
 
       if (state == AnchorState.Anchored) SendSpeedChange(DirectionChange.Stop);
 
-
-
       m_nview.InvokeRPC(nameof(RPC_SetAnchor), (int)state);
-
     }
 
 
@@ -2870,9 +2841,8 @@
 
     {
 
-      if (isAnchored && vehicleAnchorState != AnchorState.Reeling)
-
-        SendSetAnchor(AnchorState.Reeling);
+      if (isAnchored && vehicleAnchorState != AnchorState.Recovered)
+        SendSetAnchor(AnchorState.Recovered);
 
     }
 
@@ -9664,31 +9634,26 @@
     /// <param name="hasOverride"></param>
 
     public void SetAnchor(AnchorState state, bool hasOverride = false)
-
     {
-
       var newFlags = HandleSetAnchor(state);
 
       Logger.LogDebug(
-
         $"Setting anchor to: {state} the new movementFlag should be {newFlags}");
 
-
-
-      if (m_nview.IsOwner() || hasOverride)
-
+      if (m_nview != null && (m_nview.IsOwner() || hasOverride))
       {
-
         var zdo = m_nview.GetZDO();
-
-        zdo.Set(VehicleZdoVars.VehicleAnchorState, (int)state);
-
+        if (zdo != null)
+        {
+          zdo.Set(VehicleZdoVars.VehicleAnchorState, (int)state);
+        }
       }
 
-
-
       vehicleAnchorState = state;
-
+      if (PiecesController != null)
+      {
+        PiecesController.UpdateAnchorState(state);
+      }
     }
 
 
@@ -10080,11 +10045,8 @@
       {
 
         if (PropulsionConfig.ShouldLiftAnchorOnSpeedChange.Value)
-
         {
-
-          vehicleAnchorState = HandleSetAnchor(AnchorState.Reeling);
-
+          SendSetAnchor(AnchorState.Recovered);
         }
 
         else

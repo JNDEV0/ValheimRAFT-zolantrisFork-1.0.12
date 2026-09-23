@@ -1,4 +1,4 @@
-﻿#region
+#region
 
   using System;
   using UnityEngine;
@@ -42,17 +42,21 @@
 
     public float GetDistanceToGround()
     {
-      var position = transform.position - GetAnchorStartLocalPosition();
-      var distanceFromAnchorToGround =
-        position.y - ZoneSystem.instance.GetGroundHeight(position);
-      return distanceFromAnchorToGround;
+      var worldPos = anchorRopeAttachStartPoint != null
+        ? anchorRopeAttachStartPoint.position
+        : transform.position;
+
+      var groundHeight = ZoneSystem.instance != null
+        ? ZoneSystem.instance.GetGroundHeight(worldPos)
+        : 0f;
+
+      return worldPos.y - groundHeight;
     }
 
     public void UpdateDistanceToGround()
     {
       var dtg = GetDistanceToGround();
-      anchorDropDistance = Mathf.Clamp(dtg, 1f,
-        maxAnchorDistance);
+      anchorDropDistance = Mathf.Clamp(dtg, 1f, maxAnchorDistance);
     }
 
     public static string GetCurrentStateTextStatic(AnchorState anchorState, bool isLandVehicle)
@@ -84,15 +88,19 @@
     }
 
     /// <summary>
-    /// Catch all if the anchor is not near the ground when it becomes anchored, move it down to the ground. This always happens on initial spawn.
+    /// Instantly positions the anchor to seafloor ground height below the winch cradle.
     /// </summary>
     public void UpdateAnchorPositionIfNotNearGround()
     {
       var deltaGround = GetDistanceToGround();
-      if (!(deltaGround > 2)) return;
+      var clampedDepth = Mathf.Clamp(deltaGround, 1f, maxAnchorDistance);
       var newPos = GetAnchorStartLocalPosition();
-      newPos.y -= deltaGround;
-      anchorTransform.localPosition = newPos;
+      newPos.y -= clampedDepth;
+      if (anchorTransform != null)
+      {
+        anchorTransform.localPosition = newPos;
+      }
+      UpdateRopeVisual();
     }
 
     public override void OnAnchorStateChange(AnchorState newState)
@@ -108,19 +116,25 @@
         case AnchorState.Idle:
           break;
         case AnchorState.Lowering:
-          break;
         case AnchorState.Anchored:
           UpdateAnchorPositionIfNotNearGround();
           break;
         case AnchorState.Reeling:
-          break;
         case AnchorState.Recovered:
+          if (anchorTransform != null)
+          {
+            anchorTransform.localPosition = GetAnchorStartLocalPosition();
+            anchorTransform.localRotation = Quaternion.identity;
+          }
+          UpdateRopeVisual();
           break;
         default:
           throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
       }
 
-      if (MovementController != null && MovementController.m_nview.IsOwner())
+      if (MovementController != null && MovementController.m_nview != null && MovementController.m_nview.IsOwner())
+      {
         MovementController.SendSetAnchor(newState);
+      }
     }
   }

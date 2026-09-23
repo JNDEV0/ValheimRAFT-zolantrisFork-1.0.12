@@ -521,6 +521,17 @@ public class SteeringWheelComponent : MonoBehaviour, IAnimatorHandler, Hoverable
   {
     if (anchorState == lastAnchorState) return;
     lastAnchorState = anchorState;
+    if (steeringWheelHoverText == null)
+    {
+      if (steeringWheelHoverTransform != null)
+      {
+        steeringWheelHoverText = steeringWheelHoverTransform.gameObject.AddComponent<HoverFadeText>();
+      }
+      else
+      {
+        steeringWheelHoverText = HoverFadeText.CreateHoverFadeText(transform);
+      }
+    }
     steeringWheelHoverText.currentText = message;
     steeringWheelHoverText.Show();
   }

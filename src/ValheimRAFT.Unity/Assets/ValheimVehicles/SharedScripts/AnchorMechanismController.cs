@@ -218,16 +218,10 @@ namespace ValheimVehicles.SharedScripts
       // Do nothing if state is equivalent
       if (newState == currentState) return;
 
-
-      // drop anchor on first load otherwise it will not spawn / return to anchor state.
-      if (currentState == AnchorState.Idle && newState == AnchorState.Anchored)
-      {
-        StartDropping();
-      }
-
       currentState = newState;
 
       UpdateHoverText(text);
+
       // Execute behavior based on the current state
       switch (currentState)
       {
@@ -347,7 +341,7 @@ namespace ValheimVehicles.SharedScripts
       }
     }
 
-    private void UpdateRopeVisual()
+    public void UpdateRopeVisual()
     {
       if (ropeLine == null) return;
 

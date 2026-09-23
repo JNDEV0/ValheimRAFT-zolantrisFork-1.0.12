@@ -2956,6 +2956,12 @@
         anchorComponent.MovementController = MovementController;
 
       anchorComponent.TryGuardAgainstAnchorSyncIssues();
+
+      // Ensure anchor head sits on seabed if vessel is already anchored on load
+      if (MovementController != null && MovementController.isAnchored)
+      {
+        anchorComponent.UpdateAnchorPositionIfNotNearGround();
+      }
     }
     /// <summary>
     /// Binds the Movement to the anchor components and allows for the anchor hotkeys to toggle all anchors on the ship
