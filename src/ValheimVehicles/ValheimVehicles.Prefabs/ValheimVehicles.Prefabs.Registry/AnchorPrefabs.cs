@@ -18,7 +18,7 @@ public class AnchorPrefabs : RegisterPrefab<AnchorPrefabs>
   public override void OnRegister()
   {
     RegisterAnchorWoodPrefab();
-    RegisterAnchorDockingAttachment();
+    // Step 16: Removed RegisterAnchorDockingAttachment();
   }
 
 
@@ -125,13 +125,25 @@ public class AnchorPrefabs : RegisterPrefab<AnchorPrefabs>
           new RequirementConfig
           {
             Amount = 20,
+            Item = "Wood",
+            Recover = true
+          },
+          new RequirementConfig
+          {
+            Amount = 20,
             Item = "RoundLog",
             Recover = true
           },
           new RequirementConfig
           {
-            Amount = 3,
-            Item = "Chain",
+            Amount = 5,
+            Item = "Bronze",
+            Recover = true
+          },
+          new RequirementConfig
+          {
+            Amount = 8,
+            Item = "BronzeNails",
             Recover = true
           }
         ],

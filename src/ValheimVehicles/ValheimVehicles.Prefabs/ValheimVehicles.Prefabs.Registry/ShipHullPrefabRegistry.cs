@@ -86,8 +86,6 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
       "hull_rib_aft_right_wood",
       "hull_rib_aft_left_iron",
       "hull_rib_aft_right_iron",
-      "hull_rib_expander_left_wood",
-      "hull_rib_expander_right_wood",
       "hull_rib_expander_left_iron",
       "hull_rib_expander_right_iron",
       "hull_seal_bow_left_wood",
@@ -100,8 +98,6 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
       "hull_seal_corner_right_iron",
       "hull_seal_expander_left_iron",
       "hull_seal_expander_right_iron",
-      "hull_seal_expander_left_wood",
-      "hull_seal_expander_right_wood",
       "hull_seal_tri_bow_left_wood",
       "hull_seal_tri_bow_right_wood",
       "hull_seal_tri_bow_left_iron",
@@ -556,14 +552,17 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
     }
 
     foreach (var hullMaterialType in hullMaterialTypes)
-    foreach (var sizeVariant in sizeVariants)
     {
-      var materialCount = PrefabNames.GetPrefabSizeArea(sizeVariant);
-      RegisterHull(
-        PrefabNames.GetHullWallName(hullMaterialType, sizeVariant),
-        hullMaterialType,
-        materialCount,
-        sizeVariant);
+      if (hullMaterialType == HullMaterial.Wood) continue; // Step 11: Remove hull wall (wood) 2x2/4x4
+      foreach (var sizeVariant in sizeVariants)
+      {
+        var materialCount = PrefabNames.GetPrefabSizeArea(sizeVariant);
+        RegisterHull(
+          PrefabNames.GetHullWallName(hullMaterialType, sizeVariant),
+          hullMaterialType,
+          materialCount,
+          sizeVariant);
+      }
     }
   }
 
@@ -572,7 +571,7 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
     RegisterHullRib(HullMaterial.Wood, PrefabNames.PrefabSizeVariant.TwoByTwoByTwo);
     RegisterHullRib(HullMaterial.Iron, PrefabNames.PrefabSizeVariant.TwoByTwoByTwo);
 
-    RegisterHullRib(HullMaterial.Wood, PrefabNames.PrefabSizeVariant.TwoByOneByTwo);
+    // Step 11: Removed hull-rib side 2x1x2 (wood)
     RegisterHullRib(HullMaterial.Iron, PrefabNames.PrefabSizeVariant.TwoByOneByTwo);
 
     RegisterHullRib(HullMaterial.Iron, PrefabNames.PrefabSizeVariant.TwoByOneByEight);
@@ -606,9 +605,7 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
     RegisterHullCornerFloor(HullMaterial.Iron, PrefabNames.DirectionVariant.Left, PrefabNames.PrefabSizeVariant.TwoByFour);
     RegisterHullCornerFloor(HullMaterial.Iron, PrefabNames.DirectionVariant.Right, PrefabNames.PrefabSizeVariant.TwoByFour);
 
-    RegisterHullCornerFloor(HullMaterial.Wood, PrefabNames.DirectionVariant.Left, PrefabNames.PrefabSizeVariant.TwoByEight);
-    RegisterHullCornerFloor(HullMaterial.Wood, PrefabNames.DirectionVariant.Right, PrefabNames.PrefabSizeVariant.TwoByEight);
-
+    // Step 11: Removed hull-rib corner floor (wood) 2x8 (left/right)
     RegisterHullCornerFloor(HullMaterial.Iron, PrefabNames.DirectionVariant.Left, PrefabNames.PrefabSizeVariant.TwoByEight);
     RegisterHullCornerFloor(HullMaterial.Iron, PrefabNames.DirectionVariant.Right, PrefabNames.PrefabSizeVariant.TwoByEight);
 
@@ -617,8 +614,7 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
 
     RegisterHullProwSeal();
 
-    RegisterHullProwSpecialVariant(HullMaterial.Wood, PrefabNames.PrefabSizeVariant.TwoByTwoByEight, PrefabNames.DirectionVariant.Left, "sleek");
-    RegisterHullProwSpecialVariant(HullMaterial.Wood, PrefabNames.PrefabSizeVariant.TwoByTwoByEight, PrefabNames.DirectionVariant.Right, "sleek");
+    // Step 12: Removed both hull-rib prow sleek (wood) 2x2x8 (left/right)
 
     RegisterHullProwSpecialVariant(HullMaterial.Iron, PrefabNames.PrefabSizeVariant.TwoByTwoByEight, PrefabNames.DirectionVariant.Left, "cutter");
     RegisterHullProwSpecialVariant(HullMaterial.Iron, PrefabNames.PrefabSizeVariant.TwoByTwoByEight, PrefabNames.DirectionVariant.Right, "cutter");
@@ -1150,6 +1146,12 @@ public class ShipHullPrefabRegistry : RegisterPrefab<ShipHullPrefabRegistry>
 
   private static bool ShouldRegisterInverseV4Prefab(string assetName)
   {
+    // Step 9: Remove hull-rib prow (right/left)(wood)(inverse)
+    if (assetName.Contains("wood") && (assetName.StartsWith("hull_bow_curved") || assetName.StartsWith("hull_bow_tri")))
+    {
+      return false;
+    }
+
     return HullsWithInverseVariant.Any(assetName.StartsWith);
   }
 

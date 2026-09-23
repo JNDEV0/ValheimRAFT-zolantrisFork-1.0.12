@@ -297,7 +297,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
         [
           new RequirementConfig
           {
-            Amount = 10,
+            Amount = 20,
             Item = "Wood",
             Recover = true
           },
@@ -355,19 +355,19 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
         {
           new()
           {
-            Amount = 10,
+            Amount = 30,
             Item = "FineWood",
             Recover = true
           },
           new()
           {
-            Amount = 2,
+            Amount = 20,
             Item = "RoundLog",
             Recover = true
           },
           new()
           {
-            Amount = 6,
+            Amount = 8,
             Item = "TrollHide",
             Recover = true
           }

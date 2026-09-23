@@ -60,9 +60,14 @@ public class DirtFloorPrefabRegistry : RegisterPrefab<DirtFloorPrefabRegistry>
         [
           new RequirementConfig
           {
-            // this may cause issues it's just size^2 but Math.Pow returns a double
-            Amount = (int)Math.Pow(size, 2),
-            Item = "Stone",
+            Amount = 5 * size,
+            Item = "Wood",
+            Recover = true
+          },
+          new RequirementConfig
+          {
+            Amount = 5 * size,
+            Item = "Charcoal",
             Recover = true
           }
         ]

@@ -97,14 +97,14 @@ public class RampPrefabRegistry : RegisterPrefab<RampPrefabRegistry>
       [
         new RequirementConfig
         {
-          Amount = 10,
+          Amount = 20,
           Item = "Wood",
           Recover = true
         },
         new RequirementConfig
         {
           Amount = 4,
-          Item = "IronNails",
+          Item = "BronzeNails",
           Recover = true
         }
       ]
@@ -146,7 +146,7 @@ public class RampPrefabRegistry : RegisterPrefab<RampPrefabRegistry>
         [
           new RequirementConfig
           {
-            Amount = 20,
+            Amount = 40,
             Item = "Wood",
             Recover = true
           },

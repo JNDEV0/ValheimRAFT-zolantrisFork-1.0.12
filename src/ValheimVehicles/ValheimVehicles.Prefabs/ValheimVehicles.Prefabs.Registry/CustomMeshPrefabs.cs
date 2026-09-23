@@ -24,14 +24,8 @@ public class CustomMeshPrefabs : RegisterPrefab<CustomMeshPrefabs>
 
   public override void OnRegister()
   {
-    RegisterWaterMaskCreator();
+    // Step 8: Removed RegisterWaterMaskCreator, RegisterCustomFloatationPrefab, RegisterShipChunkBoundaryFromMultiplier, RegisterShipChunkBoundaryEraser
     RegisterWaterMaskPrefab();
-    RegisterCustomFloatationPrefab();
-    RegisterShipChunkBoundaryFromMultiplier(2);
-    RegisterShipChunkBoundaryFromMultiplier(4);
-    RegisterShipChunkBoundaryFromMultiplier(8);
-    RegisterShipChunkBoundaryFromMultiplier(16);
-    RegisterShipChunkBoundaryEraser();
 
     if (CustomMeshConfig.EnableCustomWaterMeshTestPrefabs.Value)
     {

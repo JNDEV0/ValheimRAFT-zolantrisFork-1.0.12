@@ -715,4 +715,19 @@
 
       return vvShipResult;
     }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.IsPieceAvailable))]
+    [HarmonyPostfix]
+    public static void Player_IsPieceAvailable(Player __instance, Piece piece, ref bool __result)
+    {
+      if (__result) return;
+      if (!piece || !piece.m_enabled) return;
+
+      // Step 19: Auto-unlock all remaining vehicle hammer recipes by default
+      if (__instance && __instance.m_buildPieces &&
+          __instance.m_buildPieces.name.StartsWith(global::ValheimVehicles.Prefabs.Registry.VehicleHammerTableRegistry.VehicleHammerTableName))
+      {
+        __result = true;
+      }
+    }
   }

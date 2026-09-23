@@ -62,26 +62,13 @@ public class RamPrefabRegistry : RegisterPrefab<RamPrefabRegistry>
   {
     RamVariant[] loadedAssets =
     [
-      new()
-      {
-        asset = LoadValheimVehicleAssets.RamStakeWood1X2,
-        prefabName = "1x2",
-        material = PrefabTiers.Tier1,
-        size = 1
-      },
+      // Step 13: Kept larger 2x4 variants and removed duplicate 1x2 variants
       new()
       {
         asset = LoadValheimVehicleAssets.RamStakeWood2X4,
         prefabName = "2x4",
         material = PrefabTiers.Tier1,
         size = 2
-      },
-      new()
-      {
-        asset = LoadValheimVehicleAssets.RamStakeIron1X2,
-        prefabName = "1x2",
-        material = PrefabTiers.Tier3,
-        size = 1
       },
       new()
       {
@@ -235,6 +222,6 @@ public class RamPrefabRegistry : RegisterPrefab<RamPrefabRegistry>
   public override void OnRegister()
   {
     RegisterRamStake();
-    RegisterRamBlade();
+    // Step 13: Removed RegisterRamBlade();
   }
 }
