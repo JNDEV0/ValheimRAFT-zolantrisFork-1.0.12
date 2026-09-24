@@ -188,7 +188,16 @@
       }
 
       t.localPosition = netView.m_zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-      t.localRotation = Quaternion.Euler(netView.m_zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.zero));
+      var rotVec = netView.m_zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.negativeInfinity);
+      if (rotVec != Vector3.negativeInfinity)
+      {
+        t.localRotation = Quaternion.Euler(rotVec);
+      }
+      else
+      {
+        var legacyRot = netView.m_zdo.GetQuaternion(VehicleZdoVars.MBRotationHash, Quaternion.identity);
+        t.localRotation = legacyRot;
+      }
 
       if (netView.TryGetComponent<WearNTear>(out var wnt))
         wnt.enabled = true;
@@ -275,13 +284,6 @@
     {
       var id = VehiclePiecesController.GetParentID(zdo);
       if (id == 0) return false;
-
-      if (!VehiclePiecesController.IsValidVehiclePieceZdo(zdo, id))
-      {
-        VehiclePiecesController.RemoveVehicleDataFromZdo(zdo);
-        netView.transform.SetParent(null);
-        return false;
-      }
 
       // 1. Direct active instance lookup - if pieces controller is already active in memory, activate piece immediately
       if (VehiclePiecesController.ActiveInstances.TryGetValue(id, out var activeController) && activeController != null && activeController.isActiveAndEnabled && !activeController.IsInvalid())

@@ -504,67 +504,49 @@
 
       // 3. Validate MBRotation (Vector3 or legacy Quaternion)
       var localRot = zdo.GetVec3(VehicleZdoVars.MBRotationVecHash, Vector3.negativeInfinity);
-      if (localRot == Vector3.negativeInfinity)
+      if (localRot != Vector3.negativeInfinity)
       {
-        var legacyRot = zdo.GetQuaternion(VehicleZdoVars.MBRotationHash, new Quaternion(999, 999, 999, 999));
-        if (legacyRot == new Quaternion(999, 999, 999, 999)) return false;
+        if (float.IsNaN(localRot.x) || float.IsNaN(localRot.y) || float.IsNaN(localRot.z)) return false;
       }
       else
       {
-        if (float.IsNaN(localRot.x) || float.IsNaN(localRot.y) || float.IsNaN(localRot.z)) return false;
+        if (!zdo.GetQuaternion(VehicleZdoVars.MBRotationHash, out var legacyRot))
+        {
+          // Neither MBRotationVec nor MBRotation explicitly present; allowed as identity
+        }
       }
 
       // 4. Strict component and prefab validation via ZNetScene
       if (ZNetScene.instance != null)
       {
         var prefabGo = ZNetScene.instance.GetPrefab(prefab);
-        if (prefabGo == null) return false;
-
-        var name = prefabGo.name;
-
-        // Reject natural terrain, boulders, trees, rocks, destruction effects
-        if (name.StartsWith("sfx_") || name.StartsWith("vfx_") || name.StartsWith("fx_") ||
-            name.Contains("TerrainComp") || name.StartsWith("LocationProxy") ||
-            name.StartsWith("MineRock") || name.StartsWith("cliff_") || name.StartsWith("rock4_") ||
-            name.StartsWith("TreeBase") || name.StartsWith("TreeLog") || name.StartsWith("stubbe"))
+        if (prefabGo != null)
         {
-          return false;
-        }
+          var name = prefabGo.name;
 
-        if (prefabGo.GetComponent<Character>() != null ||
-            prefabGo.GetComponent<MonsterAI>() != null ||
-            prefabGo.GetComponent<AnimalAI>() != null ||
-            prefabGo.GetComponent<Heightmap>() != null ||
-            prefabGo.GetComponent<TerrainComp>() != null ||
-            prefabGo.GetComponent<TerrainModifier>() != null ||
-            prefabGo.GetComponent<LocationProxy>() != null ||
-            prefabGo.GetComponent<MineRock>() != null ||
-            prefabGo.GetComponent<MineRock5>() != null ||
-            prefabGo.GetComponent<TreeBase>() != null ||
-            prefabGo.GetComponent<TreeLog>() != null)
-        {
-          return false;
-        }
+          // Reject natural terrain, boulders, trees, rocks, destruction effects
+          if (name.StartsWith("sfx_") || name.StartsWith("vfx_") || name.StartsWith("fx_") ||
+              name.Contains("TerrainComp") || name.StartsWith("LocationProxy") ||
+              name.StartsWith("MineRock") || name.StartsWith("cliff_") || name.StartsWith("rock4_") ||
+              name.StartsWith("TreeBase") || name.StartsWith("TreeLog") || name.StartsWith("stubbe"))
+          {
+            return false;
+          }
 
-        // Positive check: Must be a player-buildable piece or recognized vehicle component
-        var hasPiece = prefabGo.GetComponent<Piece>() != null;
-        var hasVehicleComponent = prefabGo.GetComponent<SteeringWheelComponent>() != null ||
-                                  prefabGo.GetComponent<SailComponent>() != null ||
-                                  prefabGo.GetComponent<MastComponent>() != null ||
-                                  prefabGo.GetComponent<AnchorMechanismController>() != null ||
-                                  prefabGo.GetComponent<VehicleAnchorMechanismController>() != null ||
-                                  prefabGo.GetComponent<SwivelPieceActivator>() != null ||
-                                  prefabGo.GetComponent<VehicleRamAoe>() != null;
-        var hasVehiclePrefix = name.StartsWith("MB_") || name.StartsWith("MBRaft") ||
-                               name.StartsWith("ShipHull") || name.StartsWith("Sail") ||
-                               name.StartsWith("Mast") || name.StartsWith("Rudder") ||
-                               name.StartsWith("Rope") || name.StartsWith("Swivel") ||
-                               name.StartsWith("VehiclePiece") || name.StartsWith("WaterVehicle") ||
-                               name.StartsWith("ValheimVehicles");
-
-        if (!hasPiece && !hasVehicleComponent && !hasVehiclePrefix)
-        {
-          return false;
+          if (prefabGo.GetComponent<Character>() != null ||
+              prefabGo.GetComponent<MonsterAI>() != null ||
+              prefabGo.GetComponent<AnimalAI>() != null ||
+              prefabGo.GetComponent<Heightmap>() != null ||
+              prefabGo.GetComponent<TerrainComp>() != null ||
+              prefabGo.GetComponent<TerrainModifier>() != null ||
+              prefabGo.GetComponent<LocationProxy>() != null ||
+              prefabGo.GetComponent<MineRock>() != null ||
+              prefabGo.GetComponent<MineRock5>() != null ||
+              prefabGo.GetComponent<TreeBase>() != null ||
+              prefabGo.GetComponent<TreeLog>() != null)
+          {
+            return false;
+          }
         }
       }
 
@@ -583,7 +565,7 @@
         var activeSet = activeVpc.m_pieces
           .Where(p => p != null && p.IsValid())
           .Select(p => p.GetZDO())
-          .Where(z => z != null && z.IsValid() && IsValidVehiclePieceZdo(z, vehiclePersistentId))
+          .Where(z => z != null && z.IsValid())
           .ToHashSet();
         m_allPieces[vehiclePersistentId] = activeSet;
         return activeSet;
@@ -596,28 +578,13 @@
 
         if (ZDOMan.instance != null && ZDOMan.instance.m_objectsByID != null)
         {
-          var invalidZdosToClean = new List<ZDO>();
           foreach (var kvp in ZDOMan.instance.m_objectsByID)
           {
             var zdo = kvp.Value;
             if (zdo == null || !zdo.IsValid()) continue;
             if (zdo.GetInt(VehicleZdoVars.MBParentId, 0) == vehiclePersistentId)
             {
-              if (!IsValidVehiclePieceZdo(zdo, vehiclePersistentId))
-              {
-                invalidZdosToClean.Add(zdo);
-                continue;
-              }
               pieceSet.Add(zdo);
-            }
-          }
-
-          if (invalidZdosToClean.Count > 0)
-          {
-            LoggerProvider.LogWarning($"[Auto-Purge] Cleaning {invalidZdosToClean.Count} invalid/foreign ZDOs mistakenly attached to vehicle {vehiclePersistentId}");
-            foreach (var badZdo in invalidZdosToClean)
-            {
-              RemoveVehicleDataFromZdo(badZdo);
             }
           }
         }
@@ -1949,8 +1916,16 @@
       var isPortal = Game.instance != null && Game.instance.PortalPrefabHash.Contains(zdo.GetPrefab());
       var oldSector = zdo.GetSectorIndex();
 
-      var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
-      var targetPos = vehiclePosition + pieceOffset;
+      Vector3 targetPos;
+      if (CanUseActualPiecePosition)
+      {
+        var pieceOffset = zdo.GetVec3(VehicleZdoVars.MBPositionHash, Vector3.zero);
+        targetPos = vehiclePosition + pieceOffset;
+      }
+      else
+      {
+        targetPos = vehiclePosition;
+      }
 
       zdo.SetPosition(targetPos);
 
@@ -2816,8 +2791,14 @@
 
     public IEnumerator ActivatePendingPiecesCoroutine()
     {
-      if (BaseVehicleInitState !=
-          InitializationState.Complete)
+      // Wait for vehicle initialization to complete (up to 5 seconds)
+      var waitTimer = Stopwatch.StartNew();
+      while (BaseVehicleInitState != InitializationState.Complete && waitTimer.ElapsedMilliseconds < 5000)
+      {
+        yield return null;
+      }
+
+      if (BaseVehicleInitState != InitializationState.Complete)
       {
         _pendingPiecesCoroutine = null;
         yield break;
@@ -2834,6 +2815,24 @@
       }
 
       var currentPieces = GetShipActiveInstances(persistentZdoId);
+      if ((currentPieces == null || currentPieces.Count == 0) &&
+          BasePieceActivatorComponent.m_pendingPieces.TryGetValue(persistentZdoId, out var baseList) && baseList != null && baseList.Count > 0)
+      {
+        currentPieces = baseList;
+      }
+
+      // If pieces are still spawning in from ZNetScene, allow a brief window to accumulate
+      var pieceWaitTimer = Stopwatch.StartNew();
+      while ((currentPieces == null || currentPieces.Count == 0) && pieceWaitTimer.ElapsedMilliseconds < 500)
+      {
+        yield return null;
+        currentPieces = GetShipActiveInstances(persistentZdoId);
+        if ((currentPieces == null || currentPieces.Count == 0) &&
+            BasePieceActivatorComponent.m_pendingPieces.TryGetValue(persistentZdoId, out var bList) && bList != null && bList.Count > 0)
+        {
+          currentPieces = bList;
+        }
+      }
 
       if (currentPieces == null || currentPieces.Count == 0)
       {
@@ -2877,6 +2876,14 @@
           currentPieces ??= [];
           currentPieces.AddRange(directPending);
           directPending.Clear();
+          _pendingPiecesDirty = true;
+        }
+
+        if (BasePieceActivatorComponent.m_pendingPieces.TryGetValue(persistentZdoId, out var basePending) && basePending != null && basePending.Count > 0)
+        {
+          currentPieces ??= [];
+          currentPieces.AddRange(basePending);
+          basePending.Clear();
           _pendingPiecesDirty = true;
         }
       } while
@@ -3393,11 +3400,6 @@
       var id = GetParentID(zdo);
       if (id != 0)
       {
-        if (!IsValidVehiclePieceZdo(zdo, id))
-        {
-          return;
-        }
-
         if (!m_allPieces.TryGetValue(id, out var list))
         {
           list = [];
@@ -3748,8 +3750,7 @@
           netView.GetComponent<TerrainComp>() != null || netView.GetComponent<TerrainModifier>() != null ||
           netView.name.Contains("TerrainComp") ||
           netView.name.StartsWith("LocationProxy") ||
-          netView.GetComponent<LocationProxy>() != null ||
-          !IsValidVehiclePieceZdo(zdo, PersistentZdoId))
+          netView.GetComponent<LocationProxy>() != null)
       {
         LoggerProvider.LogWarning($"[Auto-Purge] Rejecting and unparenting invalid piece {netView.name} (ZDO: {zdo.m_uid}) from vehicle {PersistentZdoId}");
         RemoveVehicleDataFromZdo(zdo);

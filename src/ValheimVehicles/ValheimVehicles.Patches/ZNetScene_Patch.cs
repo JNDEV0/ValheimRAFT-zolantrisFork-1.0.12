@@ -181,11 +181,6 @@
         return false;
       }
 
-      if (!VehiclePiecesController.IsValidVehiclePieceZdo(zdo, parentPersistentId))
-      {
-        return false;
-      }
-
       VehiclePiecesController.VehicleParentIdCache[zdo] = parentPersistentId;
 
       return IsVehicleParentActive(parentPersistentId);
