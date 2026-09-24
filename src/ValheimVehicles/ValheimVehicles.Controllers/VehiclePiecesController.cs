@@ -838,7 +838,7 @@
     public static CannonballVariant AmmoVariantDefault = CannonballVariant.Solid;
 
 
-    public void AddPieceDataForComponents(ZNetView netView)
+    public void AddPieceDataForComponents(ZNetView netView, bool isNew = false)
     {
       var components = netView.GetComponents<Component>();
       if (components == null) return;
@@ -908,68 +908,71 @@
             m_rudderPieces.RemoveAll(r => r == null || !r);
             if (m_rudderPieces.Contains(rudder)) break;
 
-            // Enforce max 2 rudders
-            if (m_rudderPieces.Count >= 2)
+            if (isNew)
             {
-              var wnt = netView.GetComponent<WearNTear>();
-              if (wnt != null)
+              // Enforce max 2 rudders
+              if (m_rudderPieces.Count >= 2)
               {
-                wnt.Destroy();
-              }
-              else if (netView.gameObject)
-              {
-                ZNetScene.instance.Destroy(netView.gameObject);
-              }
-              if (Player.m_localPlayer != null)
-              {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_max_reached"));
-              }
-              break;
-            }
-
-            // Enforce that rudder faces the same forward direction as the vehicle / steering wheel
-            var forwardDot = Vector3.Dot(rudder.transform.forward, transform.forward);
-            if (forwardDot < 0.2f)
-            {
-              var wnt = netView.GetComponent<WearNTear>();
-              if (wnt != null)
-              {
-                wnt.Destroy();
-              }
-              else if (netView.gameObject)
-              {
-                ZNetScene.instance.Destroy(netView.gameObject);
-              }
-              if (Player.m_localPlayer != null)
-              {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_orientation_invalid"));
-              }
-              break;
-            }
-
-            // Enforce matching rotation if a rudder already exists
-            if (m_rudderPieces.Count == 1)
-            {
-              var existingRudder = m_rudderPieces[0];
-              if (existingRudder != null)
-              {
-                var existingDot = Vector3.Dot(rudder.transform.forward, existingRudder.transform.forward);
-                if (existingDot < 0.8f)
+                var wnt = netView.GetComponent<WearNTear>();
+                if (wnt != null)
                 {
-                  var wnt = netView.GetComponent<WearNTear>();
-                  if (wnt != null)
+                  wnt.Destroy();
+                }
+                else if (netView.gameObject)
+                {
+                  ZNetScene.instance.Destroy(netView.gameObject);
+                }
+                if (Player.m_localPlayer != null)
+                {
+                  Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_max_reached"));
+                }
+                break;
+              }
+
+              // Enforce that rudder faces the same forward direction as the vehicle / steering wheel
+              var forwardDot = Vector3.Dot(rudder.transform.forward, transform.forward);
+              if (forwardDot < 0.2f)
+              {
+                var wnt = netView.GetComponent<WearNTear>();
+                if (wnt != null)
+                {
+                  wnt.Destroy();
+                }
+                else if (netView.gameObject)
+                {
+                  ZNetScene.instance.Destroy(netView.gameObject);
+                }
+                if (Player.m_localPlayer != null)
+                {
+                  Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_orientation_invalid"));
+                }
+                break;
+              }
+
+              // Enforce matching rotation if a rudder already exists
+              if (m_rudderPieces.Count == 1)
+              {
+                var existingRudder = m_rudderPieces[0];
+                if (existingRudder != null)
+                {
+                  var existingDot = Vector3.Dot(rudder.transform.forward, existingRudder.transform.forward);
+                  if (existingDot < 0.8f)
                   {
-                    wnt.Destroy();
+                    var wnt = netView.GetComponent<WearNTear>();
+                    if (wnt != null)
+                    {
+                      wnt.Destroy();
+                    }
+                    else if (netView.gameObject)
+                    {
+                      ZNetScene.instance.Destroy(netView.gameObject);
+                    }
+                    if (Player.m_localPlayer != null)
+                    {
+                      Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_orientation_invalid"));
+                    }
+                    break;
                   }
-                  else if (netView.gameObject)
-                  {
-                    ZNetScene.instance.Destroy(netView.gameObject);
-                  }
-                  if (Player.m_localPlayer != null)
-                  {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$valheim_vehicles_rudder_orientation_invalid"));
-                  }
-                  break;
                 }
               }
             }
@@ -981,12 +984,12 @@
           case RopeAnchorComponent ropeAnchor:
             if (ropeAnchor.IsDockAnchor())
             {
-              OnAddUniquePieceDestroyPrevious(m_dockAnchor);
+              if (isNew) OnAddUniquePieceDestroyPrevious(m_dockAnchor);
               m_dockAnchor = ropeAnchor;
             }
             break;
           case SteeringWheelComponent wheel:
-            OnAddUniquePieceDestroyPrevious(_steeringWheelPiece);
+            if (isNew) OnAddUniquePieceDestroyPrevious(_steeringWheelPiece);
             _steeringWheelPiece = wheel;
             RotateVehicleForwardPosition();
 
@@ -1154,7 +1157,7 @@
       m_pieces.Add(netView);
       UpdatePieceCount();
 
-      AddPieceDataForComponents(netView);
+      AddPieceDataForComponents(netView, isNew);
 
 
       if (RamPrefabRegistry.IsRam(netView.name))
@@ -3822,7 +3825,7 @@
       var wnt = netView.GetComponent<WearNTear>();
       if ((bool)wnt) wnt.enabled = true;
 
-      AddPiece(netView);
+      AddPiece(netView, false);
     }
 
 

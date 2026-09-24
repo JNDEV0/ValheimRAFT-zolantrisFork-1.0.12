@@ -15,7 +15,7 @@
   /// </summary>
   public class VehicleAnchorMechanismController : AnchorMechanismController
   {
-    public const float maxAnchorDistance = 40f;
+    public const float maxAnchorDistance = 500f;
 
     public static void SyncHudAnchorValues()
     {
@@ -40,6 +40,8 @@
       if (currentState == AnchorState.Lowering) UpdateDistanceToGround();
     }
 
+    private static int s_anchorGroundRayMask = 0;
+
     public float GetDistanceToGround()
     {
       if (!this || !transform) return 0f;
@@ -47,11 +49,26 @@
         ? anchorRopeAttachStartPoint.position
         : transform.position;
 
+      if (s_anchorGroundRayMask == 0)
+      {
+        s_anchorGroundRayMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "terrain");
+      }
+
+      // Raycast downwards for actual terrain or structures up to 500m (like rope ladder)
+      if (Physics.Raycast(worldPos, Vector3.down, out var hit, maxAnchorDistance, s_anchorGroundRayMask))
+      {
+        // Don't hit self/vehicle colliders
+        if (MovementController == null || (hit.collider.transform.root != MovementController.transform.root))
+        {
+          return hit.distance;
+        }
+      }
+
       var groundHeight = ZoneSystem.instance != null
         ? ZoneSystem.instance.GetGroundHeight(worldPos)
         : 0f;
 
-      return worldPos.y - groundHeight;
+      return Mathf.Max(1f, worldPos.y - groundHeight);
     }
 
     public void UpdateDistanceToGround()

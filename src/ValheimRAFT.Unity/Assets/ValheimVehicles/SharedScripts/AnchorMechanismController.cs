@@ -295,7 +295,8 @@ namespace ValheimVehicles.SharedScripts
       if (anchorRopeAttachmentPoint.position.y >
           rotationAnchorRopeAttachpoint.position.y - anchorDropDistance)
       {
-        var deltaReelSpeed = reelSpeed * 1.5f * Time.fixedDeltaTime;
+        var speedMult = Mathf.Clamp(anchorDropDistance / 30f, 1f, 5f);
+        var deltaReelSpeed = reelSpeed * 1.5f * speedMult * Time.fixedDeltaTime;
 
         // Move the anchor downward
         anchorRb.MovePosition(anchorRb.position +
@@ -320,7 +321,9 @@ namespace ValheimVehicles.SharedScripts
       if (anchorRopeAttachmentPoint.position.y <
           anchorRopeAttachStartPoint.position.y)
       {
-        var deltaReelSpeed = reelSpeed * Time.fixedDeltaTime;
+        var currentDepth = Mathf.Abs(anchorRopeAttachStartPoint.position.y - anchorRopeAttachmentPoint.position.y);
+        var speedMult = Mathf.Clamp(currentDepth / 30f, 1f, 5f);
+        var deltaReelSpeed = reelSpeed * speedMult * Time.fixedDeltaTime;
 
         // Move the anchor upward
         anchorRb.MovePosition(anchorRb.position + Vector3.up * deltaReelSpeed);
