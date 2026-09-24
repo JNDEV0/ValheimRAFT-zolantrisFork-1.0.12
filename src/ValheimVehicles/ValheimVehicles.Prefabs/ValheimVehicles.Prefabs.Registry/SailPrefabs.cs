@@ -378,41 +378,28 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
 
   private static void SetupMastSail(GameObject prefab, MastComponent mastComponent)
   {
-    // First, look for a SkinnedMeshRenderer (used by Valheim Karve, VikingShip, Drakkar sails with MagicaCloth2)
-    var smr = prefab.GetComponentInChildren<SkinnedMeshRenderer>(true);
-    if (smr != null)
+    var cloth = prefab.GetComponentInChildren<Cloth>(true);
+    if (cloth != null)
     {
-      mastComponent.m_sailObject = smr.gameObject;
+      mastComponent.m_sailCloth = cloth;
+      mastComponent.m_sailObject = (cloth.transform.parent != null && cloth.transform.parent != prefab.transform)
+        ? cloth.transform.parent.gameObject
+        : cloth.gameObject;
     }
     else
     {
-      var cloth = prefab.GetComponentInChildren<Cloth>(true);
-      if (cloth != null)
+      var sailTransform = prefab.transform.Find("Sail") ??
+                          prefab.transform.Find("sail") ??
+                          prefab.GetComponentsInChildren<Transform>(true)
+                            .FirstOrDefault(t => t.name.IndexOf("sail", System.StringComparison.OrdinalIgnoreCase) >= 0 && t != prefab.transform);
+      if (sailTransform != null)
       {
-        mastComponent.m_sailCloth = cloth;
-        mastComponent.m_sailObject = (cloth.transform.parent != null && cloth.transform.parent != prefab.transform)
-          ? cloth.transform.parent.gameObject
-          : cloth.gameObject;
+        mastComponent.m_sailObject = sailTransform.gameObject;
+        mastComponent.m_sailCloth = sailTransform.GetComponentInChildren<Cloth>(true);
       }
       else
       {
-        var renderers = prefab.GetComponentsInChildren<Renderer>(true);
-        var sailRenderer = renderers.FirstOrDefault(r =>
-          r.name.IndexOf("sail", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
-          (r.sharedMaterial != null && r.sharedMaterial.name.IndexOf("sail", System.StringComparison.OrdinalIgnoreCase) >= 0));
-
-        if (sailRenderer != null)
-        {
-          mastComponent.m_sailObject = sailRenderer.gameObject;
-        }
-        else
-        {
-          var sailTransform = prefab.transform.Find("Sail") ??
-                              prefab.transform.Find("sail") ??
-                              prefab.GetComponentsInChildren<Transform>(true)
-                                .FirstOrDefault(t => t.name.IndexOf("sail", System.StringComparison.OrdinalIgnoreCase) >= 0 && t != prefab.transform);
-          mastComponent.m_sailObject = sailTransform != null ? sailTransform.gameObject : prefab;
-        }
+        mastComponent.m_sailObject = prefab;
       }
     }
 

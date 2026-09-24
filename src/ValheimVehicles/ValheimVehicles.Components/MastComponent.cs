@@ -24,22 +24,10 @@ public class MastComponent : MonoBehaviour
   public float m_sailTopLocalY = 0f;
   public bool m_hasInitializedSailPositions = false;
 
-  private class MastRopeTracker
-  {
-    public LineRenderer line = null!;
-    public Vector3 localP0;
-    public Vector3 localInSailP1;
-  }
-
-  private readonly List<MastRopeTracker> m_ropeTrackers = new();
-  private bool m_hasInitializedRopes = false;
-
   public void InitSailPositions()
   {
     if (m_hasInitializedSailPositions || m_sailObject == null || m_sailObject == gameObject) return;
     m_initialSailLocalPos = m_sailObject.transform.localPosition;
-
-    InitRopes();
 
     var mf = m_sailObject.GetComponentInChildren<MeshFilter>(true);
     var smr = m_sailObject.GetComponentInChildren<SkinnedMeshRenderer>(true);
@@ -75,53 +63,6 @@ public class MastComponent : MonoBehaviour
     }
 
     m_hasInitializedSailPositions = true;
-  }
-
-  public void InitRopes()
-  {
-    if (m_hasInitializedRopes || m_sailObject == null || m_sailObject == gameObject) return;
-    m_ropeTrackers.Clear();
-
-    var lines = GetComponentsInChildren<LineRenderer>(true);
-    foreach (var line in lines)
-    {
-      if (line == null) continue;
-      var lineAttach = line.GetComponent<LineAttach>();
-      if (lineAttach != null) lineAttach.enabled = false;
-
-      line.positionCount = 2;
-      var p0 = line.GetPosition(0);
-      var p1 = line.GetPosition(1);
-      var worldP1 = line.transform.TransformPoint(p1);
-      var localInSail = m_sailObject.transform.InverseTransformPoint(worldP1);
-
-      m_ropeTrackers.Add(new MastRopeTracker
-      {
-        line = line,
-        localP0 = p0,
-        localInSailP1 = localInSail
-      });
-    }
-
-    m_hasInitializedRopes = true;
-  }
-
-  public void UpdateRopePositions()
-  {
-    if (!m_hasInitializedRopes) InitRopes();
-    if (m_sailObject == null) return;
-
-    for (int i = 0; i < m_ropeTrackers.Count; i++)
-    {
-      var tracker = m_ropeTrackers[i];
-      if (tracker.line == null) continue;
-
-      tracker.line.positionCount = 2;
-      tracker.line.SetPosition(0, tracker.localP0);
-      var worldP1 = m_sailObject.transform.TransformPoint(tracker.localInSailP1);
-      var localP1 = tracker.line.transform.InverseTransformPoint(worldP1);
-      tracker.line.SetPosition(1, localP1);
-    }
   }
 
   public float GetSailWidthScale()

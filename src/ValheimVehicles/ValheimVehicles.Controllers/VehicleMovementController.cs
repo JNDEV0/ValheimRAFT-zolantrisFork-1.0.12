@@ -1975,17 +1975,16 @@
           m_body.linearVelocity = Vector3.zero;
           m_body.angularVelocity = Vector3.zero;
         }
-        return;
       }
-
-      if (!isPlayerHaulingVehicle && m_body.isKinematic || isPlayerHaulingVehicle && HaulingPlayer != null && HaulingPlayer.transform.root == PiecesController!.transform.root)
+      else
       {
-        m_body.isKinematic = false;
+        if (!isPlayerHaulingVehicle && m_body.isKinematic || isPlayerHaulingVehicle && HaulingPlayer != null && HaulingPlayer.transform.root == PiecesController!.transform.root)
+        {
+          m_body.isKinematic = false;
+        }
+
+        VehicleMovementUpdatesOwnerOnly();
       }
-
-
-
-      VehicleMovementUpdatesOwnerOnly();
 
       VehiclePhysicsFixedUpdateAllClients();
 
@@ -6482,7 +6481,7 @@
 
     public void UpdateSailSize(float dt)
     {
-      var targetY = 0.1f;
+      var num = 0f;
       var speed = VehicleSpeed;
 
       if (!isAnchored)
@@ -6490,29 +6489,29 @@
         switch (speed)
         {
           case Ship.Speed.Half:
-            targetY = 0.5f;
+            num = 0.5f;
             break;
 
           case Ship.Speed.Full:
-            targetY = 1f;
+            num = 1f;
             break;
 
           default: // Stop, Slow (Rowing), Back
-            targetY = 0.1f;
+            num = 0.01f;
             break;
         }
       }
       else
       {
-        targetY = 0.1f;
+        num = 0.01f;
       }
 
       var localScale = m_sailObject.transform.localScale;
-      var flag = Mathf.Abs(localScale.y - targetY) < 0.005f;
+      var flag = Mathf.Abs(localScale.y - num) < 0.005f;
       if (!flag)
       {
-        localScale.y = Mathf.Clamp(Mathf.MoveTowards(localScale.y, targetY, dt), 0.1f, 1f);
-        m_sailObject.transform.localScale = new Vector3(localScale.x, localScale.y, localScale.z);
+        localScale.y = Mathf.MoveTowards(localScale.y, num, dt);
+        m_sailObject.transform.localScale = localScale;
       }
 
 
@@ -6834,14 +6833,14 @@
 
         if (mast.m_sailObject != null)
         {
-          var sailScaleY = Mathf.Clamp(m_sailObject.transform.localScale.y, 0.1f, 1f);
-          var isRetracted = sailScaleY <= 0.15f;
+          var sailScaleY = m_sailObject.transform.localScale.y;
+          var isRetracted = sailScaleY <= 0.05f;
 
           if (mast.m_allowSailShrinking)
           {
             mast.InitSailPositions();
             var widthScale = mast.GetSailWidthScale();
-            var targetScale = new Vector3(widthScale, sailScaleY, 1f);
+            var targetScale = new Vector3(widthScale, Mathf.Max(0.01f, sailScaleY), 1f);
             mast.m_sailObject.transform.localScale = targetScale;
 
             // Compensate position so the top edge stays attached to the crossbeam/yardarm
@@ -6852,8 +6851,8 @@
 
             if (mast.m_sailCloth != null)
             {
-              mast.m_sailCloth.enabled = !mast.m_disableCloth;
-              if (EnvMan.instance != null)
+              mast.m_sailCloth.enabled = !isRetracted && !mast.m_disableCloth;
+              if (!isRetracted && EnvMan.instance != null)
               {
                 mast.m_sailCloth.externalAcceleration = EnvMan.instance.GetWindForce();
               }
@@ -6864,10 +6863,8 @@
             var renderers = mast.m_sailObject.GetComponentsInChildren<Renderer>(true);
             foreach (var r in renderers)
             {
-              r.enabled = true;
+              r.enabled = !isRetracted || sailScaleY > 0.02f;
             }
-
-            mast.UpdateRopePositions();
           }
           else
           {
@@ -6889,7 +6886,6 @@
             }
 
             UpdateMagicaCloth(mast, false);
-            mast.UpdateRopePositions();
           }
         }
       }
@@ -7733,7 +7729,10 @@
     {
       if (OnboardController != null && OnboardController.m_localPlayers.Count > 0) return;
       HasPendingAnchor = false;
-      SendSetAnchor(AnchorState.Anchored);
+      if (Manager != null && Manager.IsLandVehicle)
+        SendSetAnchor(AnchorState.Anchored);
+      else
+        SendSetAnchor(AnchorState.Lowering);
     }
 
     public void CancelDelayedAnchor()
@@ -7747,7 +7746,7 @@
     /// </summary>
     public void SendDelayedAnchor()
     {
-      if (isAnchored) return;
+      if (isAnchored || vehicleAnchorState == AnchorState.Lowering) return;
 
       if (VehicleGuiMenuConfig.HasAutoAnchorDelay.Value)
       {
@@ -7758,7 +7757,10 @@
         return;
       }
 
-      SendSetAnchor(AnchorState.Anchored);
+      if (Manager != null && Manager.IsLandVehicle)
+        SendSetAnchor(AnchorState.Anchored);
+      else
+        SendSetAnchor(AnchorState.Lowering);
     }
 
 
@@ -9080,13 +9082,13 @@
       }
 
       var newState = (isAnchored || vehicleAnchorState == AnchorState.Lowering || vehicleAnchorState == AnchorState.Anchored)
-        ? AnchorState.Recovered
-        : AnchorState.Anchored;
+        ? AnchorState.Reeling
+        : AnchorState.Lowering;
 
       SendSetAnchor(newState);
-      ShowWheelHoverMessage(newState == AnchorState.Anchored
-        ? $"[<color=red><b>{ModTranslations.AnchorPrefab_anchoredText}</b></color>]"
-        : $"[<color=green><b>{ModTranslations.AnchorPrefab_RecoveredAnchorText}</b></color>]");
+      ShowWheelHoverMessage(newState == AnchorState.Lowering
+        ? $"[<color=yellow><b>{ModTranslations.AnchorPrefab_loweringText}</b></color>]"
+        : $"[<color=yellow><b>{ModTranslations.AnchorPrefab_reelingText}</b></color>]");
     }
 
 
@@ -10055,7 +10057,7 @@
 
         if (PropulsionConfig.ShouldLiftAnchorOnSpeedChange.Value)
         {
-          SendSetAnchor(AnchorState.Recovered);
+          SendSetAnchor(AnchorState.Reeling);
         }
 
         else
