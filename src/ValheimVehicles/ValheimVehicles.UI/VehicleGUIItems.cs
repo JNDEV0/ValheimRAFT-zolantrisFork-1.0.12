@@ -33,16 +33,6 @@ public static class VehicleGUIItems
   [
     new()
     {
-      title = ModTranslations.VehicleCommand_WatermaskDebugger ?? "Watermask Debugger",
-      OnButtonPress = VehicleCommands.ToggleColliderEditMode
-    },
-    new()
-    {
-      title = ModTranslations.WaterMaskOnOff ?? "Water Mask On/Off",
-      OnButtonPress = VehicleCommands.ToggleAutomatedWaterMask
-    },
-    new()
-    {
       title = ModTranslations.VehicleCommand_HullDebugger ?? "Hull Debugger",
       OnButtonPress = VehicleGui.ToggleConvexHullDebugger
     },

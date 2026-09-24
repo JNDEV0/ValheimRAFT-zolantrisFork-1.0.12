@@ -107,12 +107,6 @@
 
     public override void OnAnchorStateChange(AnchorState newState)
     {
-      // No callbacks for anchor when flying
-      if (MovementController != null && MovementController.IsFlying())
-      {
-        return;
-      }
-
       switch (newState)
       {
         case AnchorState.Idle:

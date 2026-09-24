@@ -157,14 +157,14 @@
 
     private void OnDisable()
     {
-      RemoveGui();
+      DestroyAll();
     }
 
     private void Update()
     {
       if (Player.m_localPlayer == null || ZNet.instance == null || Game.instance == null)
       {
-        RemoveGui();
+        DestroyAll();
       }
     }
 
@@ -186,6 +186,46 @@
       if (GuiObj) Destroy(GuiObj);
       GuiObj = null;
       Gui = null;
+    }
+
+    public static void DestroyAll()
+    {
+      hasCommandsWindowOpened = false;
+      hasConfigPanelOpened = false;
+
+      if (Instance != null)
+      {
+        try { Instance.RemoveGui(); } catch { }
+      }
+
+      if (Gui != null)
+      {
+        try { Gui.RemoveGui(); } catch { }
+      }
+
+      if (GuiObj != null)
+      {
+        try { Destroy(GuiObj); } catch { }
+        GuiObj = null;
+      }
+
+      // Also clean up any lingering panel objects in GUIManager.CustomGUIFront
+      if (GUIManager.CustomGUIFront != null)
+      {
+        var toDestroy = new List<GameObject>();
+        for (int i = 0; i < GUIManager.CustomGUIFront.transform.childCount; i++)
+        {
+          var child = GUIManager.CustomGUIFront.transform.GetChild(i);
+          if (child != null && (child.name.StartsWith("ValheimVehicles") || child.name.Contains("commandsWindow") || child.name.Contains("configWindow")))
+          {
+            toDestroy.Add(child.gameObject);
+          }
+        }
+        foreach (var go in toDestroy)
+        {
+          try { Destroy(go); } catch { }
+        }
+      }
     }
 
     public bool lastPanelState = false;
@@ -771,7 +811,7 @@
 
       var viewStyles = new SwivelUISharedStyles();
       var panelWidth = 420f;
-      var panelHeight = 440f;
+      var panelHeight = 350f;
 
       commandsWindow = GUIManager.Instance.CreateWoodpanel(
         commandsToggleButtonWindow.transform,

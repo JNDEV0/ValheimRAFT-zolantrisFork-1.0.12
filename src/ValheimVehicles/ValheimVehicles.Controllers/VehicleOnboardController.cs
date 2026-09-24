@@ -369,6 +369,9 @@
     public void HandleItemHitVehicle(Collider collider)
     {
       if (collider == null) return;
+      // Do not parent naturally spawned ground pickables (rocks, flint, branches, mushrooms)
+      if (collider.GetComponentInParent<Pickable>() != null) return;
+      if (collider.GetComponentInParent<ItemDrop>() == null) return;
       var itemNetView = collider.GetComponentInParent<ZNetView>();
       if (itemNetView == null) return;
       if (PiecesController == null || PiecesController.m_tempPieces.Contains(itemNetView)) return;

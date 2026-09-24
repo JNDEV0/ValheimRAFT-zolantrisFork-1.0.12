@@ -67,25 +67,20 @@ public class GamePause_Patch
   [HarmonyPostfix]
   private static void Game_OnDestroy_CleanupGui()
   {
-    VehicleGui.Instance?.RemoveGui();
-    if (VehicleGui.GuiObj != null)
-    {
-      Object.Destroy(VehicleGui.GuiObj);
-      VehicleGui.GuiObj = null;
-      VehicleGui.Gui = null;
-    }
+    VehicleGui.DestroyAll();
   }
 
   [HarmonyPatch(typeof(FejdStartup), "Awake")]
   [HarmonyPostfix]
   private static void FejdStartup_Awake_CleanupGui()
   {
-    VehicleGui.Instance?.RemoveGui();
-    if (VehicleGui.GuiObj != null)
-    {
-      Object.Destroy(VehicleGui.GuiObj);
-      VehicleGui.GuiObj = null;
-      VehicleGui.Gui = null;
-    }
+    VehicleGui.DestroyAll();
+  }
+
+  [HarmonyPatch(typeof(FejdStartup), "Start")]
+  [HarmonyPostfix]
+  private static void FejdStartup_Start_CleanupGui()
+  {
+    VehicleGui.DestroyAll();
   }
 }

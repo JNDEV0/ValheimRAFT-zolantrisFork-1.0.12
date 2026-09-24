@@ -3846,6 +3846,8 @@
     {
       if (netView == null) return;
       if (TryBailOnSameObject(netView.gameObject)) return;
+      // Do not allow naturally spawned rocks/flint/branches to be parented to the vehicle
+      if (netView.GetComponent<Pickable>() != null || netView.GetComponentInParent<Pickable>() != null) return;
       // do not allow adding a piece to itself
       if (netView.transform == transform || netView.transform == Manager.transform) return;
 

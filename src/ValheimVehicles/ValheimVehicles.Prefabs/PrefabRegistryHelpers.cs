@@ -865,9 +865,9 @@ public abstract class PrefabRegistryHelpers
     var ropes = r.GetComponentsInChildren<LineAttach>();
     for (var i = 0; i < ropes.Length; i++)
     {
-      ropes[i].GetComponent<LineRenderer>().positionCount = 2;
-      ropes[i].m_attachments.Clear();
-      ropes[i].m_attachments.Add(r.transform);
+      var lr = ropes[i].GetComponent<LineRenderer>();
+      if (lr != null) lr.positionCount = 2;
+      ropes[i].enabled = false;
     }
   }
 
