@@ -7748,7 +7748,7 @@
     {
       if (OnboardController != null && OnboardController.m_localPlayers.Count > 0) return;
       HasPendingAnchor = false;
-      if (IsFlying() || (Manager != null && Manager.IsLandVehicle))
+      if (Manager != null && Manager.IsLandVehicle)
       {
         SendSetAnchor(AnchorState.Anchored);
       }
@@ -7780,7 +7780,7 @@
         return;
       }
 
-      if (IsFlying() || (Manager != null && Manager.IsLandVehicle))
+      if (Manager != null && Manager.IsLandVehicle)
       {
         SendSetAnchor(AnchorState.Anchored);
       }
@@ -9093,8 +9093,8 @@
     public void ToggleAnchor()
     {
       if (Manager == null) return;
-      // Flying or land vehicle does not animate anchor.
-      if (IsFlying() || Manager.IsLandVehicle)
+      // Land vehicle does not animate anchor.
+      if (Manager != null && Manager.IsLandVehicle)
       {
         SendSetAnchor(!isAnchored ? AnchorState.Anchored : AnchorState.Recovered);
         if (LandMovementController != null)
@@ -9608,7 +9608,7 @@
           return;
         }
 
-        if (IsFlying() || (Manager != null && Manager.IsLandVehicle))
+        if (Manager != null && Manager.IsLandVehicle)
           SendSetAnchor(AnchorState.Anchored);
         else
           SendSetAnchor(AnchorState.Lowering);

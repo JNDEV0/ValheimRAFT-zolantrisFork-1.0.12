@@ -44,6 +44,7 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
   public static ConfigEntry<float> SpeedCapMultiplier { get; set; }
   public static ConfigEntry<float> SailVerticalOffset { get; set; } = null!;
   public static ConfigEntry<float> KarveSailVerticalOffset { get; set; } = null!;
+  public static ConfigEntry<float> KarveSailWidthScale { get; set; } = null!;
 
 
   public static ConfigEntry<bool> FlightVerticalToggle { get; set; }
@@ -234,10 +235,15 @@ public class PropulsionConfig : BepInExBaseConfig<PropulsionConfig>
         "Vertical offset (in meters) to adjust the sail canvas towards the yardarm crossbeam.",
         true, false, new AcceptableValueRange<float>(-3f, 3f)));
 
-    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 0.25f,
+    KarveSailVerticalOffset = config.BindUnique(GenericSectionName, "KarveSailVerticalOffset", 0.75f,
       ConfigHelpers.CreateConfigDescription(
         "Vertical offset (in meters) to adjust the Karve sail canvas towards the yardarm crossbeam.",
-        true, false, new AcceptableValueRange<float>(-3f, 3f)));
+        true, false, new AcceptableValueRange<float>(-3f, 5f)));
+
+    KarveSailWidthScale = config.BindUnique(GenericSectionName, "KarveSailWidthScale", 1.75f,
+      ConfigHelpers.CreateConfigDescription(
+        "Width multiplier to stretch the Karve sail canvas across the entire yardarm crossbeam rings.",
+        true, false, new AcceptableValueRange<float>(1f, 3f)));
 
     // rudder
 

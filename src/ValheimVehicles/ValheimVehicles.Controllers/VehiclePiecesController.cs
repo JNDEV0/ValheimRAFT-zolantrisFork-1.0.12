@@ -4228,9 +4228,11 @@
         return;
       }
 
-      // Safeguard 4: Ground contact check - if resting on terrain outside hull, reject (exempt rudders)
-      bool isRudderPiece = netView.GetComponent<RudderComponent>() != null;
-      if (!isRudderPiece && Physics.Raycast(pieceWorldPos + Vector3.up * 0.5f, Vector3.down, out var groundHit, 3f, LayerHelpers.GroundLayers))
+      // Safeguard 4: Ground contact check - if resting on terrain outside hull, reject (exempt rudders, rope ladders, anchors)
+      bool isShipFixture = netView.GetComponent<RudderComponent>() != null ||
+                           netView.GetComponent<RopeLadderComponent>() != null ||
+                           netView.GetComponent<VehicleAnchorMechanismController>() != null;
+      if (!isShipFixture && Physics.Raycast(pieceWorldPos + Vector3.up * 0.5f, Vector3.down, out var groundHit, 3f, LayerHelpers.GroundLayers))
       {
         if (groundHit.collider != null && groundHit.collider.GetComponent<Heightmap>() != null && groundHit.collider.GetComponentInParent<IPieceController>() == null)
         {

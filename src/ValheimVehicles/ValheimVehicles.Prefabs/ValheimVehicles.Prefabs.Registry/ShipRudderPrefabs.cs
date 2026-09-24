@@ -23,6 +23,17 @@ public class ShipRudderPrefabs : RegisterPrefab<ShipRudderPrefabs>
       PrefabManager.Instance.CreateClonedPrefab(
         PrefabNames.ShipRudderBasic, LoadValheimVehicleAssets.ShipRudderBasicAsset);
 
+    // Adjust pivot point on basic rudder so it hinges at the top attachment tip (hull contact point)
+    // rather than the center of the paddle mesh, preventing visual detachment from the boat when turning.
+    var rudderRotation = prefab.transform.FindDeepChild("rudder_rotation");
+    var rudderMeshTransform = rudderRotation != null ? rudderRotation.Find("rudder") : null;
+    if (rudderRotation != null && rudderMeshTransform != null)
+    {
+      var pivotOffset = new Vector3(-0.0833f, 0.8158f, 0.4648f);
+      rudderRotation.localPosition = pivotOffset;
+      rudderMeshTransform.localPosition = -pivotOffset;
+    }
+
     SharedSetup(prefab, RudderTier.Basic);
 
     PrefabRegistryController.AddPiece(new CustomPiece(prefab, false, new PieceConfig

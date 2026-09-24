@@ -1,4 +1,4 @@
-﻿#region
+#region
 
   using System;
   using System.Collections;
@@ -599,6 +599,8 @@
             var itemCollectionData = item.ColliderPointData;
             if (item.IsSwivelChild) continue;
             if (item.Prefab == null || item.Prefab.name.StartsWith(PrefabNames.SwivelPrefabName)) continue;
+            var prefabLower = item.Prefab.name.ToLower();
+            if (prefabLower.Contains("mast") || prefabLower.Contains("sail")) continue;
             if (itemCollectionData == null) continue;
             if (itemCollectionData.Value.Points.Length == 0)
             {

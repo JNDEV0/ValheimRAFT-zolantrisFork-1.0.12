@@ -206,9 +206,11 @@
         }
 
         // Safety check 2: if placed directly on world terrain/ground outside vehicle, do not parent to vehicle.
-        // Exempt rudders since their blades extend into shallow water
-        bool isRudder = gameObject.GetComponent<RudderComponent>() != null;
-        if (!isRudder && Physics.Raycast(gameObject.transform.position + Vector3.up * 0.5f, Vector3.down, out var groundHit, 2f, LayerHelpers.GroundLayers))
+        // Exempt rudders, rope ladders, and anchors whose models/ropes extend downwards into shallow water
+        bool isShipFixture = gameObject.GetComponent<RudderComponent>() != null ||
+                             gameObject.GetComponent<RopeLadderComponent>() != null ||
+                             gameObject.GetComponent<VehicleAnchorMechanismController>() != null;
+        if (!isShipFixture && Physics.Raycast(gameObject.transform.position + Vector3.up * 0.5f, Vector3.down, out var groundHit, 2f, LayerHelpers.GroundLayers))
         {
           if (groundHit.collider.GetComponent<Heightmap>() != null && groundHit.collider.GetComponentInParent<IPieceController>() == null)
           {

@@ -69,7 +69,7 @@ public class MastComponent : MonoBehaviour
     var name = gameObject.name;
     if (name.IndexOf("karve", StringComparison.OrdinalIgnoreCase) >= 0)
     {
-      return 2.0f;
+      return PropulsionConfig.KarveSailWidthScale != null ? PropulsionConfig.KarveSailWidthScale.Value : 1.75f;
     }
     return m_sailWidthScale;
   }
@@ -79,7 +79,7 @@ public class MastComponent : MonoBehaviour
     var name = gameObject.name;
     if (name.IndexOf("karve", StringComparison.OrdinalIgnoreCase) >= 0)
     {
-      return PropulsionConfig.KarveSailVerticalOffset != null ? PropulsionConfig.KarveSailVerticalOffset.Value : 0.25f;
+      return PropulsionConfig.KarveSailVerticalOffset != null ? PropulsionConfig.KarveSailVerticalOffset.Value : 0.75f;
     }
     return PropulsionConfig.SailVerticalOffset?.Value ?? 0f;
   }

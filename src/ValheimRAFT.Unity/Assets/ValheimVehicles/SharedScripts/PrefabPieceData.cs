@@ -46,11 +46,14 @@ namespace ValheimVehicles.SharedScripts
 
     private bool CanAddColliders(GameObject prefab)
     {
+      var nameLower = prefab.name.ToLower();
+      if (nameLower.Contains("mast")) return false;
+      if (nameLower.Contains("sail")) return false;
       if (prefab.name.Contains(PrefabNames.VehicleSail)) return false;
       if (prefab.name.Contains(PrefabNames.VehicleSailCloth)) return false;
-      if (prefab.name.Contains("fire")) return false;
-      if (prefab.name.Contains("smoke")) return false;
-      if (prefab.name.Contains("vfx")) return false;
+      if (nameLower.Contains("fire")) return false;
+      if (nameLower.Contains("smoke")) return false;
+      if (nameLower.Contains("vfx")) return false;
       return true;
     }
 
