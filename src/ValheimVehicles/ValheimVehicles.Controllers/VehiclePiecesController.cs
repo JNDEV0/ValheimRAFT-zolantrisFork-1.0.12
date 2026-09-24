@@ -961,8 +961,7 @@
             }
 
             // Enforce that rudder faces the same forward direction as the vehicle / steering wheel
-            // Note: Rudder model forward points aft/stern (-transform.forward) into the water
-            var forwardDot = Vector3.Dot(rudder.transform.forward, -transform.forward);
+            var forwardDot = Vector3.Dot(rudder.transform.forward, transform.forward);
             if (forwardDot < 0.2f)
             {
               var wnt = netView.GetComponent<WearNTear>();

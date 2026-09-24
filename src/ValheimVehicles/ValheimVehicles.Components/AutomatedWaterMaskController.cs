@@ -89,7 +89,7 @@ public class AutomatedWaterMaskController : MonoBehaviour
 
     _maskContainer = new GameObject("AutomatedWaterMask")
     {
-      layer = LayerHelpers.PieceNonSolidLayer
+      layer = LayerHelpers.IgnoreRaycastLayer
     };
     _maskContainer.transform.SetParent(_manager.PiecesController.transform, false);
     _maskContainer.transform.localPosition = Vector3.zero;
@@ -145,7 +145,7 @@ public class AutomatedWaterMaskController : MonoBehaviour
 
       var subObj = new GameObject($"MaskSub_{i}")
       {
-        layer = LayerHelpers.PieceNonSolidLayer
+        layer = LayerHelpers.IgnoreRaycastLayer
       };
       subObj.transform.SetParent(_maskContainer.transform, false);
       subObj.transform.localPosition = hullGo.transform.localPosition;

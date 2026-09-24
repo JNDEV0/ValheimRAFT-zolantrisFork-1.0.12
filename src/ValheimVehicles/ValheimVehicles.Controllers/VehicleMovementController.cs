@@ -6732,12 +6732,61 @@
 
 
 
+    private static System.Reflection.PropertyInfo? s_magicaSerializeDataProp;
+    private static System.Reflection.FieldInfo? s_magicaBlendWeightField;
+    private static System.Reflection.MethodInfo? s_magicaSetParamMethod;
+    private static bool s_magicaReflectionInitialized = false;
+
+    private static void UpdateMagicaCloth(MastComponent mast, bool isRetracted)
+    {
+      if (mast == null) return;
+
+      foreach (var behaviour in mast.GetComponentsInChildren<Behaviour>(true))
+      {
+        if (behaviour == null || behaviour.GetType().Name != "MagicaCloth") continue;
+
+        behaviour.enabled = !isRetracted && !mast.m_disableCloth;
+
+        try
+        {
+          if (!s_magicaReflectionInitialized)
+          {
+            var bType = behaviour.GetType();
+            s_magicaSerializeDataProp = bType.GetProperty("SerializeData");
+            s_magicaSetParamMethod = bType.GetMethod("SetParameterChange", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (s_magicaSerializeDataProp != null)
+            {
+              var sType = s_magicaSerializeDataProp.PropertyType;
+              s_magicaBlendWeightField = sType.GetField("blendWeight", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            }
+            s_magicaReflectionInitialized = true;
+          }
+
+          if (s_magicaSerializeDataProp != null)
+          {
+            var serializeData = s_magicaSerializeDataProp.GetValue(behaviour);
+            if (serializeData != null && s_magicaBlendWeightField != null)
+            {
+              var currentWeight = (float)s_magicaBlendWeightField.GetValue(serializeData);
+              var targetWeight = isRetracted ? 0f : 1f;
+              if (Mathf.Abs(currentWeight - targetWeight) > 0.01f)
+              {
+                s_magicaBlendWeightField.SetValue(serializeData, targetWeight);
+                s_magicaSetParamMethod?.Invoke(behaviour, null);
+              }
+            }
+          }
+        }
+        catch
+        {
+          // Ignore reflection errors gracefully
+        }
+      }
+    }
+
     /**
-
      * In theory, we can just make the sailComponent and mastComponent parents of the masts/sails of the ship. This will make any mutations to those parents in sync with the sail changes
-
      */
-
     private void SyncVehicleRotationDependentItems()
 
     {
@@ -6807,111 +6856,57 @@
 
 
           if (mast.m_allowSailShrinking)
-
           {
-
             mast.InitSailPositions();
-
-            var targetScale = new Vector3(mast.m_sailWidthScale, Mathf.Max(0.01f, sailScaleY), 1f);
-
+            var widthScale = mast.GetSailWidthScale();
+            var targetScale = new Vector3(widthScale, Mathf.Max(0.01f, sailScaleY), 1f);
             mast.m_sailObject.transform.localScale = targetScale;
 
-
-
             // Compensate position so the top edge stays attached to the crossbeam/yardarm
-
             var verticalOffset = (mast.m_sailObject != mast.gameObject) ? mast.GetVerticalOffset() : 0f;
-
             var newPos = mast.m_initialSailLocalPos;
-
             newPos.y += (1f - targetScale.y) * mast.m_sailTopLocalY + verticalOffset;
-
             mast.m_sailObject.transform.localPosition = newPos;
 
-
-
             if (mast.m_sailCloth != null)
-
             {
-
               mast.m_sailCloth.enabled = !isRetracted && !mast.m_disableCloth;
-
-            }
-
-
-
-            foreach (var behaviour in mast.GetComponentsInChildren<Behaviour>(true))
-
-            {
-
-              if (behaviour != null && behaviour.GetType().Name == "MagicaCloth")
-
+              if (!isRetracted && EnvMan.instance != null)
               {
-
-                behaviour.enabled = !isRetracted && !mast.m_disableCloth;
-
+                mast.m_sailCloth.externalAcceleration = EnvMan.instance.GetWindForce();
               }
-
             }
 
-
+            UpdateMagicaCloth(mast, isRetracted);
 
             var renderers = mast.m_sailObject.GetComponentsInChildren<Renderer>(true);
-
             foreach (var r in renderers)
-
             {
-
               r.enabled = !isRetracted || sailScaleY > 0.02f;
-
             }
-
           }
-
           else
-
           {
-
-            mast.m_sailObject.transform.localScale = new Vector3(mast.m_sailWidthScale, 1f, 1f);
-
+            var widthScale = mast.GetSailWidthScale();
+            mast.m_sailObject.transform.localScale = new Vector3(widthScale, 1f, 1f);
             if (mast.m_hasInitializedSailPositions)
-
             {
-
               var verticalOffset = (mast.m_sailObject != mast.gameObject) ? mast.GetVerticalOffset() : 0f;
-
               var newPos = mast.m_initialSailLocalPos;
-
               newPos.y += verticalOffset;
-
               mast.m_sailObject.transform.localPosition = newPos;
-
             }
-
-
 
             if (mast.m_sailCloth != null)
-
-              mast.m_sailCloth.enabled = !mast.m_disableCloth;
-
-            foreach (var behaviour in mast.GetComponentsInChildren<Behaviour>(true))
-
             {
-
-              if (behaviour != null && behaviour.GetType().Name == "MagicaCloth")
-
-              {
-
-                behaviour.enabled = !mast.m_disableCloth;
-
-              }
-
+              mast.m_sailCloth.enabled = !mast.m_disableCloth;
+              if (EnvMan.instance != null)
+                mast.m_sailCloth.externalAcceleration = EnvMan.instance.GetWindForce();
             }
 
+            UpdateMagicaCloth(mast, false);
           }
-
         }
-
       }
 
 

@@ -53,11 +53,25 @@ public class MastComponent : MonoBehaviour
       }
       else
       {
-        m_sailTopLocalY = 5f;
+        var name = gameObject.name;
+        if (name.IndexOf("karve", StringComparison.OrdinalIgnoreCase) >= 0)
+          m_sailTopLocalY = 2.5f;
+        else
+          m_sailTopLocalY = 4.5f;
       }
     }
 
     m_hasInitializedSailPositions = true;
+  }
+
+  public float GetSailWidthScale()
+  {
+    var name = gameObject.name;
+    if (name.IndexOf("karve", StringComparison.OrdinalIgnoreCase) >= 0)
+    {
+      return 2.0f;
+    }
+    return m_sailWidthScale;
   }
 
   public float GetVerticalOffset()

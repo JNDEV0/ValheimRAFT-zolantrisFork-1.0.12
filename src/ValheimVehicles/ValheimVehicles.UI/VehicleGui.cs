@@ -160,6 +160,14 @@
       RemoveGui();
     }
 
+    private void Update()
+    {
+      if (Player.m_localPlayer == null || ZNet.instance == null || Game.instance == null)
+      {
+        RemoveGui();
+      }
+    }
+
     public void RemoveGui()
     {
       commandsPanelToggleObjects.Clear();
@@ -176,6 +184,8 @@
       configWindow = null;
 
       if (GuiObj) Destroy(GuiObj);
+      GuiObj = null;
+      Gui = null;
     }
 
     public bool lastPanelState = false;

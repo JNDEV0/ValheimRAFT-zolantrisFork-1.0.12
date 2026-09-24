@@ -331,6 +331,7 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
     // tweak the mast
     var mast = mbKarveMastPrefab.AddComponent<MastComponent>();
     SetupMastSail(mbKarveMastPrefab, mast);
+    mast.m_sailWidthScale = 2.0f;
     mast.m_allowSailShrinking = true;
     mast.m_allowSailRotation = true;
 
@@ -403,9 +404,5 @@ public class SailPrefabs : RegisterPrefab<SailPrefabs>
     }
 
     mastComponent.m_sailWidthScale = 1.4f;
-    if (mastComponent.m_sailObject != null && mastComponent.m_sailObject != prefab)
-    {
-      mastComponent.m_sailObject.transform.localScale = Vector3.zero;
-    }
   }
 }

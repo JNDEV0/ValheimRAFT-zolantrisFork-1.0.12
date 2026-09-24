@@ -673,6 +673,22 @@
       return list;
     }
 
+    [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
+    [HarmonyPostfix]
+    public static void UpdatePlacementGhost_HideMastSail(Player __instance)
+    {
+      if (!__instance.m_placementGhost) return;
+      var mast = __instance.m_placementGhost.GetComponent<MastComponent>();
+      if (mast != null && mast.m_sailObject != null && mast.m_sailObject != __instance.m_placementGhost)
+      {
+        var renderers = mast.m_sailObject.GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renderers)
+        {
+          r.enabled = false;
+        }
+      }
+    }
+
     [HarmonyPatch(typeof(Player), "GetControlledShip")]
     [HarmonyPrefix]
     public static bool GetControlledShip(Player __instance, object? __result)

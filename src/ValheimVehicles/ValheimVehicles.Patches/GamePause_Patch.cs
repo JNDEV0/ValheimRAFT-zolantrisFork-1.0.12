@@ -3,6 +3,7 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVehicles.BepInExConfig;
 using ValheimVehicles.Controllers;
+using ValheimVehicles.UI;
 
 namespace ValheimVehicles.Patches;
 
@@ -59,6 +60,32 @@ public class GamePause_Patch
     else
     {
       Time.timeScale = hasPeerConnections ? 1f : Game.m_timeScale;
+    }
+  }
+
+  [HarmonyPatch(typeof(Game), "OnDestroy")]
+  [HarmonyPostfix]
+  private static void Game_OnDestroy_CleanupGui()
+  {
+    VehicleGui.Instance?.RemoveGui();
+    if (VehicleGui.GuiObj != null)
+    {
+      Object.Destroy(VehicleGui.GuiObj);
+      VehicleGui.GuiObj = null;
+      VehicleGui.Gui = null;
+    }
+  }
+
+  [HarmonyPatch(typeof(FejdStartup), "Awake")]
+  [HarmonyPostfix]
+  private static void FejdStartup_Awake_CleanupGui()
+  {
+    VehicleGui.Instance?.RemoveGui();
+    if (VehicleGui.GuiObj != null)
+    {
+      Object.Destroy(VehicleGui.GuiObj);
+      VehicleGui.GuiObj = null;
+      VehicleGui.Gui = null;
     }
   }
 }
